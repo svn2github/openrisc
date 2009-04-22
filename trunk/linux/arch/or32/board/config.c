@@ -2,7 +2,11 @@
  *  linux/arch/or32/board/config.c
  *
  *  or32 version
- *    author(s): Simon Srot (srot@opencores.org) and OpenCores.org
+ *    author(s): Simon Srot (srot@opencores.org)
+ *
+ *  For more information about OpenRISC processors, licensing and
+ *  design services you may contact Beyond Semiconductor at
+ *  sales@bsemi.com or visit website http://www.bsemi.com.
  *
  * This file is subject to the terms and conditions of the GNU General Public
  * License.  See the file COPYING in the main directory of this archive
@@ -106,7 +110,7 @@ static struct plat_serial8250_port serial_platform_data[] = {
 	{
 		.mapbase	= 0x90000000,
 		.irq		= 2,
-		.uartclk	= BASE_BAUD,
+		.uartclk	= SYS_CLK, /*BASE_BAUD,*/
 		.regshift	= 0,
 		.iotype		= UPIO_MEM,
 		.flags		= UPF_IOREMAP | UPF_BOOT_AUTOCONF,
