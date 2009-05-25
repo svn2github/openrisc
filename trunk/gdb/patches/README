@@ -1,0 +1,23 @@
+			 OpenRISC GDB Implementation
+			 ===========================
+
+GDB Patches Directory
+=====================
+
+This directory contains patch files for GDB for the OpenRISC architecture.
+
+These patch files should be applied to the standard GNU GDB implementation of
+corresponding version. For example if the standard implementation of GDB has
+been unpacked in gdb-6.8 and the patch file is in or32-gdb-6.8-patch-2.1.bz2,
+use:
+
+  cd gdb-6.8
+  bunzip2 -dc ../or32-gdb-6.8-patch-2.1.bz2 | patch -p1
+
+The directory gdb-6.8 will not contain a source tree for GDB 6.8 for the
+OpenRISC architecture. It can be built using the standard GDB instructions
+(configure; make; make install).
+
+
+Updated by Jeremy Bennett <jeremy.bennett@embecosm.com>
+25 May 2009
