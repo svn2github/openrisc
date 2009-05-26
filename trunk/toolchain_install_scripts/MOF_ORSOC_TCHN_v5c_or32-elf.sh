@@ -15,7 +15,7 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 
-##Date: 21/04/2009
+##Date: 26/05/2009
 ##Title: MOF_ORSOC_TCN_v5c_or32-elf.sh
 ##Purpose: Complete Toolchain Builder from MOF & ORSoC.
 ##initial rgd, mse
@@ -72,6 +72,8 @@
 #        - Hopefully now runs on Cygwin with new patch for uClibc
 # 300409 - New Binutils patch - fixes objdump instruction decode issue
 # 110509 - (v5c) Put in check for required build tools before building
+# 260509 - Changed gcc's package download to gcc-core as we only use the
+#          c-language compiler and libraries right now.
 
 # TODO: OS X build things - need an "elf.h" from some Linux machine's 
 #       /usr/local/include dir and put in Mac's /usr/local/include dir - 
@@ -196,7 +198,8 @@ DIR=`pwd`
 
 ## Versions of the toolchain components ##
 BINUTILS_VER=binutils-2.18.50
-GCC_VER=gcc-4.2.2
+GCC_VER_NUM=4.2.2
+GCC_VER=gcc-$GCC_VER_NUM
 GDB_VER=gdb-6.8
 UCLIB_VER=uClibc-0.9.29
 LINUX_VER=linux-2.6.24
@@ -229,7 +232,7 @@ TARGET=or32-elf
 ## Tarballs ##
 ZBALL1=$BINUTILS_VER.tar.bz2
 TBALL1=$BINUTILS_VER.tar
-ZBALL2=$GCC_VER.tar.bz2
+ZBALL2=gcc-core-$GCC_VER_NUM.tar.bz2
 TBALL2=$GCC_VER.tar
 ZBALL3=$UCLIB_VER.tar.bz2
 TBALL3=$UCLIB_VER.tar
