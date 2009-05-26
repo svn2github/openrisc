@@ -1,0 +1,49 @@
+; Options for the OR32 port of the compiler
+
+mhard-float
+Target RejectNegative Mask(HARD_FLOAT)
+Use hardware floating point
+
+msoft-float
+Target RejectNegative InverseMask(HARD_FLOAT)
+Do not use hardware floating point
+
+mhard-div
+Target RejectNegative Mask(HARD_DIV)
+Use hardware division
+
+msoft-div
+Target RejectNegative InverseMask(HARD_DIV)
+Do not use hardware division
+
+mhard-mul
+Target RejectNegative Mask(HARD_MUL)
+Use hardware multiplication
+
+msoft-mul
+Target RejectNegative InverseMask(HARD_MUL)
+Do not use hardware multiplication
+
+maj
+Target Mask(MASK_ALIGNED_JUMPS)
+Use aligned jumps
+
+msext
+Target Mask(MASK_SEXT)
+Use sign-extending instructions
+
+mcmov
+Target Mask(MASK_CMOV)
+Use conditional move instructions
+
+mlogue
+Target Mask(MASK_SCHED_LOGUE)
+Schedule prologue/epilogue
+
+mror
+Target Mask(MASK_ROR)
+Emit ROR instructions
+
+msibcall
+Target Mask(MASK_SIBCALL)
+Enable sibcall optimization

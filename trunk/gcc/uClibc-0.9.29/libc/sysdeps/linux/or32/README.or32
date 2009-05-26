@@ -1,0 +1,14 @@
+This is a port of uClibc to OpenRISC 1000 family of microprocessors. More
+information about it can be found at:
+
+	 http://www.opencores.org/projects/or1k/
+
+Changes:
+14. 02. 2004	Matjaz Breskvar (phoenix@opencores.org)
+	improvments all over, upgrade to uClibc-0.9.26.
+	busybox compiles and runs on linux or32 port.
+
+09. 12. 2003	Matjaz Breskvar (phoenix@opencores.org)
+	initial port of uClibc-0.9.23 to OpenRISC/or32 architecture. 
+	sash-3.6 compiles cleanly and runs on linux 2.4.20	 
+	
