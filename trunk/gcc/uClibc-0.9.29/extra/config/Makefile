@@ -18,11 +18,11 @@ host-cmulti := $(foreach m,$(__hostprogs),\
 host-cobjs  := $(sort $(foreach m,$(__hostprogs),$($(m)-objs)))
 
 ## Check if we're on Cygwin, if so include the extra options when linking
-ON_CYGWIN=$(shell set | grep -i mach|grep -i -c cygwin)
-ifeq ($(ON_CYGWIN),0)
-	CYGWIN_LDOPTS=
-else
+
+ifeq ($(shell uname -o),Cygwin)
 	CYGWIN_LDOPTS="-lcurses -lintl"
+else
+	CYGWIN_LDOPTS=
 endif
 
 

@@ -74,6 +74,9 @@
 # 110509 - (v5c) Put in check for required build tools before building
 # 260509 - Changed gcc's package download to gcc-core as we only use the
 #          c-language compiler and libraries right now.
+# 030609 - Fixed odd problem with uClibc build on latest Cygwin where it tried
+#          to run the INSTALL script file instead of the systems install binary
+#          by adding a suffix to the text file.
 
 # TODO: OS X build things - need an "elf.h" from some Linux machine's 
 #       /usr/local/include dir and put in Mac's /usr/local/include dir - 
@@ -399,7 +402,7 @@ mkdir $INSTALL_DIR
 
 ####################################################################################################
 ## Now check which sources have already been downloaded, if any ##
-DO_DOWNLOADS="y" ## Default is to do downloads
+DO_DOWNLOADS="y" ## Default is to NOT do downloads
 
 if [ $DBG_BUILD -eq 1 ]
     then
@@ -412,7 +415,7 @@ if [ $DBG_BUILD -eq 1 ]
 	then
 	DO_DOWNLOADS="n"
     else
-	DO_DOWNLOADS=$(echo $YN | tr [:upper:] [:lower:])
+	DO_DOWNLOADS=$(echo $DO_DOWNLOADS | tr [:upper:] [:lower:])
     fi
 
 fi
@@ -420,13 +423,11 @@ fi
 if [ $DO_DOWNLOADS = "y" ]
 then
 ## Check if download directory exists, if not create it ##
-    if [ -d $DOWNLOAD_DIR ]
-	then
-	cd $DOWNLOAD_DIR
-    else
+    if [ ! -d $DOWNLOAD_DIR ]; then
 	mkdir $DOWNLOAD_DIR
-	cd $DOWNLOAD_DIR
     fi
+    
+    cd $DOWNLOAD_DIR
     
 ## We'll need the md5sum file ##
 ## This is a file stored on the ORSoC FTP server, containing checksums of all the files we need ##
@@ -549,9 +550,11 @@ ON_CYGWIN=`set | grep -i mach|grep -i -c cygwin`
 if [ $ON_CYGWIN -ge 1 ]
     then
     echo
-    echo "Cygwin host exports:"
+    echo "Cygwin host detected"
+    echo "Platform specific exports:"
     echo  "export HOST_LOADLIBES=\"-lcurses -lintl\" "
     echo
+    export ON_CYGWIN=1
     export HOST_LOADLIBES="-lcurses -lintl"
 fi
 
@@ -706,7 +709,7 @@ if [ $BUILD_THIS = "y" ]
     
 ## Make sure that patched ok ##
     check_exit_code
-    
+## Copy our preconfigured configuration file into place ##    
     cp rgd_dot_config .config
 
     echo
@@ -843,6 +846,14 @@ if [ $BUILD_THIS = "y" ]
 ## Removes the uclinux line and changes to whatever our current target is ##
     sed "s/or32\-uclinux/\or32\-$TARGET_SECOND_PART/" $BUILD_TOP/$UCLIB_VER/extra/Configs/Config.or32  > $BUILD_TOP/$UCLIB_VER/extra/Configs/Config.or32.newtarget
     mv $BUILD_TOP/$UCLIB_VER/extra/Configs/Config.or32.newtarget $BUILD_TOP/$UCLIB_VER/extra/Configs/Config.or32    
+
+if [ $ON_CYGWIN -ge 1 ]
+    then
+## If on Cygwin, fix strange error where 'install' command by the makefile ##
+## results in it trying to execute the INSTALL text file in the root of the ##
+## package ##
+    mv INSTALL INSTALL.txt
+fi
 
     echo
     echo "Making uClibc oldconfig"
