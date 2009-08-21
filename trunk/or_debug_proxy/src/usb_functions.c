@@ -369,6 +369,7 @@ static int retry_no = 0;
 int retry_do() {
 
   unsigned char stalled;
+  int tap_id_reads = 0;
 
   //printf("RETRY\n");
   if (retry_no == 0)
@@ -391,7 +392,7 @@ int retry_do() {
   */
   
   // Try a readback of the TAP ID
-
+ read_tap:
   // Set ID code instruction in IR
   usb_set_tap_ir(JI_IDCODE);
   
@@ -403,10 +404,19 @@ int retry_do() {
 
   if((id&0xffffffff) != (id_read_at_reset&0xffffffff))
     {
-      // Pretty big problem - can't even read the ID of the TAP anymore
-      // So return error
-      printf("Unable to read JTAG TAP ID - read %08x, expected %08x\n", id, id_read_at_reset);
-      return 1;
+      if (tap_id_reads == 10)
+	{
+	  // Pretty big problem - can't even read the ID of the TAP anymore
+	  // So return error
+	  printf("Unable to read JTAG TAP ID - read %08x, expected %08x\n", 
+		 id, id_read_at_reset);
+
+	  return 1;
+	}
+      
+      tap_id_reads++;
+      
+      goto read_tap;
     }
 
   current_chain = -1;

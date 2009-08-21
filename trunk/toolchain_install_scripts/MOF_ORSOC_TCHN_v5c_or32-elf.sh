@@ -112,13 +112,15 @@ check_exit_code()
 	echo
 	echo "Please report this to the script maintainers."
 	echo
-	echo "A useful report would contain information such as the module"
-	echo "buing built/\"make\"ed when the error occurred (relevant lines"
-	echo "of console output), the version of GCC on the host system used"
-	echo "to compile (gcc --version), linux distro and version, etc."
-	echo "A good place to post this information is on the OpenCores"
-	echo "forum for the OpenRISC project: "	
-	echo "http://opencores.org/?do=forum"
+	echo "A useful report would contain information such as the tool"
+	echo "being built/\"make\"d when the error occurred and the relevant"
+	echo "lines of console output or log file relating to the error. It"
+	echo "also helps to include information about your the host OS and"
+	echo "version of GCC."
+	echo "A good place to look for solutions, and report any bugs, is at"
+	echo "the OpenRISC project's bug tracker on OpenCores.org:"
+	echo
+	echo "           http://opencores.org/openrisc,bugtracker"
 	echo
 	exit $?
     fi
