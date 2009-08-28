@@ -61,7 +61,8 @@
 //                      a remote target.                                jb
 // 090505               Remove PPC polling - caused intermittent errors 
 //                      in or1k                                         jb
-
+// 090828               Fixed byte/non-aligned accesses. Removed legacy
+//                      "remote JTAG" protocol.                         jb
 #ifdef CYGWIN_COMPILE
 
 #else
@@ -215,6 +216,20 @@ enum stallStates {
 int      npcIsCached;		//!< Is the NPC cached - should be bool
 uint32_t  npcCachedValue;		//!< Cached value of the NPC
 
+/* OR32 Linux kernel debugging hacks */
+/* If we're operating in virtual memory space, currently the standard VM base 
+   is 0xc0000000, since the GDB we're currently using is bare-metal we will 
+   do a translation of these VM addresses to their physical address - although 
+   not with any sophistication, we simply map all 0xc0000000 based addresses 
+   to 0x0. This allows GDB to read/wite the addresses the PC and NPC point to,
+   access VM data areas, etc. */
+/* Define OR32_KERNEL_DBUG_COMPAT=1 when compiling to enable this */
+#define OR32_KERNEL_DBG_COMPAT 1
+#define OR32_LINUX_VM_OFFSET 0xc0000000
+#define OR32_LINUX_VM_MASK 0xf0000000
+
+#define IS_VM_ADDR(adr) ((adr & OR32_LINUX_VM_MASK) == OR32_LINUX_VM_OFFSET)
+
 
 
 
@@ -274,8 +289,6 @@ static struct
 static char *printTime(void);
 static int gdb_read(void*, int);
 static int gdb_write(void*, int);
-static void ProtocolClean(int, int32_t);
-static void GDBRequest(void);
 static void rsp_interrupt();
 static char rsp_peek();
 static struct rsp_buf *get_packet (void);
@@ -291,18 +304,18 @@ static void rsp_get_client (void);
 static void rsp_client_request (void);
 static void rsp_client_close (void);
 static void client_close (char err);
-static void	put_str_packet (const char *str);
+static void put_str_packet (const char *str);
 static void rsp_report_exception (void);
 static void put_packet (struct rsp_buf *p_buf);
 static void send_rsp_str (unsigned char *data, int len);
 static void rsp_query (struct rsp_buf *p_buf);
 static void rsp_vpkt (struct rsp_buf *p_buf);
-static void	rsp_step (struct rsp_buf *p_buf);
-static void	rsp_step_with_signal (struct rsp_buf *p_buf);
-static void	rsp_step_generic (uint32_t  addr, uint32_t  except);
+static void rsp_step (struct rsp_buf *p_buf);
+static void rsp_step_with_signal (struct rsp_buf *p_buf);
+static void rsp_step_generic (uint32_t  addr, uint32_t  except);
 static void rsp_continue (struct rsp_buf *p_buf);
-static void	rsp_continue_with_signal (struct rsp_buf *p_buf);
-static void	rsp_continue_generic (uint32_t  addr, uint32_t  except);
+static void rsp_continue_with_signal (struct rsp_buf *p_buf);
+static void rsp_continue_generic (uint32_t  addr, uint32_t  except);
 static void rsp_read_all_regs (void);
 static void rsp_write_all_regs (struct rsp_buf *p_buf);
 static void rsp_read_mem (struct rsp_buf *p_buf);
@@ -312,7 +325,7 @@ static int rsp_unescape (char *data, int len);
 static void rsp_read_reg (struct rsp_buf *p_buf);
 static void rsp_write_reg (struct rsp_buf *p_buf);
 static void mp_hash_init (void);
-static void	mp_hash_add (enum mp_type type, uint32_t  addr, uint32_t  instr);
+static void mp_hash_add (enum mp_type type, uint32_t  addr, uint32_t  instr);
 static struct mp_entry * mp_hash_lookup (enum mp_type type, uint32_t  addr);
 static struct mp_entry * mp_hash_delete (enum mp_type type,	uint32_t  addr);
 static void rsp_remove_matchpoint (struct rsp_buf *p_buf);
@@ -329,6 +342,7 @@ static void set_stall_state (int state);
 static void reset_or1k (void);
 static void gdb_ensure_or1k_stalled();
 static int gdb_set_chain(int chain);
+static int gdb_write_byte(uint32_t adr, uint8_t data);
 static int gdb_write_reg(uint32_t adr, uint32_t data);
 static int gdb_read_reg(uint32_t adr, uint32_t *data);
 static int gdb_write_block(uint32_t adr, uint32_t *data, int len);
@@ -446,6 +460,7 @@ handle_rsp (void)
 #ifdef CYGWIN_COMPILE
 	  sleep(1);
 #else
+	usleep(10000);
 	sched_yield();
 #endif
 	
@@ -475,6 +490,7 @@ handle_rsp (void)
       sleep(1);
 #else
     {
+      usleep(10000);
       sched_yield();
     }
 #endif
@@ -493,8 +509,8 @@ static void rsp_check_for_exception()
 
   unsigned char stalled;
   uint32_t drr;
-  err = dbg_cpu0_read_ctrl(0, &stalled);				 /* check if we're stalled */
-  
+  err = dbg_cpu0_read_ctrl(0, &stalled); /* check if we're stalled */
+
   if (!(stalled & 0x01))
     {
       // Processor not stalled. Just return;
@@ -2159,8 +2175,15 @@ static void rsp_read_mem (struct rsp_buf *p_buf)
   unsigned int    addr;			/* Where to read the memory */
   int             len;			/* Number of bytes to read */
   int             off;			/* Offset into the memory */
-	uint32_t		temp_uint32 = 0;
-  char 						*rec_buf;
+  uint32_t		temp_uint32 = 0;
+  char 						*rec_buf, *rec_buf_ptr;
+  int bytes_per_word = 4; /* Current OR implementation is 4-byte words */
+  int i;
+  int len_cpy;
+  /* Couple of temps we might need when doing aligning/leftover accesses */
+  uint32_t tmp_word;
+  char *tmp_word_ptr = (char*) &tmp_word;
+  
 
 
   if (2 != sscanf (p_buf->data, "m%x,%x:", &addr, &len))
@@ -2181,7 +2204,6 @@ static void rsp_read_mem (struct rsp_buf *p_buf)
 
   if(!(rec_buf = (char*)malloc(len))) {
     put_str_packet ("E01");
-    ProtocolClean(0, JTAG_PROXY_OUT_OF_MEMORY);
     return;
   }
 
@@ -2191,52 +2213,120 @@ static void rsp_read_mem (struct rsp_buf *p_buf)
   // Set chain 5 --> Wishbone Memory chain
   err = gdb_set_chain(SC_WISHBONE);
   if(err){
-  	if (DEBUG_GDB) printf("Error %d in gdb_set_chain\n", err);
-  	put_str_packet ("E01");
+    if (DEBUG_GDB) printf("Error %d in gdb_set_chain\n", err);
+    put_str_packet ("E01");
     return;
-	}
+  }
+  
+  len_cpy = len;
+  rec_buf_ptr = rec_buf; // Need to save a copy of pointer
+  
+  if (addr & 0x3)  // address not aligned at the start
+    {
+      // Have to read from the word-aligned address first and fetch the bytes
+      // we need.
+      if (DEBUG_GDB) 
+	printf("rsp_read_mem: unaligned address read - reading before bytes\n",
+	       err);      
+      int num_bytes_to_align = bytes_per_word - (addr & 0x3);
+      uint32_t aligned_addr = addr & ~0x3;
 
-  // Read the data from Wishbone Memory chain
-  err = gdb_read_block(addr, (uint32_t*)rec_buf, len); 
-  if(err){
-  	put_str_packet ("E01");
-		return;
+      if (DEBUG_GDB) 
+	printf("rsp_read_mem: reading first %d of %d overall, from 0x%.8x\n", 
+	       num_bytes_to_align, len_cpy, aligned_addr);
+
+      err = gdb_read_reg(aligned_addr, &tmp_word);
+
+      if (DEBUG_GDB) printf("rsp_read_mem: first word 0x%.8x\n", tmp_word);
+
+      if(err){
+	put_str_packet ("E01");
+	return;
+      }
+      
+      // Pack these bytes in first
+      if (num_bytes_to_align > len_cpy) num_bytes_to_align = len_cpy;
+      
+      // Data returns back in big endian format.
+      if (DEBUG_GDB_BLOCK_DATA)printf("rsp_read_mem: packing first bytes ");
+      i=addr&0x3; int buf_ctr = 0;
+      while (buf_ctr < num_bytes_to_align)
+	{
+	  rec_buf_ptr[buf_ctr] = tmp_word_ptr[i];
+	  if (DEBUG_GDB_BLOCK_DATA)printf("i=%d=0x%x, ", i,
+					  tmp_word_ptr[bytes_per_word-1-i]);
+	  i++;
+	  buf_ctr++;
 	}
+      
+      if (DEBUG_GDB_BLOCK_DATA)printf("\n");
+      
+      // Adjust our status
+      len_cpy -= num_bytes_to_align; addr += num_bytes_to_align; 
+      rec_buf_ptr += num_bytes_to_align;
+    }
+  if (len_cpy/bytes_per_word) // Now perform all full word accesses
+    {
+      int words_to_read = len_cpy/bytes_per_word; // Full words to read
+      if (DEBUG_GDB) printf("rsp_read_mem: reading %d words from 0x%.8x\n", 
+			    words_to_read, addr);      
+      // Read full data words from Wishbone Memory chain
+      err = gdb_read_block(addr, (uint32_t*)rec_buf_ptr, 
+			   words_to_read*bytes_per_word); 
+      
+      if(err){
+	put_str_packet ("E01");
+	return;
+      }
+
+      // Adjust our status
+      len_cpy -= (words_to_read*bytes_per_word);
+      addr += (words_to_read*bytes_per_word);
+      rec_buf_ptr += (words_to_read*bytes_per_word);
+    }
+  if (len_cpy) // Leftover bytes
+    {
+      if (DEBUG_GDB) 
+	printf("rsp_read_mem: reading %d left-over bytes from 0x%.8x\n", 
+	       len_cpy, addr);      
+      
+      err = gdb_read_reg(addr, &tmp_word);
+      
+      // Big endian - top byte first!
+      for(i=0;i<len_cpy;i++) 
+	rec_buf_ptr[i] = tmp_word_ptr[i];
+
+    }
+  
+  if (DEBUG_GDB) 
+    printf("rsp_read_mem: err: %d\n",err);
+
+
+  if(err){
+    put_str_packet ("E01");
+    return;
+  }
 
   /* Refill the buffer with the reply */
   for( off = 0 ; off < len ; off ++ ) {
-		;
-		temp_uint32 = (temp_uint32 << 8) | (0x000000ff & *(rec_buf + off));
-		
-		if((off %4 ) == 3){
-			temp_uint32 = htonl(temp_uint32);
-			reg2hex (temp_uint32, &(p_buf->data[off * 2 - 6]));
-		}
-		if (DEBUG_GDB_BLOCK_DATA){
-		  switch(off % 16)
-			{
-				case 3:	 
-					printf("Add 0x%08x   Data 0x%08x  ", addr + off - 3, temp_uint32);
-					break;
-				case 7:	 
-				case 11:
-					printf("0x%08x  ", temp_uint32);	 
-					break;
-				case 15:	 
-					printf("0x%08x\n", temp_uint32);
-					break;
-				default:
-					break;
-			}
-			if ((len - off == 1) && (off % 16) < 15) printf("\n");
-		}
+    ;
+    p_buf->data[(2*off)] = hexchars[((rec_buf[off]&0xf0)>>4)];
+    p_buf->data[(2*off)+1] = hexchars[(rec_buf[off]&0x0f)];
   }
-  
+
   if (DEBUG_GDB && (err > 0)) printf("\nError %x\n", err);fflush (stdout);
 	free(rec_buf);
   p_buf->data[off * 2] = 0;			/* End of string */
   p_buf->len           = strlen (p_buf->data);
+  if (DEBUG_GDB_BLOCK_DATA){
+    printf("rsp_read_mem: adr 0x%.8x data: ", addr);
+    for(i=0;i<len*2;i++)
+      printf("%c",p_buf->data[i]);
+    printf("\n");
+  }
+
   put_packet (p_buf);
+
 }	/* rsp_read_mem () */
 
 
@@ -2363,38 +2453,38 @@ rsp_read_reg (struct rsp_buf *p_buf)
     put_str_packet ("E01");
   	return;
 	}
-
+  
   /* Get the relevant register */
   if (regnum < MAX_GPRS)
     {
-		  err = gdb_read_reg(0x400 + regnum, &temp_uint32);
-		  if(err > 0){
-		  	if (DEBUG_GDB) printf("Error %d in rsp_read_reg at reg. %d \n", err, regnum);
-		    put_str_packet ("E01");
-		  	return;
-		  }
-		  reg2hex (temp_uint32, p_buf->data);
+      err = gdb_read_reg(0x400 + regnum, &temp_uint32);
+      if(err > 0){
+	if (DEBUG_GDB) printf("Error %d in rsp_read_reg at reg. %d \n", err, regnum);
+	put_str_packet ("E01");
+	return;
+      }
+      reg2hex (temp_uint32, p_buf->data);
     }
   else if (PPC_REGNUM == regnum)	/* ---------- PPC ---------- */
     {
-		  err = gdb_read_reg(PPC_CPU_REG_ADD, &temp_uint32);
-		  if(err > 0){
-		  	if (DEBUG_GDB) printf("Error %d in rsp_read_reg read --> PPC\n", err);
-		    put_str_packet ("E01");
-		  	return;
-		  }
-		  reg2hex (temp_uint32, p_buf->data);
-    }
-  else if (NPC_REGNUM == regnum)	/* ---------- NPC ---------- */
-    {
-      temp_uint32 = get_npc();
-      /*
-      err = gdb_read_reg(NPC_CPU_REG_ADD, &temp_uint32);
+      err = gdb_read_reg(PPC_CPU_REG_ADD, &temp_uint32);
       if(err > 0){
 	if (DEBUG_GDB) printf("Error %d in rsp_read_reg read --> PPC\n", err);
 	put_str_packet ("E01");
 	return;
       }
+      reg2hex (temp_uint32, p_buf->data);
+    }
+  else if (NPC_REGNUM == regnum)	/* ---------- NPC ---------- */
+    {
+      temp_uint32 = get_npc();
+      /*
+	err = gdb_read_reg(NPC_CPU_REG_ADD, &temp_uint32);
+	if(err > 0){
+	if (DEBUG_GDB) printf("Error %d in rsp_read_reg read --> PPC\n", err);
+	put_str_packet ("E01");
+	return;
+	}
       */
       reg2hex (temp_uint32, p_buf->data);
     }
@@ -2463,22 +2553,22 @@ rsp_write_reg (struct rsp_buf *p_buf)
 
   /* Set the relevant register */
   if (regnum < MAX_GPRS)				 /* ---------- GPRS ---------- */
-		{
+    {
       err = gdb_write_reg(0x400 + regnum, hex2reg (valstr));
-		  if(err > 0){
-		  	if (DEBUG_GDB) printf("Error %d in rsp_write_reg write --> GPRS\n", err);
-		    put_str_packet ("E01");
-		  	return;
-		  }
+      if(err > 0){
+	if (DEBUG_GDB) printf("Error %d in rsp_write_reg write --> GPRS\n", err);
+	put_str_packet ("E01");
+	return;
+      }
     }
   else if (PPC_REGNUM == regnum) /* ---------- PPC ---------- */
     {
       err = gdb_write_reg(PPC_CPU_REG_ADD, hex2reg (valstr));
-		  if(err > 0){
-		  	if (DEBUG_GDB) printf("Error %d in rsp_write_reg write --> PPC\n", err);
-		    put_str_packet ("E01");
-		  	return;
-		  }
+      if(err > 0){
+	if (DEBUG_GDB) printf("Error %d in rsp_write_reg write --> PPC\n", err);
+	put_str_packet ("E01");
+	return;
+      }
     }
   else if (NPC_REGNUM == regnum) /* ---------- NPC ---------- */
     {
@@ -2486,19 +2576,19 @@ rsp_write_reg (struct rsp_buf *p_buf)
       /*
       err = gdb_write_reg(NPC_CPU_REG_ADD, hex2reg (valstr));
       if(err > 0){
-	if (DEBUG_GDB) printf("Error %d in rsp_write_reg write --> NPC\n", err);
-	put_str_packet ("E01");
-	return;
+      if (DEBUG_GDB) printf("Error %d in rsp_write_reg write --> NPC\n", err);
+      put_str_packet ("E01");
+      return;
       }
       */
     }
   else if (SR_REGNUM == regnum)	 /* ---------- SR ---------- */
     {
       err = gdb_write_reg(SR_CPU_REG_ADD, hex2reg (valstr));
-		  if(err > 0){
-		  	if (DEBUG_GDB) printf("Error %d in rsp_write_reg write --> SR\n", err);
-		    put_str_packet ("E01");
-		  	return;
+      if(err > 0){
+	if (DEBUG_GDB) printf("Error %d in rsp_write_reg write --> SR\n", err);
+	put_str_packet ("E01");
+	return;
 		  }
     }
   else
@@ -2509,9 +2599,9 @@ rsp_write_reg (struct rsp_buf *p_buf)
       put_str_packet ("E01");
       return;
     }
-
+  
   put_str_packet ("OK");
-
+  
 }	/* rsp_write_reg () */
 
     
@@ -3038,9 +3128,11 @@ rsp_write_mem_bin (struct rsp_buf *p_buf)
 {
   unsigned int  addr;			/* Where to write the memory */
   int           len;			/* Number of bytes to write */
-  char         	*bindat;	/* Pointer to the binary data */
+  char         	*bindat, *bindat_ptr;	/* Pointer to the binary data */
   int           off = 0;	/* Offset to start of binary data */
   int           newlen;		/* Number of bytes in bin data */
+  int i;
+  int bytes_per_word = 4; /* Current OR implementation is 4-byte words */
 
   if (2 != sscanf (p_buf->data, "X%x,%x:", &addr, &len))
     {
@@ -3090,14 +3182,13 @@ rsp_write_mem_bin (struct rsp_buf *p_buf)
   /* Write the bytes to memory */
   if (len)
     {
-      swap_buf(bindat, len);
-      
+      //swap_buf(bindat, len);
       if (DEBUG_GDB_BLOCK_DATA){
 	uint32_t  temp_uint32;
 	for (off = 0; off < len; off++){
 	  temp_uint32 = (temp_uint32 << 8) | (0x000000ff & bindat[off]);
 	  if((off %4 ) == 3){
-	    temp_uint32 = htonl(temp_uint32);
+	    //temp_uint32 = htonl(temp_uint32);
 	  }
 	  switch(off % 16)
 	    {
@@ -3118,15 +3209,64 @@ rsp_write_mem_bin (struct rsp_buf *p_buf)
 	}
       }
       
-      err = gdb_write_block(addr, (uint32_t*)bindat, len);
+      bindat_ptr = bindat; // Copy pointer so we don't trash the original.
+      if (addr & 0x3) // not perfectly aligned at beginning - fix
+	{
+	  if (DEBUG_GDB) {
+	    printf("rsp_write_mem_bin: address not word aligned: 0x%.8x\n", 
+		   addr);fflush (stdout);
+	  }
+	  // Write enough to align us
+	  int bytes_to_write = bytes_per_word - (addr&0x3);
+	  if (bytes_to_write > len) bytes_to_write = len; // case of writing 1 byte to adr 0x1
+	  if (DEBUG_GDB) {
+	    printf("rsp_write_mem_bin: writing %d bytes of len (%d)\n",
+		   bytes_to_write, len);fflush (stdout);
+	  }
+	  
+	  for (i=0;i<bytes_to_write;i++) 
+	    err = gdb_write_byte(addr+i, (uint8_t) bindat_ptr[i]);
+	  
+	  addr += bytes_to_write; bindat_ptr += bytes_to_write; 
+	  len -= bytes_to_write;
+	  if (DEBUG_GDB){
+	    printf("rsp_write_mem_bin: address should now be word aligned: 0x%.8x\n", addr);
+	    fflush (stdout);
+	  }
+	}
+      if ((len > 3) && !err) // now write full words, if we can
+	{
+	  int words_to_write = len/bytes_per_word;
+	  if (DEBUG_GDB) 
+	    printf("rsp_write_mem_bin: writing %d words from 0x%x, len %d bytes\n",
+		   words_to_write, addr, len);fflush (stdout);
+	  
+	  err = gdb_write_block(addr, (uint32_t*)bindat_ptr, 
+				(words_to_write*bytes_per_word));
+	  
+	  addr+=(words_to_write*bytes_per_word); 
+	  bindat_ptr+=(words_to_write*bytes_per_word); 
+	  len-=(words_to_write*bytes_per_word); 
+	}
+      if (len && !err)  // leftover words. Write them out
+	{
+	  if (DEBUG_GDB) 
+	    printf("rsp_write_mem_bin: writing remainder %d bytes to 0x%.8x\n",
+		   len, addr);fflush (stdout);
+	  
+	  for (i=0;i<len;i++) 
+	    err = gdb_write_byte(addr+i, (uint8_t) bindat_ptr[i]);
+	}
+      
       if(err){
 	put_str_packet ("E01");
 	return;
       }
+      
       if (DEBUG_GDB) printf("Error %x\n", err);fflush (stdout);
     }
   put_str_packet ("OK");
-  
+    
 }	/* rsp_write_mem_bin () */
 
       
@@ -3276,9 +3416,9 @@ rsp_insert_matchpoint (struct rsp_buf *p_buf)
       gdb_read_block(addr, &instr, 4); 
 
       mp_hash_add (type, addr, instr);
-      
-      // Arc Sim Code -->   set_program32 (addr, OR1K_TRAP_INSTR);
-      instr = OR1K_TRAP_INSTR;
+
+      //instr = OR1K_TRAP_INSTR;
+      instr = ntohl(OR1K_TRAP_INSTR);// Endianess of this needs to be swapped -jb
       err = gdb_write_block(addr, &instr, 4);
       if(err){
 	put_str_packet ("E01");
@@ -3362,8 +3502,45 @@ static void gdb_ensure_or1k_stalled()
     }  
 }
 
+int gdb_write_byte(uint32_t adr, uint8_t data) {
+  
+#ifdef OR32_KERNEL_DBG_COMPAT
+  if (IS_VM_ADDR(adr))
+    adr = adr & ~OR32_LINUX_VM_MASK;
+#endif
 
+  if (DEBUG_CMDS) printf("wbyte %d\n", gdb_chain);
+  switch (gdb_chain) {
+  case SC_WISHBONE:   return dbg_wb_write8(adr, data) ? 
+      ERR_CRC : ERR_NONE;
+  default:            return JTAG_PROXY_INVALID_CHAIN;
+  }
+}
+
+int gdb_write_reg(uint32_t adr, uint32_t data) {
+
+#ifdef OR32_KERNEL_DBG_COMPAT
+  if (IS_VM_ADDR(adr))
+    adr = adr & ~OR32_LINUX_VM_MASK;
+#endif
+
+
+  switch (gdb_chain) { /* remap registers, to be compatible with jp1 */
+  case SC_RISC_DEBUG: if (adr == JTAG_RISCOP) adr = 0x00;
+    return dbg_cpu0_write(adr, data) ? ERR_CRC : ERR_NONE;
+  case SC_REGISTER:   return dbg_cpu0_write_ctrl(adr, data) ? ERR_CRC : ERR_NONE;
+  case SC_WISHBONE:   return dbg_wb_write32(adr, data) ? ERR_CRC : ERR_NONE;
+  case SC_TRACE:      return 0;
+  default:            return JTAG_PROXY_INVALID_CHAIN;
+  }
+}
 int gdb_read_reg(uint32_t adr, uint32_t *data) {
+
+#ifdef OR32_KERNEL_DBG_COMPAT
+  if (IS_VM_ADDR(adr))
+    adr = adr & ~OR32_LINUX_VM_MASK;
+#endif
+  
   switch (gdb_chain) {
   case SC_RISC_DEBUG: return dbg_cpu0_read(adr, data) ? ERR_CRC : ERR_NONE;
   case SC_REGISTER:   return dbg_cpu0_read_ctrl(adr, (unsigned char*)data) ? 
@@ -3374,27 +3551,32 @@ int gdb_read_reg(uint32_t adr, uint32_t *data) {
   }
 }
 
-int gdb_write_reg(uint32_t adr, uint32_t data) {
-  switch (gdb_chain) { /* remap registers, to be compatible with jp1 */
-  case SC_RISC_DEBUG: if (adr == JTAG_RISCOP) adr = 0x00;
-    return dbg_cpu0_write(adr, data) ? ERR_CRC : ERR_NONE;
-  case SC_REGISTER:   return dbg_cpu0_write_ctrl(adr, data) ? ERR_CRC : ERR_NONE;
-  case SC_WISHBONE:   return dbg_wb_write32(adr, data) ? ERR_CRC : ERR_NONE;
-  case SC_TRACE:      return 0;
-  default:            return JTAG_PROXY_INVALID_CHAIN;
-  }
-}
 
 int gdb_read_block(uint32_t adr, uint32_t *data, int len) {
+
+#ifdef OR32_KERNEL_DBG_COMPAT
+  if (IS_VM_ADDR(adr))
+    adr = adr & ~OR32_LINUX_VM_MASK;
+#endif
+
   if (DEBUG_CMDS) printf("rb %d\n", gdb_chain);
+    
   switch (gdb_chain) {
-  case SC_WISHBONE:   return dbg_wb_read_block32(adr, data, len) ? 
-      ERR_CRC : ERR_NONE;
+  case SC_WISHBONE:   
+    {
+      return dbg_wb_read_block32(adr, data, len) ? ERR_CRC : ERR_NONE;
+    }
   default:            return JTAG_PROXY_INVALID_CHAIN;
   }
 }
 
 int gdb_write_block(uint32_t adr, uint32_t *data, int len) {
+
+#ifdef OR32_KERNEL_DBG_COMPAT
+  if (IS_VM_ADDR(adr))
+    adr = adr & ~OR32_LINUX_VM_MASK;
+#endif
+  
   if (DEBUG_CMDS) printf("wb %d\n", gdb_chain);
   switch (gdb_chain) {
   case SC_WISHBONE:   return dbg_wb_write_block32(adr, data, len) ? 
@@ -3413,569 +3595,6 @@ int gdb_set_chain(int chain) {
   default:            return JTAG_PROXY_INVALID_CHAIN;
   }
 }
-
-/* Added by CZ 24/05/01 */
-int GetServerSocket(const char* name, const char* proto, int port) {
-  struct servent *service;
-  struct protoent *protocol;
-  struct sockaddr_in sa;
-  struct hostent *hp;  
-  int sockfd;
-  char myname[256];
-  //int flags; --changed to socklen_t for c++?! -- Julius
-  socklen_t flags;
-  char sTemp[256];
-
-  /* First, get the protocol number of TCP */
-  if (!(protocol = getprotobyname(proto))) {
-    sprintf(sTemp, "Unable to load protocol \"%s\"", proto);
-    perror(sTemp);
-    return 0;
-  }
-  tcp_level = protocol->p_proto; /* Save for later */
-
-  /* If we weren't passed a non standard port, get the port
-     from the services directory. */
-  if (!port && (service = getservbyname(name, protocol->p_name)))
-    port = ntohs(service->s_port);
- 
-  /* Create the socket using the TCP protocol */
-  if ((sockfd = socket(PF_INET, SOCK_STREAM, protocol->p_proto)) < 0) {
-    perror("Unable to create socket");
-    return 0;
-  }
- 
-  flags = 1;
-  if (setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, 
-		 (const char*)&flags, sizeof(int)) < 0) {
-    sprintf(sTemp, "Can not set SO_REUSEADDR option on socket %d", sockfd);
-    perror(sTemp);
-    close(sockfd);
-    return 0;
-  }
-
-  /* The server should also be non blocking. Get the current flags. */
-  if(fcntl(sockfd, F_GETFL, &flags) < 0) {
-    sprintf(sTemp, "Unable to get flags for socket %d", sockfd);
-    perror(sTemp);
-    close(sockfd);
-    return 0;
-  }
-
-  /* Set the nonblocking flag */
-  if(fcntl(sockfd, F_SETFL, flags | O_NONBLOCK) < 0) {
-    sprintf(sTemp, "Unable to set flags for socket %d to value 0x%08x", 
-                    sockfd, flags | O_NONBLOCK);
-    perror(sTemp);
-    close(sockfd);
-    return 0;
-  }
-
-  /* Find out what our address is */
-  memset(&sa, 0, sizeof(struct sockaddr_in));
-  gethostname(myname, sizeof(myname));
-  if(!(hp = gethostbyname(myname))) {
-    perror("Unable to read hostname");
-    close(sockfd);
-    return 0;
-  }
- 
-  /* Bind our socket to the appropriate address */
-  sa.sin_family = hp->h_addrtype;
-  sa.sin_port = htons(port);
-  if(bind(sockfd, (struct sockaddr*)&sa, sizeof(struct sockaddr_in)) < 0) {
-    sprintf(sTemp, "Unable to bind socket %d to port %d", sockfd, port);
-    perror(sTemp);
-    close(sockfd);
-    return 0;
-  }
-  serverIP = sa.sin_addr.s_addr;
-  flags = sizeof(struct sockaddr_in);
-  if(getsockname(sockfd, (struct sockaddr*)&sa, &flags) < 0) {
-    sprintf(sTemp, "Unable to get socket information for socket %d", sockfd);
-    perror(sTemp);
-    close(sockfd);
-    return 0;
-  }
-  serverPort = ntohs(sa.sin_port);
-
-  /* Set the backlog to 1 connections */
-  if(listen(sockfd, 1) < 0) {
-    sprintf(sTemp, "Unable to set backlog on socket %d to %d", sockfd, 1);
-    perror(sTemp);
-    close(sockfd);
-    return 0;
-  }
-
-  return sockfd;
-}
-
-//void HandleServerSocket(Boolean block) {
-void HandleServerSocket(void) {
-  struct pollfd fds[2];
-  int n;
-  uint32_t		temp_uint32;
-
- rebuild:
-  n = 0;
-  if(!server_fd && !gdb_fd) return;
-  
-  if(server_fd) {
-    fds[n].fd = server_fd;
-    fds[n].events = POLLIN;
-    fds[n++].revents = 0;
-  }
-  if(gdb_fd) {
-    fds[n].fd = gdb_fd;
-    fds[n].events = POLLIN;
-    fds[n++].revents = 0;
-  }
-  
-  while(1) {
-    switch(poll(fds, n, -1)) {
-    case 0:
-    case -1:
-      if(errno == EINTR) continue;
-      perror("poll");
-      server_fd = 0;
-      return;
-    default:
-      /* Make sure to handle the gdb port first! */
-      if (gdb_fd && ((fds[0].revents && !server_fd) || (fds[1].revents && server_fd)))
-	{
-	  int revents = server_fd ? fds[1].revents : fds[0].revents;
-	  if (revents & POLLIN){
-	    /* If we have an unacknowledged exception tell the GDB client. If this
-	       exception was a trap due to a memory breakpoint, then adjust the NPC. */
-	    if (rsp.client_waiting)
-	      {
-		err = gdb_read_reg(PPC_CPU_REG_ADD, &temp_uint32);
-		if(err) printf("Error read from PPC register\n");
-		if ((TARGET_SIGNAL_TRAP == rsp.sigval) &&
-		    (NULL != mp_hash_lookup (BP_MEMORY, temp_uint32)))
-		  {
-		    set_npc (temp_uint32);
-		  }
-		
-		rsp_report_exception();
-		rsp.client_waiting = 0;		/* No longer waiting */
-	      }
-	    GDBRequest();
-	  }
-	  else {/* Error Occurred */
-	    printf("\n%sSocket closed.\n",printTime());
-	    //fprintf(stderr, 
-	    //"Received flags 0x%08x on gdb socket. Shutting down.\n", revents);
-	    close(gdb_fd);
-	    gdb_fd = 0;
-	  }
-	}
-      
-      // Go to blocking accept() instead of looping around through poll(), 
-      // takes a loot of CPU resources and it doesn't work when 
-      // reconnecting... Jonas Rosén
-      if(!gdb_fd)
-      {
-			  JTAGRequest();
-			  rsp.client_waiting = 0;		/* No longer waiting */
-			  goto rebuild;
-      }
-      
-      if(fds[0].revents && server_fd) {
-        if(fds[0].revents & POLLIN) {
-          JTAGRequest();
-          rsp.client_waiting = 0;		/* No longer waiting */
-          goto rebuild;
-        } else { /* Error Occurred */
-			  fprintf(stderr, 
-				  "Received flags 0x%08x on server. Shutting down.\n", 
-				  fds[0].revents);
-			  close(server_fd);
-			  server_fd = 0;
-			  serverPort = 0;
-			  serverIP = 0;
-			  return;
-				}
-  		}
-      break;
-    } /* End of switch statement */
-  } /* End of while statement */
-}
-
-void JTAGRequest(void) {
-  struct sockaddr_in sa;
-  struct sockaddr* addr = (struct sockaddr*)&sa;
-  //int n = sizeof(struct sockaddr_in); --changed to socklen_t from int type
-  socklen_t n = sizeof(struct sockaddr_in);
-  int fd = accept(server_fd, addr, &n);
-  int on_off = 0; /* Turn off Nagel's algorithm on the socket */
-  int flags;
-  char sTemp[256];
-  if (DEBUG_GDB) printf("JTAGRequest\n");
-
-  if(fd < 0) {
-    /* This is valid, because a connection could have started, 
-       and then terminated due to a protocol error or user
-       initiation before the accept could take place. */
-    if(errno != EWOULDBLOCK && errno != EAGAIN) {
-      perror("accept");
-      close(server_fd);
-      server_fd = 0;
-      serverPort = 0;
-      serverIP = 0;
-    }
-    return;
-  }
-
-  if(gdb_fd) {
-    close(fd);
-    return;
-  }
-
-  if(fcntl(fd, F_GETFL, &flags) < 0) {
-    sprintf(sTemp, "Unable to get flags for gdb socket %d", fd);
-    perror(sTemp);
-    close(fd);
-    return;
-  }
-  
-  /* Rene
-  if(fcntl(fd, F_SETFL, flags | O_NONBLOCK) < 0) {
-    sprintf(sTemp, "Unable to set flags for gdb socket %d to value 0x%08x", 
-      fd, flags | O_NONBLOCK);
-    perror(sTemp);
-    close(fd);
-    return;
-  }	Rene */
-
-  if(setsockopt(fd, tcp_level, TCP_NODELAY, &on_off, sizeof(int)) < 0) {
-    sprintf(sTemp, "Unable to disable Nagel's algorithm for socket %d.\nsetsockopt", fd);
-    perror(sTemp);
-    close(fd);
-    return;
-  }
-
-  printf("\n%sConnection established from %s on port %d\n", printTime(),inet_ntoa(sa.sin_addr),ntohs(sa.sin_port));
-  gdb_fd = fd;
-}
-
-
-/*---------------------------------------------------------------------------
-* Decode the GDB command.
-*
-*---------------------------------------------------------------------------*/
-static void GDBRequest(void) {
-  JTAGProxyWriteMessage msg_write;
-  JTAGProxyReadMessage msg_read;
-  JTAGProxyChainMessage msg_chain;
-  JTAGProxyWriteResponse resp_write;
-  JTAGProxyReadResponse resp_read;
-  JTAGProxyChainResponse resp_chain;
-  JTAGProxyBlockWriteMessage *msg_bwrite;
-  JTAGProxyBlockReadMessage msg_bread;
-  JTAGProxyBlockWriteResponse resp_bwrite;
-  JTAGProxyBlockReadResponse *resp_bread;
-  char *p_buf;
-  uint32_t command;
-  uint32_t length;
-  int len, i;
-
-  /* First, we must read the incomming command */
-  if(gdb_read(&command, sizeof(uint32_t)) < 0) {
-    client_close ('1');
-    return;
-  }
-  command = ntohl(command);
-
-  if(gdb_read(&length, sizeof(uint32_t)) < 0) {
-    client_close ('2');
-    return;
-  }
-  length = ntohl(length);
-  if (DEBUG_GDB) printf("\n%s-----------------------------------------------------\nCommand %d Length %d ", printTime(), command, length);
-
-  if (DEBUG_GDB){
-  switch(command){
-    case JTAG_COMMAND_READ:
-            printf("JTAG_COMMAND_READ       \n");
-            break;
-    case JTAG_COMMAND_WRITE:
-            printf("JTAG_COMMAND_WRITE      \n");
-            break;
-    case JTAG_COMMAND_BLOCK_READ:
-            printf("JTAG_COMMAND_BLOCK_READ \n");
-            break;
-    case JTAG_COMMAND_BLOCK_WRITE:
-            printf("JTAG_COMMAND_BLOCK_WRITE\n");
-            break;
-    case JTAG_COMMAND_CHAIN:
-            printf("JTAG_COMMAND_CHAIN      \n");
-            break;
-		}
-	}
-	
-  /* Now, verify the protocol and implement the command */
-  switch(command) {
-    case JTAG_COMMAND_WRITE:
-      if(length != sizeof(msg_write) - 8) {
-        ProtocolClean(length, JTAG_PROXY_PROTOCOL_ERROR);
-        return;
-      }
-      p_buf = (char*)&msg_write;
-      if(gdb_read(&p_buf[8], length) < 0) {
-        client_close ('3');
-        return;
-      }
-      msg_write.address = ntohl(msg_write.address);
-      msg_write.data_H = ntohl(msg_write.data_H);
-      msg_write.data_L = ntohl(msg_write.data_L);
-      err = gdb_write_reg(msg_write.address, msg_write.data_L);      
-      resp_write.status = htonl(err);      
-      if (DEBUG_GDB) printf("Write Reg to Chain %d at add 0x%08x -> H-Data 0x%08x L-Data 0x%08x Error %d", 
-        gdb_chain, msg_write.address, msg_write.data_H, msg_write.data_L, err);fflush (stdout);
-      if(gdb_write(&resp_write, sizeof(resp_write)) < 0) {
-        client_close ('4');
-        return;
-      }
-      break;
-    case JTAG_COMMAND_READ:
-      if(length != sizeof(msg_read) - 8) {
-        ProtocolClean(length, JTAG_PROXY_PROTOCOL_ERROR);
-        return;
-      }
-      p_buf = (char*)&msg_read;
-      if(gdb_read(&p_buf[8], length) < 0) {
-        client_close ('5');
-        return;
-      }
-      msg_read.address = ntohl(msg_read.address);
-      err = gdb_read_reg(msg_read.address, (uint32_t *)&resp_read.data_L);
-      if (DEBUG_GDB) printf("Read Reg from Chain %d at add 0x%08x", gdb_chain, msg_read.address);
-      resp_read.status = htonl(err);
-      resp_read.data_H = 0;
-      resp_read.data_L = htonl(resp_read.data_L);
-      if(gdb_write(&resp_read, sizeof(resp_read)) < 0) {
-        client_close ('6');
-        return;
-        }
-      if (DEBUG_GDB) printf(" --> Data 0x%08x Error %d\n", htonl(resp_read.data_L), err);fflush (stdout);
-      break;
-    case JTAG_COMMAND_BLOCK_WRITE:
-      if(length < sizeof(JTAGProxyBlockWriteMessage)-8) {
-        ProtocolClean(length, JTAG_PROXY_PROTOCOL_ERROR);
-        return;
-      }
-      if(!(p_buf = (char*)malloc(8+length))) {
-        ProtocolClean(length, JTAG_PROXY_OUT_OF_MEMORY);
-        return;
-      }
-      msg_bwrite = (JTAGProxyBlockWriteMessage*)p_buf;
-      if(gdb_read(&p_buf[8], length) < 0) {
-        client_close ('5');
-        free(p_buf);
-        return;
-      }
-      msg_bwrite->address = ntohl(msg_bwrite->address);
-      msg_bwrite->nRegisters = ntohl(msg_bwrite->nRegisters);
-      if (DEBUG_GDB) printf("Block Write to Chain %d start add 0x%08x Write %d (32 bit words):\n\n", gdb_chain, msg_bwrite->address, msg_bwrite->nRegisters);
-      for(i=0;i<msg_bwrite->nRegisters;i++) {
-        msg_bwrite->data[i] = ntohl(msg_bwrite->data[i]);
-				if (DEBUG_GDB_BLOCK_DATA){
-				  if ((i % 4) == 0)      printf("Add 0x%08x   Data 0x%08x  ", msg_bwrite->address + (i * 4), msg_bwrite->data[i]);
-		          else if ((i % 4) == 3) printf("0x%08x\n", msg_bwrite->data[i]);
-				  else                   printf("0x%08x  ", msg_bwrite->data[i]);
-
-					// add a new line on the last data, but not if it is the last one in the colum 
-					if ((msg_bwrite->nRegisters - i == 1) && (i % 4) < 3) printf("\n");
-				}
-      }
-      err = gdb_write_block(msg_bwrite->address, (uint32_t*)msg_bwrite->data, msg_bwrite->nRegisters * 4);
-      if (DEBUG_GDB) printf("Error %x\n", err);fflush (stdout);
-      resp_bwrite.status = htonl(err);
-      free(p_buf);
-      msg_bwrite = (JTAGProxyBlockWriteMessage *)NULL;
-      p_buf = (char *)msg_bwrite;
-      if(gdb_write(&resp_bwrite, sizeof(resp_bwrite)) < 0) {
-        client_close ('4');
-        return;
-      }
-      break;
-    case JTAG_COMMAND_BLOCK_READ:
-      if(length != sizeof(msg_bread) - 8) {
-        ProtocolClean(length, JTAG_PROXY_PROTOCOL_ERROR);
-        return;
-      }
-      p_buf = (char*)&msg_bread;
-      if(gdb_read(&p_buf[8], length) < 0) {
-        client_close ('5');
-        return;
-      }
-      msg_bread.address = ntohl(msg_bread.address);
-      msg_bread.nRegisters = ntohl(msg_bread.nRegisters);
-      if (DEBUG_GDB) printf("Block Read from Chain %d start add 0x%08x Read %d (32 bit words):\n\n", gdb_chain, msg_bread.address, msg_bread.nRegisters);
-      len = sizeof(JTAGProxyBlockReadResponse) + 4*(msg_bread.nRegisters-1);
-      if(!(p_buf = (char*)malloc(len))) {
-        ProtocolClean(0, JTAG_PROXY_OUT_OF_MEMORY);
-        return;
-      }
-      resp_bread = (JTAGProxyBlockReadResponse*)p_buf;
-      err = gdb_read_block(msg_bread.address, (uint32_t*)resp_bread->data, msg_bread.nRegisters * 4);
-      for(i=0;i<msg_bread.nRegisters;i++) {
-        /* Read previous, address next one. */
-        resp_bread->data[i] = htonl(resp_bread->data[i]);
-		if (DEBUG_GDB_BLOCK_DATA){
-		  if ((i % 4) == 0)      printf("Add 0x%08x   Data 0x%08x  ", msg_bread.address + (i * 4), htonl(resp_bread->data[i]));
-          else if ((i % 4) == 3) printf("0x%08x\n", htonl(resp_bread->data[i]));
-		  else                   printf("0x%08x  ", htonl(resp_bread->data[i]));
-		}
-		// add a new line on the last data, but not if it is the last one in the colum 
-		if ((msg_bread.nRegisters - i == 1) && (i % 4) < 3) printf("\n");
-      }
-      resp_bread->status = htonl(err);
-      resp_bread->nRegisters = htonl(msg_bread.nRegisters);
-      if (DEBUG_GDB) printf("\nError %x\n", err);fflush (stdout);
-      if(gdb_write(resp_bread, len) < 0) {
-        client_close ('6');
-        free(p_buf);
-        return;
-      }
-      free(p_buf);
-      resp_bread = (JTAGProxyBlockReadResponse *)NULL;
-      p_buf = (char *)resp_bread;
-      break;
-    case JTAG_COMMAND_CHAIN:
-      if(length != sizeof(msg_chain) - 8) {
-        ProtocolClean(length, JTAG_PROXY_PROTOCOL_ERROR);
-        return;
-      }
-      p_buf = (char*)&msg_chain;
-      if(gdb_read(&p_buf[8], sizeof(msg_chain)-8) < 0) {
-        client_close ('7');
-        return;
-      }
-      msg_chain.chain = htonl(msg_chain.chain);
-      err = gdb_set_chain(msg_chain.chain);
-      resp_chain.status = htonl(err);
-      if (DEBUG_GDB){
-	      switch(msg_chain.chain){
-					case SC_GLOBAL:      /* 0 Global BS Chain */
-						printf("Set Chain %d Global BS Chain  Error %x\n", msg_chain.chain, err);
-						break;
-					case SC_RISC_DEBUG:  /* 1 RISC Debug Interface chain */
-						printf("Set Chain %d RISC Debug Interface chain  Error %x\n", msg_chain.chain, err);
-						break;
-					case SC_RISC_TEST:   /* 2 RISC Test Chain */
-						printf("Set Chain %d RISC Test Chain  Error %x\n", msg_chain.chain, err);
-						break;
-					case SC_TRACE:       /* 3 Trace Chain */
-						printf("Set Chain %d Trace Chain  Error %x\n", msg_chain.chain, err);
-						break;
-					case SC_REGISTER:    /* 4 Register Chain */
-						printf("Set Chain %d Register Chain  Error %x\n", msg_chain.chain, err);
-						break;
-					case SC_WISHBONE:    /* 5 Memory chain */
-						printf("Set Chain %d Wishbone Memory chain  Error %x\n", msg_chain.chain, err);
-						break;
-					case SC_BLOCK:       /* 6 Block Chains */
-						printf("Set Chain %d Block Chains  Error %x\n", msg_chain.chain, err);
-						break;
-					default:						 /* Invalid chain */
-						printf("Set Chain %d Invalid chain  Error %x\n", msg_chain.chain, err);
-						break;
-	      }
-      	fflush (stdout);
-      }
-      if(gdb_write(&resp_chain, sizeof(resp_chain)) < 0) {
-        client_close ('8');
-        return;
-      }
-      break;
-    default:
-      perror("Unknown JTAG command.");fflush (stdout);
-      ProtocolClean(length, JTAG_PROXY_COMMAND_NOT_IMPLEMENTED);
-      break;
-  }
-}
-
-static void ProtocolClean(int length, int32_t err) {
-  char buffer[4096];
-
-  err = htonl(err);
-  if(((gdb_read(buffer, length) < 0) || (gdb_write(&err, sizeof(err)) < 0)) && gdb_fd) {
-    perror("gdb socket - 9");
-    close(gdb_fd);
-    gdb_fd = 0;
-  }
-}
-
-static int gdb_write(void* p_buf, int len) {
-  int n;
-  char* w_buf = (char*)p_buf;
-  struct pollfd block;
-
-  while(len) {
-    if((n = write(gdb_fd, w_buf, len)) < 0) {
-      switch(errno) {
-        case EWOULDBLOCK: /* or EAGAIN */
-          /* We've been called on a descriptor marked
-             for nonblocking I/O. We better simulate
-             blocking behavior. */
-          block.fd = gdb_fd;
-          block.events = POLLOUT;
-          block.revents = 0;
-          poll(&block, 1, -1);
-          continue;
-        case EINTR:
-          continue;
-        case EPIPE:
-          close(gdb_fd);
-          gdb_fd = 0;
-          return -1;
-        default:
-          return -1;
-        }
-      } else {
-        len -= n;
-        w_buf += n;
-      }
-  }
-  return 0;
-}
-
-static int gdb_read(void* p_buf, int len) {
-  int n;
-  char* r_buf = (char*)p_buf;
-  struct pollfd block;
-
-  while(len) {
-    if((n = read(gdb_fd, r_buf, len)) < 0) {
-      switch(errno) {
-        case EWOULDBLOCK: /* or EAGAIN */
-          /* We've been called on a descriptor marked
-       for nonblocking I/O. We better simulate
-       blocking behavior. */
-          block.fd = gdb_fd;
-          block.events = POLLIN;
-          block.revents = 0;
-          poll(&block, 1, -1);
-          continue;
-        case EINTR:
-          continue;
-        default:
-          return -1;
-        }
-    } else if(n == 0) {
-      close(gdb_fd);
-      gdb_fd = 0;
-      return -1;
-    } else {
-      len -= n;
-      r_buf += n;
-    }
-  }
-  return 0;
-}
-
 
 /*****************************************************************************
 * Close the connection to the client if it is open

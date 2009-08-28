@@ -127,12 +127,7 @@ int main(int argc,  char *argv[]) {
 
   while ( argv[inp_arg] != NULL )
     {
-      if(strcmp(argv[inp_arg], "-j") == 0) 
-	{
-	  gdb_protocol = GDB_PROTOCOL_JTAG;
-	  endpoint_target = ENDPOINT_TARGET_USB;
-	}
-      else if(strcmp(argv[inp_arg], "-r") == 0) 
+      if(strcmp(argv[inp_arg], "-r") == 0) 
 	{
 	  gdb_protocol = GDB_PROTOCOL_RSP;
 	  endpoint_target = ENDPOINT_TARGET_USB;
@@ -193,31 +188,13 @@ int main(int argc,  char *argv[]) {
 #endif
   
   /* We have a connection to the target system.  Now establish server connection. */
-  if(gdb_protocol == GDB_PROTOCOL_JTAG)
-  { // Connect to JTAG server
-    if((server_fd = GetServerSocket("or1ksim","tcp", serverPort))) {
-      // printf("JTAG Proxy server started on port %d\n", serverPort);
-      printf("Remote JTAG proxy server started on port %d\n", serverPort);
-      printf("Note: The OpenRISC remote JTAG protocol is now DEPRECATED. Please use GDB version 6.8 or later.\n");
-      printf("Press CTRL+c to exit.\n");
-    } else {
-      // fprintf(stderr,"Cannot start JTAG Proxy server on port %d\n", serverPort);
-      fprintf(stderr,"Cannot start Proxy server on port %d\n", serverPort);
-      exit(-1);
-    }
-
-    /* Do endless loop of checking and handle GDB requests.  Ctrl-c exits.  */
-    // HandleServerSocket(true);
-    HandleServerSocket();
-    return 0;	
-  }
-  else if(gdb_protocol == GDB_PROTOCOL_RSP)
-  { // Connect to RSP server
-    /* RSP always starts stalled as though we have just reset the processor. */
-    // rsp_exception (EXCEPT_TRAP);
-    handle_rsp ();
+  if(gdb_protocol == GDB_PROTOCOL_RSP)
+    { // Connect to RSP server
+      /* RSP always starts stalled as though we have just reset the processor. */
+      // rsp_exception (EXCEPT_TRAP);
+      handle_rsp ();
     // if((server_fd = GetServerSocket("or1ksim","tcp", serverPort))) {
-  }else {
+    }else {
     fprintf(stderr,"Cannot start RSP Proxy server on port %d\n", serverPort);
     exit(-1);
   }
@@ -321,6 +298,13 @@ int dbg_wb_read32(uint32_t adr, uint32_t *data) {
   return DBG_ERR_INVALID_ENDPOINT;
 }
 
+/* write a word to wishbone */
+int dbg_wb_write8(uint32_t adr, uint8_t data) {
+#ifdef USB_ENDPOINT_ENABLED
+  if (endpoint_target == ENDPOINT_TARGET_USB) return usb_dbg_wb_write8( adr, data);
+#endif
+  return DBG_ERR_INVALID_ENDPOINT;
+}
 
 /* write a word to wishbone */
 int dbg_wb_write32(uint32_t adr, uint32_t data) {

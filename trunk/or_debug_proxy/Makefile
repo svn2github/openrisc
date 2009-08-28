@@ -46,6 +46,7 @@
 # 090301	0.1.0	Makefile for OpenRISC debug proxy.             	jb
 #  2 Apr 09	0.1.1	Jeremy Bennett. Added static target
 #  1 May 09	0.1.3	Added specific make target for VPI		jb
+# 090828        0.1.4   Added ftdi_sio driver reload rule               jb
 
 #DBGCPPFLAGS=-DDEBUG_GDB=1
 #DBGCPPFLAGS=-DDEBUG_USB_DRVR_FUNCS=1
@@ -149,3 +150,12 @@ clean:
 	$(RM) $(APP_STATIC)
 	$(RM) $(APP_VPI)
 	find ./ -name "*~" | xargs $(RM)
+
+ifneq ($(OSTYPE),cygwin)
+reset_driver:
+	@echo; echo "    Re-installing FTDI serial IO drivers"echo
+	@echo "    This will require root privileges."
+	sudo modprobe -r ftdi_sio
+	sudo modprobe ftdi_sio vendor=0x0403 product=0x6010
+	@echo
+endif

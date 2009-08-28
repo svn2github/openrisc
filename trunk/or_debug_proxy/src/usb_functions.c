@@ -1020,43 +1020,42 @@ int usb_dbg_go(unsigned char *data, uint16_t len, uint32_t read) {
 int usb_dbg_wb_read32(uint32_t adr, uint32_t *data) {
   // uint32_t err;
   if ((err = usb_dbg_set_chain(DC_WISHBONE))) return err;
-  if ((err = usb_dbg_command(0x6, adr, 4))) return err;
+  if ((err = usb_dbg_command(DBG_WB_READ32, adr, 4))) return err;
   if ((err = usb_dbg_go((unsigned char*)data, 4, 1))) return err;
-  *data = ntohl(*data);
+  //*data = ntohl(*data);
   return err;
 }
 
 /* write a word to wishbone */
-int usb_dbg_wb_write32(uint32_t adr, uint32_t data) {
-  // uint32_t err;
-  data = ntohl(data);
+int usb_dbg_wb_write8(uint32_t adr, uint8_t data) {
   if ((err = usb_dbg_set_chain(DC_WISHBONE))) return err;
-  if ((err = usb_dbg_command(0x2, adr, 4))) return err;
+  if ((err = usb_dbg_command(DBG_WB_WRITE8, adr, 1))) return err;
+  if ((err = usb_dbg_go((unsigned char*)&data, 1, 0))) return err;
+  return DBG_ERR_OK;
+}
+
+
+/* write a word to wishbone */
+int usb_dbg_wb_write32(uint32_t adr, uint32_t data) {
+  if ((err = usb_dbg_set_chain(DC_WISHBONE))) return err;
+  if ((err = usb_dbg_command(DBG_WB_WRITE32, adr, 4))) return err;
   if ((err = usb_dbg_go((unsigned char*)&data, 4, 0))) return err;
   return DBG_ERR_OK;
 }
 
 /* read a block from wishbone */
 int usb_dbg_wb_read_block32(uint32_t adr, uint32_t *data, uint32_t len) {
-  uint32_t i; // err;
-  //printf("%08x %08x\n", adr, len);
   if ((err = usb_dbg_set_chain(DC_WISHBONE))) return err;
-  if ((err = usb_dbg_command(0x6, adr, len))) return err;
+  if ((err = usb_dbg_command(DBG_WB_READ32, adr, len))) return err;
   if ((err = usb_dbg_go((unsigned char*)data, len, 1))) return err;
-  uint32_t * data_uint32 = (uint32_t *) data; // data[i] gives us a proper 64-bit wide word on a 64-bit arch, so cast back to network sized data when ntohl'ing
-  for (i = 0; i < len / 4; i ++) data_uint32[i] = ntohl(data_uint32[i]);
-  //printf("%08x\n", err);
   return DBG_ERR_OK;
 }
 
 
 /* write a block to wishbone */
 int usb_dbg_wb_write_block32(uint32_t adr, uint32_t *data, uint32_t len) {
-  uint32_t i; //, err;
-  uint32_t * data_uint32 = (uint32_t *) data; // data[i] gives us a proper 64-bit wide word on a 64-bit arch, so cast back to network sized data when ntohl'ing
-  for (i = 0; i < len / 4; i ++) data_uint32[i] = ntohl(data_uint32[i]);
   if ((err = usb_dbg_set_chain(DC_WISHBONE))) return err;
-  if ((err = usb_dbg_command(0x2, adr, len))) return err;
+  if ((err = usb_dbg_command(DBG_WB_WRITE32, adr, len))) return err;
   if ((err = usb_dbg_go((unsigned char*)data, len, 0))) return err;
   return DBG_ERR_OK;
 }
@@ -1066,7 +1065,7 @@ int usb_dbg_wb_write_block32(uint32_t adr, uint32_t *data, uint32_t len) {
 int usb_dbg_cpu0_read(uint32_t adr, uint32_t *data) {
   // uint32_t err;
   if ((err = usb_dbg_set_chain(DC_CPU0))) return err;
-  if ((err = usb_dbg_command(0x6, adr, 4))) return err;
+  if ((err = usb_dbg_command(DBG_CPU_READ, adr, 4))) return err;
   if ((err = usb_dbg_go((unsigned char*)data, 4, 1))) return err;
   *data = ntohl(*data);
   return DBG_ERR_OK;
@@ -1077,7 +1076,7 @@ int usb_dbg_cpu0_write(uint32_t adr, uint32_t data) {
   // uint32_t err;
   data = ntohl(data);
   if ((err = usb_dbg_set_chain(DC_CPU0))) return err;
-  if ((err = usb_dbg_command(0x2, adr, 4))) return err;
+  if ((err = usb_dbg_command(DBG_CPU_WRITE, adr, 4))) return err;
   if ((err = usb_dbg_go((unsigned char*)&data, 4, 0))) return err;
   return DBG_ERR_OK;
 }

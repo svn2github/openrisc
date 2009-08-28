@@ -92,6 +92,18 @@ extern int dbg_chain;
 #define DC_CPU0           1
 #define DC_CPU1           2
 
+// Defining access types for wishbone
+#define DBG_WB_WRITE8           0
+#define DBG_WB_WRITE16          1
+#define DBG_WB_WRITE32          2
+#define DBG_WB_READ8            4
+#define DBG_WB_READ16           5
+#define DBG_WB_READ32           6
+
+// Defining access types for wishbone
+#define DBG_CPU_WRITE            2
+#define DBG_CPU_READ             6
+
 // Manually figure the 5-bit reversed values again if they change
 #define DI_GO          0
 #define DI_READ_CMD    1
@@ -118,6 +130,8 @@ int dbg_reset();
 int dbg_set_tap_ir(uint32_t ir);
 /* Set "scan chain" of debug unit (NOT JTAG TAP!) */
 int dbg_set_chain(uint32_t chain);
+/* read a byte from wishbone */
+int dbg_wb_write8(uint32_t adr, uint8_t data);
 /* read a word from wishbone */
 int dbg_wb_read32(uint32_t adr, uint32_t *data);
 /* write a word to wishbone */

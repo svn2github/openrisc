@@ -14,7 +14,7 @@ OpenRISC processor system via a USB debug cable.
 0.1.1 090304 jb@orsoc.se
 0.1.2 090511 jb@orsoc.se
 0.1.3 090604 jb@orsoc.se
-
+0.1.4 090828 jb@orsoc.se
 ===============================================================================
 -- Installation --
 ===============================================================================
@@ -317,17 +317,6 @@ Some basic mechanics of the proxy are as follows:
   same session.
 
 TODO List: 
-     * Explicit char and short reading and writing ability:
-       Currently only full word writing and reading is supported by the proxy. 
-       It would be great if individual words and chars could be read also. It 
-       is possible to receive such requests from GDB, so there's no reason why 
-       they shouldn't be supported. It should be simple enough to implement.
-     * Correct organisation of non-word aligned reading
-       There's some problems when reading a word from a non-word aligned 
-       boundary. This should be possible, for instance in GDB, doing something 
-       like "x/4 0x101" should read the four bytes starting at address 0x101 
-       and should display them LSB first. However this doesn't appear to 
-       function as intended.
      * USB<->JTAG Driver TODO: Increase speed of the proxy
        It appears that the current transfer rate of around 20k/s is due to 
        pauses in the driver. This was determined by profiling the proxy and 

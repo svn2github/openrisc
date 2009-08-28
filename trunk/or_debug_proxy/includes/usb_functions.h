@@ -74,6 +74,7 @@ int usb_dbg_go(unsigned char *data, uint16_t len, uint32_t read);
 
 int usb_dbg_wb_read32(uint32_t adr, uint32_t *data);
 int usb_dbg_wb_read_block32(uint32_t adr, uint32_t *data, uint32_t len);
+int usb_dbg_wb_write8(uint32_t adr, uint8_t data);
 int usb_dbg_wb_write32(uint32_t adr, uint32_t data);
 int usb_dbg_wb_write_block32(uint32_t adr, uint32_t *data, uint32_t len);
 int usb_dbg_cpu0_read(uint32_t adr, uint32_t *data);
