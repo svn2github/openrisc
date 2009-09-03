@@ -207,7 +207,6 @@ JtagIfError:
 }
 
 
-
 int dbg_reset()
 {
 #ifdef USB_ENDPOINT_ENABLED
@@ -328,7 +327,6 @@ int dbg_wb_read_block32(uint32_t adr, uint32_t *data, uint32_t len) {
   return DBG_ERR_INVALID_ENDPOINT;
 }
 
-
 /* write a block to wishbone */
 int dbg_wb_write_block32(uint32_t adr, uint32_t *data, uint32_t len) {
 #ifdef USB_ENDPOINT_ENABLED
@@ -341,9 +339,9 @@ int dbg_wb_write_block32(uint32_t adr, uint32_t *data, uint32_t len) {
 }
 
 /* read a register from cpu */
-int dbg_cpu0_read(uint32_t adr, uint32_t *data) {
+int dbg_cpu0_read(uint32_t adr, uint32_t *data, uint32_t length) {
 #ifdef USB_ENDPOINT_ENABLED
-  if (endpoint_target == ENDPOINT_TARGET_USB) return usb_dbg_cpu0_read( adr, data);
+  if (endpoint_target == ENDPOINT_TARGET_USB) return usb_dbg_cpu0_read( adr, data, length);
 #endif
 #ifdef VPI_ENDPOINT_ENABLED
   if (endpoint_target == ENDPOINT_TARGET_VPI) return vpi_dbg_cpu0_read( adr, data);
@@ -352,9 +350,9 @@ int dbg_cpu0_read(uint32_t adr, uint32_t *data) {
 }
 
 /* write a cpu register */
-int dbg_cpu0_write(uint32_t adr, uint32_t data) {
+int dbg_cpu0_write(uint32_t adr, uint32_t *data, uint32_t length) {
 #ifdef USB_ENDPOINT_ENABLED
-  if (endpoint_target == ENDPOINT_TARGET_USB) return usb_dbg_cpu0_write( adr, data);
+  if (endpoint_target == ENDPOINT_TARGET_USB) return usb_dbg_cpu0_write( adr, data, length);
 #endif
 #ifdef VPI_ENDPOINT_ENABLED
   if (endpoint_target == ENDPOINT_TARGET_VPI) return vpi_dbg_cpu0_write( adr, data);

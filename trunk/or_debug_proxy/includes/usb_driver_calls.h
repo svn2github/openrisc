@@ -86,5 +86,4 @@ FTC_STATUS
 FT2232_USB_JTAG_CloseDevice();
 
 int init_usb_jtag();
-
-
+void reinit_usb_jtag(void);

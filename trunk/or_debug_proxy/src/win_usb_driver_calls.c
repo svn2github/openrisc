@@ -328,8 +328,14 @@ FT2232_USB_JTAG_CloseDevice()
   return (jtagClose)(ftHandle);
 }
 
-
-
+void 
+reinit_usb_jtag(void)
+{
+  FTC_STATUS Status = FTC_SUCCESS;
+  if (DEBUG_USB_DRVR_FUNCS) printf("win_usb_driver_calls: reset_usb_jtag() - ");
+  Status = (jtagInitDevice)(ftHandle, 0);
+  if (DEBUG_USB_DRVR_FUNCS) printf("return Status: %d\n", (int) Status);
+}
 
 // Set clock frequency
 // Frequency = 12Mhz/((1+divisor)*2), 

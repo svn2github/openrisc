@@ -146,7 +146,8 @@ uint32_t bit_reverse_data(uint32_t data, uint32_t length){
   for (i=0;i<length;i++) reverse |= (((data>>i)&1)<<(length-1-i));
   return reverse;
 }
-// Constants that are used a lot, and were 5 bits, so might as well precalculate them
+// Constants that are used a lot, and were 5 bits, so might as well 
+// precalculate them to save reversing them each time.
 // These are from or_debug_proxy.h, so if the original values change these
 // should be recalculated!!
 const uint8_t DI_GO_5BITREVERSED = 0x00;
@@ -160,8 +161,6 @@ void usb_dbg_test() {
   
   uint32_t npc, ppc, r1; 
   unsigned char stalled;
-
-  
   
   printf("Stalling or1k\n");
   err = dbg_cpu0_write_ctrl(0, 0x01);      // stall or1k
@@ -171,12 +170,12 @@ void usb_dbg_test() {
     printf("or1k should be stalled\n");   // check stall or1k
     exit(1);
   }
-  
+  uint32_t zero = 0;
   /* Clear Debug Reason Register (DRR) 0x3015 */
-  err = dbg_cpu0_write((6 << 11) + 21, 0);
-  err = dbg_cpu0_read((0 << 11) + 16, &npc);  /* Read NPC */
-  err = dbg_cpu0_read((0 << 11) + 18, &ppc);  /* Read PPC */
-  err = dbg_cpu0_read(0x401, &r1);  /* Read R1 */
+  err = dbg_cpu0_write((6 << 11) + 21, &zero, 4);
+  err = dbg_cpu0_read((0 << 11) + 16, &npc, 4);  /* Read NPC */
+  err = dbg_cpu0_read((0 << 11) + 18, &ppc, 4);  /* Read PPC */
+  err = dbg_cpu0_read(0x401, &r1, 4);  /* Read R1 */
 
   if (err)
     {
@@ -185,36 +184,23 @@ void usb_dbg_test() {
       exit(1);
     }
   printf("Read      npc = %.8x ppc = %.8x r1 = %.8x\n", npc, ppc, r1);
-
+  
+  /*
+  // Memory test - attempt to read and write massive arrays
+  char biggest_array[65000];
+  int i;
+  printf("Testing 65000 byte array write\n");
+  printf("Filling array...\n");
+  for(i=0;i<65000;i++) biggest_array[i] = i;
+  printf("Writing array\n");
+  err = usb_dbg_wb_write_block32(0, (uint32_t *)biggest_array, 65000);
+  printf("err = %d\n",err); 
+  */
   return;
 }
 
-/*
-void ensure_or1k_stalled();
 
-// Function to check if the processor is stalled, if not, stall it.
-// this is useful in the event that GDB thinks the processor is stalled, but has, in fact
-// been hard reset on the board and is running.
-void ensure_or1k_stalled()
-{
-  unsigned char stalled;
-  dbg_cpu0_read_ctrl(0, &stalled);
-  if ((stalled & 0x1) != 0x1)
-    {
-      if (DEBUG_CMDS)
-	printf("Processor not stalled, like we thought\n");
-      
-      // Set the TAP controller to its OR1k chain
-      usb_set_tap_ir(JI_DEBUG);
-      current_chain = -1;
 
-      // Processor isn't stalled, contrary to what we though, so stall it
-      printf("Stalling or1k\n");
-      dbg_cpu0_write_ctrl(0, 0x01);      // stall or1k
-      
-    }  
-}
-*/
 /*---------------------------------------------------------------------------*/
 /*!Write up to 32-bits to the JTAG bus via the USB device
 
@@ -343,7 +329,6 @@ int usb_dbg_reset() {
   
   // if read ID was rubbish retry init - this is probably NOT the best way to do this...
   if ((id == 0xffffffff) | (id == 0x00000002) | (id == 0x00000000)) { 
-    //pFT2232cMpsseJtag->JTAG_CloseDevice(gFtHandle);
     // Platform independant driver call
     FT2232_USB_JTAG_CloseDevice();
     if (reinit_count++ > 4){
@@ -363,6 +348,24 @@ int usb_dbg_reset() {
   current_chain = -1;
   return DBG_ERR_OK;
 }
+
+static void reset_tap(void)
+{
+  uint32_t id = 0;
+  reinit_usb_jtag();
+  
+  
+  while (id != id_read_at_reset)
+    {
+      usb_set_tap_ir(JI_IDCODE);
+      id = usb_read_stream(32, RUN_TEST_IDLE_STATE);
+      //printf("reset_tap: read ID %.8x\n",id);
+    }
+  //Return the chain to DEBUG mode
+  usb_set_tap_ir(JI_DEBUG);
+  
+}
+
 
 /* counts retries and returns zero if we should abort */
 static int retry_no = 0;
@@ -609,16 +612,38 @@ int usb_dbg_command(uint32_t type, uint32_t adr, uint32_t len) {
   
   //printf("%x %x %x\n", status, crc_read, crc_generated);
   /* CRCs must match, otherwise retry */
+  uint32_t tries = 0;
   if (crc_read != crc_generated) {
-    //exit(1);//remove later
-    if (!retry_do()) goto try_again;
+    tries++;
+    if (tries < 2)
+      {
+	if (DEBUG_USB_DRVR_FUNCS)
+	  printf("usb_functions - usb_dbg_command - CRC fail. Going again\n");
+	goto try_again;
+      }
+    else if (tries < 8)
+      {
+	reset_tap();
+	goto try_again;
+      }
     else return DBG_ERR_CRC;
   }
   /* we should read expected status value, otherwise retry */
+  tries = 0;
   if (status != 0) {
-    //exit(1);//remove later
-    if (!retry_do()) goto try_again;
+    if (tries < 2)
+      {
+	if (DEBUG_USB_DRVR_FUNCS)
+	  printf("usb_functions - usb_dbg_command - bad status (%d). Going again\n",status);
+	goto try_again;
+      }
+    else if (tries < 8)
+      {
+	reset_tap();
+	goto try_again;
+      }
     else return status;
+    
   }
   /* reset retry counter */
   retry_ok();
@@ -630,7 +655,6 @@ int usb_dbg_command(uint32_t type, uint32_t adr, uint32_t len) {
 /* writes a ctrl reg */
 int usb_dbg_ctrl(uint32_t reset, uint32_t stall) {
   uint32_t i,status, crc_generated, crc_read;
-
   // JTAG driver things
   FTC_STATUS Status = FTC_SUCCESS;
   WriteDataByteBuffer WriteDataBuffer;
@@ -679,7 +703,6 @@ try_again:
 	WriteDataBuffer[11]=0|((crc_w>>31)&1);
 	
 	
-	//Status = pFT2232cMpsseJtag->JTAG_WriteReadDataToFromExternalDevice(gFtHandle,false,89+4+32 , &WriteDataBuffer, 16, &ReadDataBuffer, &dwNumBytesReturned, RUN_TEST_IDLE_STATE);
 	// Platform independant driver call
 	Status = FT2232_USB_JTAG_WriteReadDataToFromExternalDevice(false,89+4+32 , &WriteDataBuffer, 16, &ReadDataBuffer, &dwNumBytesReturned, RUN_TEST_IDLE_STATE);
 
@@ -716,16 +739,38 @@ try_again:
 	
 	/* CRCs must match, otherwise retry */
 	//printf("%x %x %x\n", status, crc_read, crc_generated);
-	if (crc_read != crc_generated) {
-	  //exit(1);//Remove later!!
-	  if (!retry_do()) goto try_again;
+	uint32_t tries = 0;
+	  if (crc_read != crc_generated) {
+	  tries++;
+	  if (tries < 2)
+	    {
+	      if (DEBUG_USB_DRVR_FUNCS)
+		printf("usb_functions - usb_dbg_ctrl - CRC fail. Going again\n");
+	      goto try_again;
+	    }
+	  else if (tries < 8)
+	    {
+	      reset_tap();
+	      goto try_again;
+	    }
 	  else return DBG_ERR_CRC;
 	}
 	/* we should read expected status value, otherwise retry */
+	tries = 0;
 	if (status != 0) {
-	  //exit(1);//Remove later!!
-	  if (!retry_do()) goto try_again;
+	  if (tries < 2)
+	    {
+	      if (DEBUG_USB_DRVR_FUNCS)
+		printf("usb_functions - usb_dbg_ctrl - bad status (%d). Going again\n",status);
+	      goto try_again;
+	    }
+	  else if (tries < 8)
+	    {
+	      reset_tap();
+	      goto try_again;
+	    }
 	  else return status;
+
 	}
 
 	/* reset retry counter */
@@ -828,18 +873,44 @@ int usb_dbg_ctrl_read(uint32_t *reset, uint32_t *stall) {
   // with the MSb going to the LSb
   status = bit_reverse_data(status, DC_STATUS_SIZE);
   crc_read = bit_reverse_data(crc_read, DBG_CRC_SIZE);	  
+
     
   /* CRCs must match, otherwise retry */
   //printf("%x %x %x\n", status, crc_generated, crc_read);
+  uint32_t tries = 0;
   if (crc_read != crc_generated) {
-    if (!retry_do()) goto try_again;
+    tries++;
+    if (tries < 2)
+      {
+	if (DEBUG_USB_DRVR_FUNCS)
+	  printf("usb_functions - usb_dbg_ctrl_read - CRC fail. Going again\n");
+	goto try_again;
+      }
+    else if (tries < 8)
+      {
+	reset_tap();
+	goto try_again;
+      }
     else return DBG_ERR_CRC;
-  }
+	}
   /* we should read expected status value, otherwise retry */
+  tries = 0;
   if (status != 0) {
-     if (!retry_do()) goto try_again;
+    if (tries < 2)
+      {
+	if (DEBUG_USB_DRVR_FUNCS)
+	  printf("usb_functions - usb_dbg_ctrl_read - bad status (%d). Going again\n",status);
+	goto try_again;
+      }
+    else if (tries < 8)
+      {
+	reset_tap();
+	goto try_again;
+      }
     else return status;
+    
   }
+  
   /* reset retry counter */
   retry_ok();
   return DBG_ERR_OK;
@@ -850,6 +921,7 @@ int usb_dbg_ctrl_read(uint32_t *reset, uint32_t *stall) {
 int usb_dbg_go(unsigned char *data, uint16_t len, uint32_t read) {
 	uint32_t status, crc_generated, crc_read;
         int i,j;
+	int tries = 0;
 	uint8_t data_byte;
 
 	// JTAG driver things
@@ -860,7 +932,7 @@ int usb_dbg_go(unsigned char *data, uint16_t len, uint32_t read) {
  try_again:
 	usb_dbg_set_chain(dbg_chain);
 	if (DEBUG_CMDS) printf("\n");
-	if (DEBUG_CMDS) printf("go len is %d, read is %d\n", len, read);
+	if (DEBUG_CMDS) printf("go len is %dbytes, read=%d (if 0, writing)\n", len, read);
 
 	crc_w = 0xffffffff;
 	// Try packing everyhing we want to send into one write buffer
@@ -959,7 +1031,7 @@ int usb_dbg_go(unsigned char *data, uint16_t len, uint32_t read) {
 	    // written to LSb first
 	    data[i] = bit_reverse_data(data[i],8);
 	    
-	    if (DEBUG_USB_DRVR_FUNCS) printf("%2x",data[i]);
+	    if (DEBUG_USB_DRVR_FUNCS) printf("%.2x",data[i]);
 	  }
 	  if (DEBUG_USB_DRVR_FUNCS) printf("\n");
 	
@@ -994,22 +1066,40 @@ int usb_dbg_go(unsigned char *data, uint16_t len, uint32_t read) {
 	}
 	
 	crc_generated = crc_r;
+
 	// Now bit reverse status and crc_read as we unpacked them
 	// with the MSb going to the LSb
 	status = bit_reverse_data(status, DC_STATUS_SIZE);
 	crc_read = bit_reverse_data(crc_read, DBG_CRC_SIZE);	  
 
-
 	/* CRCs must match, otherwise retry */
+	
+	//printf("%x %x %x\n", status, crc_read, crc_generated);
+	
 	if (crc_read != crc_generated) {
-	  if (DEBUG_CMDS || DEBUG_USB_DRVR_FUNCS)printf("CRC mismatch: %x %x %x\n", status, crc_read, crc_generated);
-	  if (!retry_do()) goto try_again;
+	  tries++;
+	  if (tries < 8)
+	    {
+	      if (DEBUG_USB_DRVR_FUNCS) printf("usb_functions - usb_dbg_go - CRC fail (%d) try %d. Going again\n",status, tries);
+	      reset_tap() ;	      
+	      goto try_again;
+	    }
 	  else return DBG_ERR_CRC;
 	}
+	//if (crc_read == crc_generated)
+	//tries = 0;
 	/* we should read expected status value, otherwise retry */
 	if (status != 0) {
-	  if (!retry_do()) goto try_again;
+	  tries++;
+	  if (tries < 8)
+	    {
+	      if (DEBUG_USB_DRVR_FUNCS) printf("usb_functions - usb_dbg_go - bad status (%d) try %d. Going again\n",status, tries);
+	      reset_tap();
+	      goto try_again;
+	      
+	    }
 	  else return status;
+
 	}
 	
 	retry_ok();
@@ -1054,6 +1144,7 @@ int usb_dbg_wb_read_block32(uint32_t adr, uint32_t *data, uint32_t len) {
 
 /* write a block to wishbone */
 int usb_dbg_wb_write_block32(uint32_t adr, uint32_t *data, uint32_t len) {
+  if (DEBUG_CMDS) printf("usb_functions: wb_write_block %.8x %d bytes\n",adr, len);
   if ((err = usb_dbg_set_chain(DC_WISHBONE))) return err;
   if ((err = usb_dbg_command(DBG_WB_WRITE32, adr, len))) return err;
   if ((err = usb_dbg_go((unsigned char*)data, len, 0))) return err;
@@ -1062,22 +1153,20 @@ int usb_dbg_wb_write_block32(uint32_t adr, uint32_t *data, uint32_t len) {
 
 
 /* read a register from cpu */
-int usb_dbg_cpu0_read(uint32_t adr, uint32_t *data) {
-  // uint32_t err;
+int usb_dbg_cpu0_read(uint32_t adr, uint32_t *data, uint32_t length) {
   if ((err = usb_dbg_set_chain(DC_CPU0))) return err;
-  if ((err = usb_dbg_command(DBG_CPU_READ, adr, 4))) return err;
-  if ((err = usb_dbg_go((unsigned char*)data, 4, 1))) return err;
-  *data = ntohl(*data);
+  if ((err = usb_dbg_command(DBG_CPU_READ, adr, length))) return err;
+  if ((err = usb_dbg_go((unsigned char*)data, length, 1))) return err;
+  int i;for(i=0;i<(length/4);i++)data[i]=ntohl(data[i]);
   return DBG_ERR_OK;
 }
 
 /* write a cpu register */
-int usb_dbg_cpu0_write(uint32_t adr, uint32_t data) {
-  // uint32_t err;
-  data = ntohl(data);
+int usb_dbg_cpu0_write(uint32_t adr, uint32_t *data, uint32_t length) {
+  int i;for(i=0;i<(length/4);i++){data[i]=ntohl(data[i]);}
   if ((err = usb_dbg_set_chain(DC_CPU0))) return err;
-  if ((err = usb_dbg_command(DBG_CPU_WRITE, adr, 4))) return err;
-  if ((err = usb_dbg_go((unsigned char*)&data, 4, 0))) return err;
+  if ((err = usb_dbg_command(DBG_CPU_WRITE, adr, length))) return err;
+  if ((err = usb_dbg_go((unsigned char*)data, length, 0))) return err;
   return DBG_ERR_OK;
 }
 

@@ -70,6 +70,7 @@
 
 #include "FT2232cMpsseJtag.h"
 
+
 static FT2232cMpsseJtag *pFT2232cMpsseJtag = NULL;
 
 // Global USB JTAG device handle
@@ -159,6 +160,13 @@ FT2232_USB_JTAG_CloseDevice()
 }
 
 
+void reinit_usb_jtag(void)
+{
+  FTC_STATUS Status = FTC_SUCCESS;
+  if (DEBUG_USB_DRVR_FUNCS) printf("linux_usb_driver_calls: reset_usb_jtag() - ");
+  Status = pFT2232cMpsseJtag->JTAG_InitDevice(ftHandle, 0);  
+  if (DEBUG_USB_DRVR_FUNCS) printf("return Status: %d\n", (int) Status);
+}
 
 // Set clock frequency
 // Frequency = 12Mhz/((1+divisor)*2), 

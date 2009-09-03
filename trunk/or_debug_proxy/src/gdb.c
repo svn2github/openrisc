@@ -128,7 +128,9 @@
     character. Adding the EOS allows us to print out the packet as a
     string. So at least NUMREGBYTES*2 + 1 (for the 'G' or the EOS) are needed
     for register packets */
-#define GDB_BUF_MAX  ((NUM_REGS) * 8 + 1)
+//#define GDB_BUF_MAX  ((NUM_REGS) * 8 + 1)
+#define GDB_BUF_MAX  4096
+#define GDB_BUF_MAX_TIMES_TWO (GDB_BUF_MAX*2)
 
 /*! Size of the matchpoint hash table. Largest prime < 2^10 */
 #define MP_HASH_SIZE  1021
@@ -251,7 +253,7 @@ int gdb_chain = -1;
   include zero bytes */
 struct rsp_buf
 {
-  char  data[GDB_BUF_MAX];
+  char  data[GDB_BUF_MAX_TIMES_TWO];
   int   len;
 };
 
@@ -2195,7 +2197,7 @@ static void rsp_read_mem (struct rsp_buf *p_buf)
   }
 
   /* Make sure we won't overflow the buffer (2 chars per byte) */
-  if ((len * 2) >= GDB_BUF_MAX)
+  if ((len * 2) >= GDB_BUF_MAX_TIMES_TWO)
   {
     fprintf (stderr, "Warning: Memory read %s too large for RSP packet: "
        "truncated\n", p_buf->data);
@@ -3524,10 +3526,8 @@ int gdb_write_reg(uint32_t adr, uint32_t data) {
     adr = adr & ~OR32_LINUX_VM_MASK;
 #endif
 
-
   switch (gdb_chain) { /* remap registers, to be compatible with jp1 */
-  case SC_RISC_DEBUG: if (adr == JTAG_RISCOP) adr = 0x00;
-    return dbg_cpu0_write(adr, data) ? ERR_CRC : ERR_NONE;
+  case SC_RISC_DEBUG: return dbg_cpu0_write(adr, &data, 4) ? ERR_CRC : ERR_NONE;
   case SC_REGISTER:   return dbg_cpu0_write_ctrl(adr, data) ? ERR_CRC : ERR_NONE;
   case SC_WISHBONE:   return dbg_wb_write32(adr, data) ? ERR_CRC : ERR_NONE;
   case SC_TRACE:      return 0;
@@ -3542,7 +3542,7 @@ int gdb_read_reg(uint32_t adr, uint32_t *data) {
 #endif
   
   switch (gdb_chain) {
-  case SC_RISC_DEBUG: return dbg_cpu0_read(adr, data) ? ERR_CRC : ERR_NONE;
+  case SC_RISC_DEBUG: return dbg_cpu0_read(adr, data, 4) ? ERR_CRC : ERR_NONE;
   case SC_REGISTER:   return dbg_cpu0_read_ctrl(adr, (unsigned char*)data) ? 
       ERR_CRC : ERR_NONE;
   case SC_WISHBONE:   return dbg_wb_read32(adr, data) ? ERR_CRC : ERR_NONE;
@@ -3562,10 +3562,9 @@ int gdb_read_block(uint32_t adr, uint32_t *data, int len) {
   if (DEBUG_CMDS) printf("rb %d\n", gdb_chain);
     
   switch (gdb_chain) {
-  case SC_WISHBONE:   
-    {
-      return dbg_wb_read_block32(adr, data, len) ? ERR_CRC : ERR_NONE;
-    }
+  case SC_RISC_DEBUG: return dbg_cpu0_read(adr, data, len) ? ERR_CRC : ERR_NONE;
+  case SC_WISHBONE: return dbg_wb_read_block32(adr, data, len) ? ERR_CRC : ERR_NONE;
+    
   default:            return JTAG_PROXY_INVALID_CHAIN;
   }
 }
@@ -3579,8 +3578,8 @@ int gdb_write_block(uint32_t adr, uint32_t *data, int len) {
   
   if (DEBUG_CMDS) printf("wb %d\n", gdb_chain);
   switch (gdb_chain) {
-  case SC_WISHBONE:   return dbg_wb_write_block32(adr, data, len) ? 
-      ERR_CRC : ERR_NONE;
+  case SC_RISC_DEBUG: return dbg_cpu0_write(adr, data, (uint32_t) len) ? ERR_CRC : ERR_NONE;
+  case SC_WISHBONE:   return dbg_wb_write_block32(adr, data, len) ? ERR_CRC : ERR_NONE;
   default:            return JTAG_PROXY_INVALID_CHAIN;
   }
 }
