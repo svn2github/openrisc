@@ -359,7 +359,7 @@ jp1_ll_reset_jp1()
 static unsigned char
 jp1_ll_read_jp1()
 {
-  int data;
+  int data = 0;				/* Initialize to keep GCC 4.4.1 OK */
 
   if (OR1K_JTAG_LOCAL != or1k_jtag_connection.location)
     {   /* CZ */
