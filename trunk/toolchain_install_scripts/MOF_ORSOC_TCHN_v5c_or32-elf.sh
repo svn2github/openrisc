@@ -79,6 +79,11 @@
 #          by adding a suffix to the text file.
 # 290609 - Changed linux patch to 2.3 - is a patch derived from revision 42 of
 #          OpenRISC repository's kernel.
+# 301109 - Changed GCC patch to one with single precision floating point as 
+#          default
+# 021209 - Added --disable-werror flag to gdb-6.8 configure line to fix issue
+#          with gcc-4.4.1
+
 # TODO: OS X build things - need an "elf.h" from some Linux machine's 
 #       /usr/local/include dir and put in Mac's /usr/local/include dir - 
 #       this solves issue with Linux compilation
@@ -214,7 +219,7 @@ SIM_VER=or1ksim-0.3.0
 
 ## Patches ##
 BINUTILS_PATCH="$BINUTILS_VER.or32_fixed_patch-v2.1.bz2"
-GCC_PATCH=$GCC_VER.or32patch.bz2
+GCC_PATCH=$GCC_VER-or32-fp.patch.bz2
 LINUX_PATCH="linux_2.6.24_or32_unified_v2.3.bz2"
 UCLIBC_PATCH="uClibc-0.9.29-or32-patch-1.1.bz2"
 GDB_PATCH="or32-gdb-6.8-patch-2.4.bz2"
@@ -988,7 +993,7 @@ if [ $BUILD_THIS = "y" ]
     
     echo
     echo "Patching $GDB_VER with $GDB_PATCH"
-    
+    echo "Logging output to $GDB_VER-patch.log"
     cd $GDB_VER
     
     bzcat -dc $DOWNLOAD_DIR/$GDB_PATCH | patch -p1 > $GDB_VER-patch.log 2>&1
@@ -997,13 +1002,14 @@ if [ $BUILD_THIS = "y" ]
     check_exit_code
 
     echo
-    echo "Configuring $GDB_VER: --target=$TARGET --prefix=$INSTALL_DIR/$TARGET"
+    echo "Configuring $GDB_VER: --target=$TARGET --prefix=$INSTALL_DIR/$TARGET --disable-werror"
+    echo "Logging output to $GDB_VER-configure.log"
     
-    ./configure --target=$TARGET --prefix=$INSTALL_DIR/$TARGET > $GDB_VER-configure.log 2>&1
+    ./configure --target=$TARGET --prefix=$INSTALL_DIR/$TARGET --disable-werror > $GDB_VER-configure.log 2>&1
 
     echo
     echo "Making and installing $GDB_VER"
-    
+    echo "Logging output to $GDB_VER-make.log"
     make all install > $GDB_VER-make.log 2>&1
     
 ## Make sure that built ok ##
