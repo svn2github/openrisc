@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright (C) 2008,2009 www.meansoffreedom.org, www.orsoc.se
+# Copyright (C) 2008,2009,2010 www.meansoffreedom.org, www.orsoc.se
 # This file is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by
 # the Free Software Foundation; either version 2 of the License, or
@@ -15,7 +15,7 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 
-##Date: 26/05/2009
+##Date: 11/03/2010
 ##Title: MOF_ORSOC_TCN_v5c_or32-elf.sh
 ##Purpose: Complete Toolchain Builder from MOF & ORSoC.
 ##initial rgd, mse
@@ -83,6 +83,7 @@
 #          default
 # 021209 - Added --disable-werror flag to gdb-6.8 configure line to fix issue
 #          with gcc-4.4.1
+# 110310 - Moved or1ksim to its own directory in the chosen install directory
 
 # TODO: OS X build things - need an "elf.h" from some Linux machine's 
 #       /usr/local/include dir and put in Mac's /usr/local/include dir - 
@@ -166,7 +167,8 @@ echo
 # Get the verbose output of GCC, redirect STDERR to STDOUT, pipe to grep replacing spaces with newlines
 # grep for the prefix dir line, cut away after the equals sign and we should have the right dir
 	echo "Checking for libncurses-dev (headers)"
-	HOST_GCC_PREFIX=`gcc -v 2>&1 | sed 's/\ /\n/g' | grep prefix | cut -d "=" -f 2 | head -1`
+	GCC_V_LIST=`gcc -v 2>&1 | sed -e s/\ /'\\\n'/g`
+	HOST_GCC_PREFIX=`echo $GCC_V_LIST | grep prefix | cut -d = -f 2 | head -1`
 	NCURSES_HEADER_COUNT=`find $HOST_GCC_PREFIX/include -name "ncurses.h" | grep ncurses -c`
 	if [ $NCURSES_HEADER_COUNT -eq 0 ]; then
 	    echo
@@ -207,6 +209,8 @@ START_DIR=`pwd`
 DN="n"
 DIR=`pwd`
 
+## Makedir command we'll use ##
+MKDIR=mkdir -p
 ## Versions of the toolchain components ##
 BINUTILS_VER=binutils-2.18.50
 GCC_VER_NUM=4.2.2
@@ -317,6 +321,7 @@ echo "Tools will be installed in [$DIR/$TARGET]"
 echo [Y/n]:
 read YN
 
+
 ## $YN will be zero length string if user just pressed enter ##
 if [ -z $YN ]
     then
@@ -340,7 +345,7 @@ if [ $VAL = "n" ]
 	    then
 	    # The path entered is OK
 	    echo "Chosen directory is [$DIR]"
-            echo "Tools will be installed in [$DIR/$TARGET]"
+            echo "Tools will be installed in [$DIR/$TARGET], or1ksim in [$DIR/or1ksim]"
 	    echo "[y/n]:"
 	    read DN
 
@@ -367,7 +372,7 @@ if [ $VAL = "n" ]
 	    
 	    if [ $MKPATHYN = "y" ]
 		then
-		`mkdir $DIR`
+		`mkdir -p $DIR`
 		
 		# Check we made it successfully
 		if [ $? -ne 0 ]
@@ -406,7 +411,7 @@ DOWNLOAD_DIR=$START_DIR/or32-download
 ## Setup the target tool installation directory ##
 INSTALL_DIR=$DIR
 
-mkdir $INSTALL_DIR
+$MKDIR $INSTALL_DIR
 
 ####################################################################################################
 ## Now check which sources have already been downloaded, if any ##
@@ -432,7 +437,7 @@ if [ $DO_DOWNLOADS = "y" ]
 then
 ## Check if download directory exists, if not create it ##
     if [ ! -d $DOWNLOAD_DIR ]; then
-	mkdir $DOWNLOAD_DIR
+	$MKDIR $DOWNLOAD_DIR
     fi
     
     cd $DOWNLOAD_DIR
@@ -576,11 +581,11 @@ if [ $DBG_BUILD -eq 0 ]
     then
 ## Always start with a clean build dir ##
     rm -fr $BUILD_TOP
-    mkdir $BUILD_TOP
+    $MKDIR $BUILD_TOP
     chmod 777 $BUILD_TOP
     
-    mkdir $BUILD_TOP/b-gcc
-    mkdir $BUILD_TOP/b-b
+    $MKDIR $BUILD_TOP/b-gcc
+    $MKDIR $BUILD_TOP/b-b
 fi
 
 ## default build option is yes ##
@@ -605,7 +610,7 @@ if [ $DBG_BUILD -eq 1 ]
 	## Delete and recreate the binutils directory ##
 	rm -rf $BUILD_TOP/b-b
 	rm -rf $BUILD_TOP/$BINUTILS_VER
-	mkdir $BUILD_TOP/b-b
+	$MKDIR $BUILD_TOP/b-b
 
     fi
 fi
@@ -682,7 +687,7 @@ if [ $DBG_BUILD -eq 1 ]
 	rm -rf $BUILD_TOP/$GCC_VER
 	rm -rf $BUILD_TOP/$LINUX_VER
 	
-	mkdir $BUILD_TOP/b-gcc	
+	$MKDIR $BUILD_TOP/b-gcc	
 
 	## Undo everything done in the next part
 	rm -rf $INSTALL_DIR/$TARGET/include
@@ -730,9 +735,9 @@ if [ $BUILD_THIS = "y" ]
     
     cd $BUILD_TOP
     
-    mkdir $INSTALL_DIR/$TARGET/include
-    mkdir $INSTALL_DIR/$TARGET/include/asm
-    mkdir $INSTALL_DIR/$TARGET/include/linux
+    $MKDIR $INSTALL_DIR/$TARGET/include
+    $MKDIR $INSTALL_DIR/$TARGET/include/asm
+    $MKDIR $INSTALL_DIR/$TARGET/include/linux
     
     cp -f -dR $LINUX_VER/include/linux/* $INSTALL_DIR/$TARGET/include/linux
     cp -f -dR $LINUX_VER/include/asm-or32/* $INSTALL_DIR/$TARGET/include/asm
@@ -1105,7 +1110,7 @@ if [ $BUILD_THIS = "y" ]
 	
 	RT=`whoami`
 	if [ $RT = "root" ];then
-	    mkdir rd_mount
+	    $MKDIR rd_mount
 	    chmod 777 rd_mount
 	    mount -t ext2 -o loop $RAMDISK_FILE rd_mount
 	    cp -f -dR $BUILD_TOP/busy_out.1.7.5/* $BUILD_TOP/rd_mount
@@ -1208,18 +1213,29 @@ if [ $BUILD_THIS = "y" ]
     cd $SIM_VER
     
     echo
-    echo "Configuring $SIM_VER: --target=$TARGET --prefix=$INSTALL_DIR/$TARGET"
+    echo "Configuring $SIM_VER: --target=$TARGET --prefix=$INSTALL_DIR/$SIM_VER"
     
-    ./configure --target=$TARGET --prefix=$INSTALL_DIR/$TARGET > $SIM_VER-configure.log 2>&1
+    ./configure --target=$TARGET --prefix=$INSTALL_DIR/$SIM_VER > $SIM_VER-configure.log 2>&1
     
     echo
     echo "Making and installing $SIM_VER"
     echo "Logging output to $SIM_VER-make.log"
     make all install > $SIM_VER-make.log 2>&1
-    
+
 ## Make sure that built ok ##
     check_exit_code
-    
+
+## Setup symbolic link from or1ksim-x.y.z to simply or1ksim
+
+    echo "Symbolically linking $INSTALL_DIR/$SIM_VER to $INSTALL_DIR/or1ksim"
+    if [ -e $INSTALL_DIR/or1ksim ]; then
+	echo "Symlink $INSTALL_DIR/or1ksim already exists. Updating to this version"
+	unlink $INSTALL_DIR/or1ksim;
+	check_exit_code
+    fi
+    echo "ln -s $INSTALL_DIR/$SIM_VER $INSTALL_DIR/or1ksim"    
+    ln -s $INSTALL_DIR/$SIM_VER $INSTALL_DIR/or1ksim
+            
     cd $BUILD_TOP
 fi
 ##########################Finish Simulator build#########################
@@ -1277,7 +1293,7 @@ if [ $SVAL = "y" ];then
     
     
     cd $BUILD_TOP/$LINUX_VER
-    $INSTALL_DIR/$TARGET/bin/$TARGET-sim -f or1ksim_linux.cfg vmlinux
+    $INSTALL_DIR/or1ksim/bin/$TARGET-sim -f or1ksim_linux.cfg vmlinux
     
 else
     ## User didn't run the sim, but tell them how to anyway ##
@@ -1293,8 +1309,18 @@ echo
 echo "OpenRISC toolchain and architectural simulator build is complete!"
 echo
 echo "Your tools are installed in: $INSTALL_DIR/$TARGET"
+echo "or1ksim has been installed in: $INSTALL_DIR/$SIM_VER"
 echo
-echo "Please add $INSTALL_DIR/$TARGET/bin to your PATH variable"
+echo "Please add the paths:"
+echo "\t$INSTALL_DIR/$TARGET/bin"
+echo "\t$INSTALL_DIR/or1ksim/bin"
+echo "to your PATH variable, for example, in most systems add the line"
+echo "below to your ~/.bashrc file:"
+echo
+echo "\texport PATH=\$PATH:$INSTALL_DIR/$TARGET/bin:$INSTALL_DIR/or1ksim/bin"
+echo
+echo "For further support please visit the OpenRISC forum at OpenCores"
+echo "http://opencores.org/forum,OpenRISC"
 echo
 exit 0
 
