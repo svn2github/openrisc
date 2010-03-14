@@ -84,6 +84,7 @@
 # 021209 - Added --disable-werror flag to gdb-6.8 configure line to fix issue
 #          with gcc-4.4.1
 # 110310 - Moved or1ksim to its own directory in the chosen install directory
+# 140310 - Fixed problem with mkdir command
 
 # TODO: OS X build things - need an "elf.h" from some Linux machine's 
 #       /usr/local/include dir and put in Mac's /usr/local/include dir - 
@@ -210,7 +211,7 @@ DN="n"
 DIR=`pwd`
 
 ## Makedir command we'll use ##
-MKDIR=mkdir -p
+MKDIR='mkdir -p'
 ## Versions of the toolchain components ##
 BINUTILS_VER=binutils-2.18.50
 GCC_VER_NUM=4.2.2
