@@ -85,6 +85,7 @@
 #          with gcc-4.4.1
 # 110310 - Moved or1ksim to its own directory in the chosen install directory
 # 140310 - Fixed problem with mkdir command
+# 140310 - Fixed ncurses header checking
 
 # TODO: OS X build things - need an "elf.h" from some Linux machine's 
 #       /usr/local/include dir and put in Mac's /usr/local/include dir - 
@@ -142,43 +143,48 @@ bzip2
 wget
 makeinfo
 "
+header_check() {
+    # Compile a simple program, including the header we're checking for
+    echo "#include <$1.h>" > header_check.c
+    echo "int main () { return 0; }" >> header_check.c
+    gcc header_check.c
+}
+
 check_essential_build_tools()
 {
-
-echo "#########################Checking for required build tools######################"
-echo
-	for TOOL in $REQUIRED_TOOL_LIST
-	do
-	    echo -n "Checking for $TOOL    "
-	    WHICHTOOL=`which $TOOL`
-	    echo "$WHICHTOOL"
-	    if [ -z $WHICHTOOL ]
-	    then
-		echo
-		echo "\t$TOOL not found"
-		echo
-		echo "Please install $TOOL and re-run this script"
-		echo
-		exit 2
-	    fi
-	done
-
-# Now check if libncurses-dev has been installed - check for the header
-# Get host system's GCC prefix dir (usually /usr, but just to be sure)
-# Get the verbose output of GCC, redirect STDERR to STDOUT, pipe to grep replacing spaces with newlines
-# grep for the prefix dir line, cut away after the equals sign and we should have the right dir
-	echo "Checking for libncurses-dev (headers)"
-	GCC_V_LIST=`gcc -v 2>&1 | sed -e s/\ /'\\\n'/g`
-	HOST_GCC_PREFIX=`echo $GCC_V_LIST | grep prefix | cut -d = -f 2 | head -1`
-	NCURSES_HEADER_COUNT=`find $HOST_GCC_PREFIX/include -name "ncurses.h" | grep ncurses -c`
-	if [ $NCURSES_HEADER_COUNT -eq 0 ]; then
+    
+    echo "#########################Checking for required build tools######################"
+    echo
+    for TOOL in $REQUIRED_TOOL_LIST
+    do
+	echo -n "Checking for $TOOL    "
+	WHICHTOOL=`which $TOOL`
+	echo "$WHICHTOOL"
+	if [ -z $WHICHTOOL ]
+	then
 	    echo
-	    echo "\tlibncurses-dev not found"
-	    echo ; echo "Please install libncurses-dev and re-run this script"; echo
+	    echo "\t$TOOL not found"
+	    echo
+	    echo "Please install $TOOL and re-run this script"
+	    echo
 	    exit 2
 	fi
-# Todo: somehow inform the user that if we're checking for makeinfo they need to install texinfo package
+    done
+
+    echo "Checking for libncurses-dev (headers)"
+    header_check "ncurses"
+    # Now check the return value of that function
+    if [ $? -ne 0 ]; then
 	echo
+	echo "\tlibncurses-dev not found"
+	echo ; echo "Please install libncurses-dev and re-run this script"; echo
+	rm -f header_check.c a.out
+	exit 2
+    fi
+    rm -f header_check.c a.out
+    
+# Todo: somehow inform the user that if we're checking for makeinfo they need to install texinfo package
+    echo
 }
 
 ## SCRIPT VERSION ##
@@ -263,18 +269,18 @@ ZBALL8=$GDB_VER.tar.bz2
 TBALL8=$GDB_VER.tar
 
 ORSOC_FTP_FILE_LIST="$ZBALL1
-	$ZBALL3
-	$ZBALL5
-	$ZBALL6 
-	$ZBALL7 
-	$BINUTILS_PATCH
-	$GCC_PATCH
-	$LINUX_PATCH
-	$UCLIBC_PATCH
-	$GDB_PATCH
-	$CONFIG1 
-	$CONFIG2"
-	
+    $ZBALL3
+    $ZBALL5
+    $ZBALL6 
+    $ZBALL7 
+    $BINUTILS_PATCH
+    $GCC_PATCH
+    $LINUX_PATCH
+    $UCLIBC_PATCH
+    $GDB_PATCH
+    $CONFIG1 
+    $CONFIG2"
+
 GNU_FTP_FILE_LIST="$ZBALL2
 $ZBALL8"
 
@@ -288,8 +294,8 @@ DBG_BUILD=0
 while getopts d OPT; do
     case "$OPT" in
 	d)
-	DBG_BUILD=1
-	;;
+	    DBG_BUILD=1
+	    ;;
     esac
 done
 
@@ -325,25 +331,25 @@ read YN
 
 ## $YN will be zero length string if user just pressed enter ##
 if [ -z $YN ]
-    then
+then
     VAL="y"
 else
     VAL=$(echo $YN | tr [:upper:] [:lower:])
 fi
 
 if [ $VAL = "n" ]
-    then
+then
     # Optional install path
     echo "Enter the path the toolchain will be installed in:"
     read DIR
     
     # Check if the path exists and ask the user to verify it
     until [ $DN = "y" ]
-      do
-      
+    do
+	
         #Check the path exists
 	if [ -d $DIR ]
-	    then
+	then
 	    # The path entered is OK
 	    echo "Chosen directory is [$DIR]"
             echo "Tools will be installed in [$DIR/$TARGET], or1ksim in [$DIR/or1ksim]"
@@ -351,7 +357,7 @@ if [ $VAL = "n" ]
 	    read DN
 
 	    if [ -z $DN ]
-		then
+	    then
 		# Presume yes here
 		DN="y"
 	    fi
@@ -364,7 +370,7 @@ if [ $VAL = "n" ]
 	    echo "[y/N]:"
 	    read MKPATH
 	    if [ -z $MKPATH ]
-		then
+	    then
 		## $MKPATH was zero, so user probably just pressed enter without entering anything, which we'll interpret as "n" ##
 		MKPATHYN="n"
 	    else
@@ -372,12 +378,12 @@ if [ $VAL = "n" ]
 	    fi
 	    
 	    if [ $MKPATHYN = "y" ]
-		then
+	    then
 		`mkdir -p $DIR`
 		
 		# Check we made it successfully
 		if [ $? -ne 0 ]
-		    then
+		then
 		    DN="n"
 		else
 		    DN="x" # Set this so we do go back through and ask the user to verify
@@ -389,7 +395,7 @@ if [ $VAL = "n" ]
 	fi
 	
 	if [ $DN = "n" ]
-	    then
+	then
 	    echo "Enter the path the toolchain should be installed in:"
 	    read DIR
 	fi
@@ -419,14 +425,14 @@ $MKDIR $INSTALL_DIR
 DO_DOWNLOADS="y" ## Default is to NOT do downloads
 
 if [ $DBG_BUILD -eq 1 ]
-    then
+then
     ## Ask if we should do downloads ##
     echo "Do downloads?"
     echo "[y/N]:"
     read DO_DOWNLOADS
     ## $YN will be zero length string if user just pressed enter ##
     if [ -z $DO_DOWNLOADS ]
-	then
+    then
 	DO_DOWNLOADS="n"
     else
 	DO_DOWNLOADS=$(echo $DO_DOWNLOADS | tr [:upper:] [:lower:])
@@ -454,78 +460,78 @@ then
     
 ## ORSoC FTP server downloads ##
     for CURRENT_FILE in $ORSOC_FTP_FILE_LIST
-      do
+    do
   # Check if we've already got the file
-      if [ -e $CURRENT_FILE ]
-	  then
-	  echo "File $CURRENT_FILE exists locally."
-	  echo "Verifying MD5 checksum:"
+	if [ -e $CURRENT_FILE ]
+	then
+	    echo "File $CURRENT_FILE exists locally."
+	    echo "Verifying MD5 checksum:"
       ## Verify it's right by checking the MD5 checksum ##
       ## First we get the line for $CURRENT_FILE out of the $MD5SUM_FILE, then feed it to "md5sum -c"
       ## which checks it and sets the return code, $? to 0 if OK, 1 if problem ##
-	  cat $MD5SUM_FILE | grep $CURRENT_FILE | md5sum -c
-	  if [ $? -ne 0 ]
-	      then
+	    cat $MD5SUM_FILE | grep $CURRENT_FILE | md5sum -c
+	    if [ $? -ne 0 ]
+	    then
 	  #MD5sum of $CURRENT_FILE differs from expected value - we'll download it again
-	      echo "MD5 checksum of $CURRENT_FILE differs from expected value. Re-downloading."
-	      rm -f $CURRENT_FILE
-	      wget ftp://$ORSOC_FTP_USER:$ORSOC_FTP_PASSWD@$ORSOC_FTP_HOST/$ORSOC_FTP_DIR/$CURRENT_FILE
-	      check_exit_code
-	  fi
-      else
+		echo "MD5 checksum of $CURRENT_FILE differs from expected value. Re-downloading."
+		rm -f $CURRENT_FILE
+		wget ftp://$ORSOC_FTP_USER:$ORSOC_FTP_PASSWD@$ORSOC_FTP_HOST/$ORSOC_FTP_DIR/$CURRENT_FILE
+		check_exit_code
+	    fi
+	else
       # File doesn't exist locally - we'll download it
-	  echo "Downloading $CURRENT_FILE"
-	  wget ftp://$ORSOC_FTP_USER:$ORSOC_FTP_PASSWD@$ORSOC_FTP_HOST/$ORSOC_FTP_DIR/$CURRENT_FILE
-	  check_exit_code
-      fi
-      echo
+	    echo "Downloading $CURRENT_FILE"
+	    wget ftp://$ORSOC_FTP_USER:$ORSOC_FTP_PASSWD@$ORSOC_FTP_HOST/$ORSOC_FTP_DIR/$CURRENT_FILE
+	    check_exit_code
+	fi
+	echo
     done
     
 ## GNU FTP server downloads ##
     for CURRENT_FILE in $GNU_FTP_FILE_LIST
-      do
+    do
   ## Check if we've already got the file ##
-      if [ -e $CURRENT_FILE ]
-	  then
-	  echo "File $CURRENT_FILE exists locally."
-	  echo "Verifying MD5 checksum:"
+	if [ -e $CURRENT_FILE ]
+	then
+	    echo "File $CURRENT_FILE exists locally."
+	    echo "Verifying MD5 checksum:"
       ## Verify it's right by checking the MD5 checksum ##
       ## First we get the line for $CURRENT_FILE out of the $MD5SUM_FILE, then feed it to "md5sum -c"
       ## which checks it and sets the return code, $? to 0 if OK, 1 if problem ##
-	  cat $MD5SUM_FILE | grep $CURRENT_FILE | md5sum -c
-	  if [ $? -ne 0 ]
-	      then
+	    cat $MD5SUM_FILE | grep $CURRENT_FILE | md5sum -c
+	    if [ $? -ne 0 ]
+	    then
 	  ## MD5sum of present one is incorrect - we'll download it again ##
-	      echo "MD5 checksum of $CURRENT_FILE differs from expected value. Re-downloading."
-	      rm -f $CURRENT_FILE
+		echo "MD5 checksum of $CURRENT_FILE differs from expected value. Re-downloading."
+		rm -f $CURRENT_FILE
 	  ## Depending on the file, we need a specific path ##
 	  ## gcc's path on ftp ##
-	      if [ $CURRENT_FILE = $ZBALL2 ]; then
-		  GNU_FTP_DIR=$GNU_FTP_GCC_DIR
-	      fi
+		if [ $CURRENT_FILE = $ZBALL2 ]; then
+		    GNU_FTP_DIR=$GNU_FTP_GCC_DIR
+		fi
 	  ## gdb's path on ftp ##
-	      if [ $CURRENT_FILE = $ZBALL8 ]; then
-		  GNU_FTP_DIR=$GNU_FTP_GDB_DIR
-	      fi
-	      wget ftp://$GNU_FTP_USER:$GNU_FTP_USER@$GNU_FTP_HOST/$GNU_FTP_DIR/$CURRENT_FILE
-	      check_exit_code
-	  fi
-      else
+		if [ $CURRENT_FILE = $ZBALL8 ]; then
+		    GNU_FTP_DIR=$GNU_FTP_GDB_DIR
+		fi
+		wget ftp://$GNU_FTP_USER:$GNU_FTP_USER@$GNU_FTP_HOST/$GNU_FTP_DIR/$CURRENT_FILE
+		check_exit_code
+	    fi
+	else
       # File doesn't exist - we'll download it
-	  echo "Downloading $CURRENT_FILE"
+	    echo "Downloading $CURRENT_FILE"
       ## Depending on the file, we need a specific path ##
       ## gcc's path on ftp ##
-	  if [ $CURRENT_FILE = $ZBALL2 ]; then
-	      GNU_FTP_DIR=$GNU_FTP_GCC_DIR
-	  fi
+	    if [ $CURRENT_FILE = $ZBALL2 ]; then
+		GNU_FTP_DIR=$GNU_FTP_GCC_DIR
+	    fi
       ## gdb's path on ftp ##
-	  if [ $CURRENT_FILE = $ZBALL8 ]; then
-	      GNU_FTP_DIR=$GNU_FTP_GDB_DIR
-	  fi
-	  wget ftp://$GNU_FTP_USER:$GNU_FTP_USER@$GNU_FTP_HOST/$GNU_FTP_DIR/$CURRENT_FILE
-	  check_exit_code
-      fi
-      echo
+	    if [ $CURRENT_FILE = $ZBALL8 ]; then
+		GNU_FTP_DIR=$GNU_FTP_GDB_DIR
+	    fi
+	    wget ftp://$GNU_FTP_USER:$GNU_FTP_USER@$GNU_FTP_HOST/$GNU_FTP_DIR/$CURRENT_FILE
+	    check_exit_code
+	fi
+	echo
     done
     
 ## Kernel.org FTP server downloads ##
@@ -540,7 +546,7 @@ then
     ## which checks it and sets the return code, $? to 0 if OK, 1 if problem ##
 	cat $MD5SUM_FILE | grep $CURRENT_FILE | md5sum -c
 	if [ $? -ne 0 ]
-	    then
+	then
 	#MD5sum of present one is incorrect - we'll download it again
 	    echo "MD5 checksum of $CURRENT_FILE differs from expected value. Re-downloading."
 	    rm -f $CURRENT_FILE
@@ -551,18 +557,18 @@ then
     ## Download it ##
 	echo "Downloading $CURRENT_FILE"
 	wget ftp://$KERNEL_FTP_USER:$KERNEL_FTP_PASSWD@$KERNEL_FTP_HOST/$KERNEL_FTP_DIR/$CURRENT_FILE
-    check_exit_code    
+	check_exit_code    
     fi
     
-echo
+    echo
 fi # if [ $DO_DOWNLOADS = "y" ]
-    
+
 ####################################################################################################
 
 ## Cygwin exports ##
 ON_CYGWIN=`set | grep -i mach|grep -i -c cygwin`
 if [ $ON_CYGWIN -ge 1 ]
-    then
+then
     echo
     echo "Cygwin host detected"
     echo "Platform specific exports:"
@@ -579,7 +585,7 @@ cd $START_DIR
 ## if not debug building, let's remove all the old stuff ##
 
 if [ $DBG_BUILD -eq 0 ]
-    then
+then
 ## Always start with a clean build dir ##
     rm -fr $BUILD_TOP
     $MKDIR $BUILD_TOP
@@ -593,21 +599,21 @@ fi
 BUILD_THIS="y"
 
 if [ $DBG_BUILD -eq 1 ]
-    then
+then
     ## Ask if we should build binutils ##
     echo "Re-build $BINUTILS_VER ?"
     echo "[y/N]:"
     read YN
     ## $YN will be zero length string if user just pressed enter ##
     if [ -z $YN ]
-	then
+    then
 	BUILD_THIS="n"
     else
 	BUILD_THIS=$(echo $YN | tr [:upper:] [:lower:])
     fi
 
     if [ $BUILD_THIS = "y" ]
-	then
+    then
 	## Delete and recreate the binutils directory ##
 	rm -rf $BUILD_TOP/b-b
 	rm -rf $BUILD_TOP/$BINUTILS_VER
@@ -618,7 +624,7 @@ fi
 
 ##########################Building Binutils#######################
 if [ $BUILD_THIS = "y" ]
-    then
+then
 
     echo "############################## Building binutils ###############################"
     echo
@@ -668,21 +674,21 @@ export PATH=$INSTALL_DIR/$TARGET/bin:$PATH
 BUILD_THIS="y"
 
 if [ $DBG_BUILD -eq 1 ]
-    then
+then
     ## Ask if we should do the initial builds of GCC and Linux ##
     echo "Re-do initial $GCC_VER and $LINUX_VER builds (note if you choose to do this then it's EXTREMELY likely that you will have to do the rest of the script, particularly the re-build of gcc that occurs later)?"
     echo "[y/N]:"
     read YN
     ## $YN will be zero length string if user just pressed enter ##
     if [ -z $YN ]
-	then
+    then
 	BUILD_THIS="n" # default is no
     else
 	BUILD_THIS=$(echo $YN | tr [:upper:] [:lower:])
     fi
 
     if [ $BUILD_THIS = "y" ]
-	then
+    then
 	## Delete and recreate the gcc directory ##
 	rm -rf $BUILD_TOP/b-gcc
 	rm -rf $BUILD_TOP/$GCC_VER
@@ -699,7 +705,7 @@ fi
 
 ##########################Building GCC and Linux############################
 if [ $BUILD_THIS = "y" ]
-    then
+then
 
     echo
     echo "####################### Building or32 gcc and Linux ############################"
@@ -794,21 +800,21 @@ fi
 BUILD_THIS="y"
 
 if [ $DBG_BUILD -eq 1 ]
-    then
+then
     ## Ask if we should rebuild uClibc ##
     echo "Re-build $UCLIB_VER ?"
     echo "[y/N]:"
     read YN
     ## $YN will be zero length string if user just pressed enter ##
     if [ -z $YN ]
-	then
+    then
 	BUILD_THIS="n" # default is no
     else
 	BUILD_THIS=$(echo $YN | tr [:upper:] [:lower:])
     fi
 
     if [ $BUILD_THIS = "y" ]
-	then
+    then
 	## Delete the uClibc directory ##
 	rm -rf $BUILD_TOP/$UCLIB_VER	
     fi
@@ -816,7 +822,7 @@ fi
 
 ##########################Building uClibc#########################
 if [ $BUILD_THIS = "y" ]
-    then
+then
     
     echo
     echo "############################## Building uClibc #################################"
@@ -861,13 +867,13 @@ if [ $BUILD_THIS = "y" ]
     sed "s/or32\-uclinux/\or32\-$TARGET_SECOND_PART/" $BUILD_TOP/$UCLIB_VER/extra/Configs/Config.or32  > $BUILD_TOP/$UCLIB_VER/extra/Configs/Config.or32.newtarget
     mv $BUILD_TOP/$UCLIB_VER/extra/Configs/Config.or32.newtarget $BUILD_TOP/$UCLIB_VER/extra/Configs/Config.or32    
 
-if [ $ON_CYGWIN -ge 1 ]
+    if [ $ON_CYGWIN -ge 1 ]
     then
 ## If on Cygwin, fix strange error where 'install' command by the makefile ##
 ## results in it trying to execute the INSTALL text file in the root of the ##
 ## package ##
-    mv INSTALL INSTALL.txt
-fi
+	mv INSTALL INSTALL.txt
+    fi
 
     echo
     echo "Making uClibc oldconfig"
@@ -890,27 +896,27 @@ fi
     unset CC
 fi
 ##########################Finish Building uClibc#########################    
-    
+
 
 ## default build option is yes ##
 BUILD_THIS="y"
 
 if [ $DBG_BUILD -eq 1 ]
-    then
+then
     ## Ask if we should rebuild gcc ##
     echo "Perform $GCC_VER re-build? - YES (y) if you rebuilt GCC and Linux previously, otherwise definitely NO (n)."
     echo "[y/N]:"
     read YN
     ## $YN will be zero length string if user just pressed enter ##
     if [ -z $YN ]
-	then
+    then
 	BUILD_THIS="n" # default is no
     else
 	BUILD_THIS=$(echo $YN | tr [:upper:] [:lower:])
     fi
 
     if [ $BUILD_THIS = "y" ]
-	then
+    then
 	## Undo some things we did before after doing this compile ##
 	unlink $INSTALL_DIR/$TARGET/$TARGET/sys-include
 	rm -rf $INSTALL_DIR/$TARGET/$TARGET/lib/*
@@ -920,7 +926,7 @@ fi
 
 ##########################re-Building GCC########################
 if [ $BUILD_THIS = "y" ]
-    then
+then
 
     echo
     echo "############################## Re-building or-32 gcc ###########################"
@@ -954,7 +960,7 @@ if [ $BUILD_THIS = "y" ]
     cd $BUILD_TOP
     
 fi
-    
+
 ##########################finish re-Building GCC########################
 
 
@@ -962,21 +968,21 @@ fi
 BUILD_THIS="y"
 
 if [ $DBG_BUILD -eq 1 ]
-    then
+then
     ## Ask if we should rebuild gdb ##
     echo "Rebuild $GDB_VER?"
     echo "[y/N]:"
     read YN
     ## $YN will be zero length string if user just pressed enter ##
     if [ -z $YN ]
-	then
+    then
 	BUILD_THIS="n" # default is no
     else
 	BUILD_THIS=$(echo $YN | tr [:upper:] [:lower:])
     fi
 
     if [ $BUILD_THIS = "y" ]
-	then
+    then
 	## Delete existing gdb dir ##
 	rm -rf $BUILD_TOP/$GDB_VER
     fi
@@ -985,7 +991,7 @@ fi
 
 ########################## GDB build ################
 if [ $BUILD_THIS = "y" ]
-    then
+then
 
     echo
     echo "############################## Building GDB ####################################"
@@ -1030,21 +1036,21 @@ fi
 BUILD_THIS="y"
 
 if [ $DBG_BUILD -eq 1 ]
-    then
+then
     ## Ask if we should rebuild busybox ##
     echo "Rebuild $BUSY_VER?"
     echo "[y/N]:"
     read YN
     ## $YN will be zero length string if user just pressed enter ##
     if [ -z $YN ]
-	then
+    then
 	BUILD_THIS="n" # default is no
     else
 	BUILD_THIS=$(echo $YN | tr [:upper:] [:lower:])
     fi
 
     if [ $BUILD_THIS = "y" ]
-	then
+    then
 	## Delete existing busybox stuff ##
 	rm -rf $BUILD_TOP/$BUSY_VER
     fi
@@ -1052,7 +1058,7 @@ fi
 
 ##########################Building Busybox########################
 if [ $BUILD_THIS = "y" ]
-    then
+then
 
     echo
     echo "############################## Building BusyBox ################################"
@@ -1107,7 +1113,7 @@ if [ $BUILD_THIS = "y" ]
     
 ## We can only play with the ext2 image if we're not on Cygwin ##
     if [ -z $ON_CYGWIN ]
-	then
+    then
 	
 	RT=`whoami`
 	if [ $RT = "root" ];then
@@ -1136,14 +1142,14 @@ fi
 BUILD_THIS="y"
 
 if [ $DBG_BUILD -eq 1 ]
-    then
+then
     ## Ask if we should rebuild linux again##
     echo "Rebuild the $LINUX_VER rebuild (only ever yes (y) if performed previous linux rebuild)?"
     echo "[y/N]:"
     read YN
     ## $YN will be zero length string if user just pressed enter ##
     if [ -z $YN ]
-	then
+    then
 	BUILD_THIS="n" # default is no
     else
 	BUILD_THIS=$(echo $YN | tr [:upper:] [:lower:])
@@ -1155,7 +1161,7 @@ fi
 #read Q
 ##########################Final Linux kernel build################
 if [ $BUILD_THIS = "y" ]
-    then
+then
     
     echo
     echo "########################### Linux image generation #############################"
@@ -1177,21 +1183,21 @@ fi
 BUILD_THIS="y"
 
 if [ $DBG_BUILD -eq 1 ]
-    then
+then
     ## Ask if we should rebuild or1ksim##
     echo "Rebuild $SIM_VER ?"
     echo "[y/N]:"
     read YN
     ## $YN will be zero length string if user just pressed enter ##
     if [ -z $YN ]
-	then
+    then
 	BUILD_THIS="n" # default is no
     else
 	BUILD_THIS=$(echo $YN | tr [:upper:] [:lower:])
     fi
 
     if [ $BUILD_THIS = "y" ]
-	then
+    then
 	## Clean previous or1ksim directories ##
 	rm -rf $BUILD_TOP/$SIM_VER
     fi
@@ -1200,7 +1206,7 @@ fi
 
 ##########################Simulator build#########################
 if [ $BUILD_THIS = "y" ]
-    then
+then
     
     echo
     echo "############################## Building or1ksim ################################"
@@ -1236,7 +1242,7 @@ if [ $BUILD_THIS = "y" ]
     fi
     echo "ln -s $INSTALL_DIR/$SIM_VER $INSTALL_DIR/or1ksim"    
     ln -s $INSTALL_DIR/$SIM_VER $INSTALL_DIR/or1ksim
-            
+    
     cd $BUILD_TOP
 fi
 ##########################Finish Simulator build#########################
@@ -1249,7 +1255,7 @@ echo "[y/N]:"
 read SI
 
 if [ -z $SI ]
-    then
+then
     SVAL="n" ## Default is no ##
 else
     SVAL=$(echo $SI | tr [:upper:] [:lower:])
@@ -1262,13 +1268,13 @@ if [ $SVAL = "y" ];then
 
 
     if [ $? -eq 0 ]
-	then
+    then
 	# Xterm exists, check if the $DISPLAY variable is set
 	# Get the display variable
 	DISPLAY=`printenv DISPLAY`
 	echo "DISPLAY variable is set to $DISPLAY"
 	if [ -n $DISPLAY ]
-	    then
+	then
 	    ## It appears display is set, let's set the or1ksim_linux.cfg file to use an xterm instead of telnet ##
 	    cd $LINUX_VER
 	    ## Rename the original script, adding .orig to the end ##
