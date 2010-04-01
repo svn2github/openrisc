@@ -86,6 +86,7 @@
 # 110310 - Moved or1ksim to its own directory in the chosen install directory
 # 140310 - Fixed problem with mkdir command
 # 140310 - Fixed ncurses header checking
+# 010410 - Fixed ncurses header checking on Cygwin (added -I path to gcc cmd)
 
 # TODO: OS X build things - need an "elf.h" from some Linux machine's 
 #       /usr/local/include dir and put in Mac's /usr/local/include dir - 
@@ -147,7 +148,7 @@ header_check() {
     # Compile a simple program, including the header we're checking for
     echo "#include <$1.h>" > header_check.c
     echo "int main () { return 0; }" >> header_check.c
-    gcc header_check.c
+    gcc header_check.c -I/usr/include/$1
 }
 
 check_essential_build_tools()
