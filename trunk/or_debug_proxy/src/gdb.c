@@ -436,10 +436,12 @@ handle_rsp (void)
 	if ((TARGET_SIGNAL_TRAP == rsp.sigval) && (NULL != mp_hash_lookup (BP_MEMORY, temp_uint32)))
 	  {
 	    if (stallState != STALLED)
-	      // This is a quick fix for a strange situation seen in some of the simulators where
-	      // the sw bp would be detected, but the stalled state variable wasn't updated correctly
-	      // indicating that last time it checked, it wasn't set but the processor has now hit the
-	      // breakpoint. So run rsp_check_for_exception() to bring everything up to date.
+	      // This is a quick fix for a strange situation seen in some of 
+	      // the simulators where the sw bp would be detected, but the 
+	      // stalled state variable wasn't updated correctly indicating 
+	      // that last time it checked, it wasn't set but the processor 
+	      // had hit the breakpoint. So run rsp_check_for_exception() to 
+	      // bring everything up to date.
 	      rsp_check_for_exception();
 	    
 	    if(DEBUG_GDB) printf("Software breakpoint hit at 0x%08x. Rolling back NPC to this instruction\n", temp_uint32);
@@ -742,20 +744,18 @@ rsp_get_client (void)
 #else
   /* Otherwise, use the old way of doing it */
   flags = 1;
-  ioctl(fd, FIOBIO, &flags);
+  ioctl(rsp.client_fd, FIOBIO, &flags);
 #endif
 
+  /* Set socket to be non-blocking.
 
-
-  /* Set socket to be non-blocking */
-
-  /* We do this because when we're given a continue, or step
-     instruction,command we set the processor stall off, then instnatly check
+     We do this because when we're given a continue, or step
+     instruction,command we set the processor stall off, then instantly check
      if it's stopped. If it hasn't then we drop through and wait for input
      from GDB. Obviously this will cause problems when it will stop after we
-     do the check. So now, rsp_peek() has been implemented to simply check if
-     there's an incoming command from GDB (only interested in interrupt
-     commands), otherwise it returns back to and poll the processor's PPC and
+     do the check. So now, rsp_peek() been implemented to simply check if
+     there's an incoming command from GDB (although, mainly interested in 
+     int. commands), otherwise it returns back to poll the processor's
      stall bit. It can only do this if the socket is non-blocking.
 
      At first test, simply adding this line appeared to give no problems with
@@ -764,6 +764,7 @@ rsp_get_client (void)
      back a EWOULDBLOCK error, as was looked to be the case in the previous
      GDB handling code) -- Julius
   */
+
   if (ioctl(rsp.client_fd, FIONBIO, (char *)&optval) > 0 )
     {
       perror("ioctl() failed");
@@ -3672,9 +3673,9 @@ static void
 reset_or1k (void)
 {
   
-  err = dbg_cpu0_write_ctrl(0, 0x02);  /* reset or1k */
+  //err = dbg_cpu0_write_ctrl(0, 0x02);  /* reset or1k */
   
-  if(err > 0 && DEBUG_GDB)printf("Error %d in reset_or1k()\n", err);
+  //if(err > 0 && DEBUG_GDB)printf("Error %d in reset_or1k()\n", err);
 
 }	/* reset_or1k () */
 

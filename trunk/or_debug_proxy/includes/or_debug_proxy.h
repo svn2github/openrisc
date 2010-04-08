@@ -61,7 +61,7 @@
 
 // This one is defined sometimes in the makefile, so check first
 #ifndef DEBUG_GDB
-#define DEBUG_GDB 0  // GDB RSP Debugging output enabled
+#define DEBUG_GDB 0 // GDB RSP Debugging output enabled
 #endif
 
 #ifndef DEBUG_GDB_DUMP_DATA

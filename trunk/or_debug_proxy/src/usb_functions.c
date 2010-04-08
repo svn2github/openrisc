@@ -54,6 +54,7 @@
 // Date		Version	Description
 //------------------------------------------------------------------------
 // 081101		First revision           			jb
+// 100408		Fixed up retries                                jb
 
 #include <assert.h>
 #include <stdio.h>
@@ -88,6 +89,9 @@ DWORD dwNumBytesReturned = 0;
 
 /* Crc of current read or written data.  */
 uint32_t crc_r, crc_w = 0;
+
+/* Number of retries for a command */
+uint32_t retries;
 
 /* Generates new crc, sending in new bit input_bit */
 uint32_t crc_calc(uint32_t crc, uint32_t input_bit) {
@@ -519,7 +523,7 @@ int usb_dbg_command(uint32_t type, uint32_t adr, uint32_t len) {
   FTC_STATUS Status = FTC_SUCCESS;
   WriteDataByteBuffer WriteDataBuffer;
   ReadDataByteBuffer ReadDataBuffer;
-
+  retries = 0;
  try_again:
   usb_dbg_set_chain(dbg_chain);
   if (DEBUG_CMDS) printf("\n");
@@ -612,16 +616,16 @@ int usb_dbg_command(uint32_t type, uint32_t adr, uint32_t len) {
   
   //printf("%x %x %x\n", status, crc_read, crc_generated);
   /* CRCs must match, otherwise retry */
-  uint32_t tries = 0;
+  //uint32_t tries = 0;
   if (crc_read != crc_generated) {
-    tries++;
-    if (tries < 2)
+    retries++;
+    if (retries < 2)
       {
 	if (DEBUG_USB_DRVR_FUNCS)
 	  printf("usb_functions - usb_dbg_command - CRC fail. Going again\n");
 	goto try_again;
       }
-    else if (tries < 8)
+    else if (retries < 8)
       {
 	reset_tap();
 	goto try_again;
@@ -629,15 +633,14 @@ int usb_dbg_command(uint32_t type, uint32_t adr, uint32_t len) {
     else return DBG_ERR_CRC;
   }
   /* we should read expected status value, otherwise retry */
-  tries = 0;
   if (status != 0) {
-    if (tries < 2)
+    if (retries < 2)
       {
 	if (DEBUG_USB_DRVR_FUNCS)
 	  printf("usb_functions - usb_dbg_command - bad status (%d). Going again\n",status);
 	goto try_again;
       }
-    else if (tries < 8)
+    else if (retries < 8)
       {
 	reset_tap();
 	goto try_again;
@@ -659,7 +662,7 @@ int usb_dbg_ctrl(uint32_t reset, uint32_t stall) {
   FTC_STATUS Status = FTC_SUCCESS;
   WriteDataByteBuffer WriteDataBuffer;
   ReadDataByteBuffer ReadDataBuffer;
-
+  retries = 0;
 try_again:
   usb_dbg_set_chain(dbg_chain);
 	if (DEBUG_CMDS) printf("\n");
@@ -739,16 +742,15 @@ try_again:
 	
 	/* CRCs must match, otherwise retry */
 	//printf("%x %x %x\n", status, crc_read, crc_generated);
-	uint32_t tries = 0;
 	  if (crc_read != crc_generated) {
-	  tries++;
-	  if (tries < 2)
+	  retries++;
+	  if (retries < 2)
 	    {
 	      if (DEBUG_USB_DRVR_FUNCS)
 		printf("usb_functions - usb_dbg_ctrl - CRC fail. Going again\n");
 	      goto try_again;
 	    }
-	  else if (tries < 8)
+	  else if (retries < 8)
 	    {
 	      reset_tap();
 	      goto try_again;
@@ -756,15 +758,15 @@ try_again:
 	  else return DBG_ERR_CRC;
 	}
 	/* we should read expected status value, otherwise retry */
-	tries = 0;
+	retries = 0;
 	if (status != 0) {
-	  if (tries < 2)
+	  if (retries < 2)
 	    {
 	      if (DEBUG_USB_DRVR_FUNCS)
 		printf("usb_functions - usb_dbg_ctrl - bad status (%d). Going again\n",status);
 	      goto try_again;
 	    }
-	  else if (tries < 8)
+	  else if (retries < 8)
 	    {
 	      reset_tap();
 	      goto try_again;
@@ -787,8 +789,8 @@ int usb_dbg_ctrl_read(uint32_t *reset, uint32_t *stall) {
   FTC_STATUS Status = FTC_SUCCESS;
   WriteDataByteBuffer WriteDataBuffer;
   ReadDataByteBuffer ReadDataBuffer;
-
-
+  retries = 0;
+  
  try_again:
   usb_dbg_set_chain(dbg_chain);
   if (DEBUG_CMDS) printf("\n");
@@ -877,32 +879,31 @@ int usb_dbg_ctrl_read(uint32_t *reset, uint32_t *stall) {
     
   /* CRCs must match, otherwise retry */
   //printf("%x %x %x\n", status, crc_generated, crc_read);
-  uint32_t tries = 0;
   if (crc_read != crc_generated) {
-    tries++;
-    if (tries < 2)
+    retries++;
+    if (retries < 2)
       {
 	if (DEBUG_USB_DRVR_FUNCS)
 	  printf("usb_functions - usb_dbg_ctrl_read - CRC fail. Going again\n");
 	goto try_again;
       }
-    else if (tries < 8)
+    else if (retries < 8)
       {
 	reset_tap();
 	goto try_again;
       }
     else return DBG_ERR_CRC;
-	}
+  }
   /* we should read expected status value, otherwise retry */
-  tries = 0;
+  retries = 0;
   if (status != 0) {
-    if (tries < 2)
+    if (retries < 2)
       {
 	if (DEBUG_USB_DRVR_FUNCS)
 	  printf("usb_functions - usb_dbg_ctrl_read - bad status (%d). Going again\n",status);
 	goto try_again;
       }
-    else if (tries < 8)
+    else if (retries < 8)
       {
 	reset_tap();
 	goto try_again;
@@ -921,9 +922,8 @@ int usb_dbg_ctrl_read(uint32_t *reset, uint32_t *stall) {
 int usb_dbg_go(unsigned char *data, uint16_t len, uint32_t read) {
 	uint32_t status, crc_generated, crc_read;
         int i,j;
-	int tries = 0;
 	uint8_t data_byte;
-
+	retries = 0;
 	// JTAG driver things
 	FTC_STATUS Status = FTC_SUCCESS;
 	WriteDataByteBuffer WriteDataBuffer;
@@ -1077,10 +1077,10 @@ int usb_dbg_go(unsigned char *data, uint16_t len, uint32_t read) {
 	//printf("%x %x %x\n", status, crc_read, crc_generated);
 	
 	if (crc_read != crc_generated) {
-	  tries++;
-	  if (tries < 8)
+	  retries++;
+	  if (retries < 8)
 	    {
-	      if (DEBUG_USB_DRVR_FUNCS) printf("usb_functions - usb_dbg_go - CRC fail (%d) try %d. Going again\n",status, tries);
+	      if (DEBUG_USB_DRVR_FUNCS) printf("usb_functions - usb_dbg_go - CRC fail (%d) try %d. Going again\n",status, retries);
 	      reset_tap() ;	      
 	      goto try_again;
 	    }
@@ -1090,10 +1090,10 @@ int usb_dbg_go(unsigned char *data, uint16_t len, uint32_t read) {
 	//tries = 0;
 	/* we should read expected status value, otherwise retry */
 	if (status != 0) {
-	  tries++;
-	  if (tries < 8)
+	  retries++;
+	  if (retries < 8)
 	    {
-	      if (DEBUG_USB_DRVR_FUNCS) printf("usb_functions - usb_dbg_go - bad status (%d) try %d. Going again\n",status, tries);
+	      if (DEBUG_USB_DRVR_FUNCS) printf("usb_functions - usb_dbg_go - bad status (%d) try %d. Going again\n",status, retries);
 	      reset_tap();
 	      goto try_again;
 	      
