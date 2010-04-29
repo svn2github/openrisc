@@ -1106,6 +1106,16 @@ int usb_dbg_go(unsigned char *data, uint16_t len, uint32_t read) {
 	return DBG_ERR_OK;
 }
 
+
+/* read a word from wishbone */
+int usb_dbg_wb_read8(uint32_t adr, uint8_t *data) {
+  if ((err = usb_dbg_set_chain(DC_WISHBONE))) return err;
+  if ((err = usb_dbg_command(DBG_WB_READ8, adr, 1))) return err;
+  if ((err = usb_dbg_go((unsigned char*)data, 1, 1))) return err;
+  //*data = ntohl(*data);
+  return err;
+}
+
 /* read a word from wishbone */
 int usb_dbg_wb_read32(uint32_t adr, uint32_t *data) {
   // uint32_t err;
@@ -1116,7 +1126,7 @@ int usb_dbg_wb_read32(uint32_t adr, uint32_t *data) {
   return err;
 }
 
-/* write a word to wishbone */
+/* write a byte to wishbone */
 int usb_dbg_wb_write8(uint32_t adr, uint8_t data) {
   if ((err = usb_dbg_set_chain(DC_WISHBONE))) return err;
   if ((err = usb_dbg_command(DBG_WB_WRITE8, adr, 1))) return err;

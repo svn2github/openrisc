@@ -346,6 +346,7 @@ static void gdb_ensure_or1k_stalled();
 static int gdb_set_chain(int chain);
 static int gdb_write_byte(uint32_t adr, uint8_t data);
 static int gdb_write_reg(uint32_t adr, uint32_t data);
+static int gdb_read_byte(uint32_t adr, uint8_t *data);
 static int gdb_read_reg(uint32_t adr, uint32_t *data);
 static int gdb_write_block(uint32_t adr, uint32_t *data, int len);
 static int gdb_read_block(uint32_t adr, uint32_t *data, int len);
@@ -2185,6 +2186,7 @@ static void rsp_read_mem (struct rsp_buf *p_buf)
   int len_cpy;
   /* Couple of temps we might need when doing aligning/leftover accesses */
   uint32_t tmp_word;
+  uint8_t tmp_byte;
   char *tmp_word_ptr = (char*) &tmp_word;
   
 
@@ -2224,50 +2226,28 @@ static void rsp_read_mem (struct rsp_buf *p_buf)
   len_cpy = len;
   rec_buf_ptr = rec_buf; // Need to save a copy of pointer
   
-  if (addr & 0x3)  // address not aligned at the start
+  if (addr & 0x3) // address not word-aligned, do byte accesses first
     {
-      // Have to read from the word-aligned address first and fetch the bytes
-      // we need.
-      if (DEBUG_GDB) 
-	printf("rsp_read_mem: unaligned address read - reading before bytes\n",
-	       err);      
+
       int num_bytes_to_align = bytes_per_word - (addr & 0x3);
-      uint32_t aligned_addr = addr & ~0x3;
 
-      if (DEBUG_GDB) 
-	printf("rsp_read_mem: reading first %d of %d overall, from 0x%.8x\n", 
-	       num_bytes_to_align, len_cpy, aligned_addr);
-
-      err = gdb_read_reg(aligned_addr, &tmp_word);
-
-      if (DEBUG_GDB) printf("rsp_read_mem: first word 0x%.8x\n", tmp_word);
-
-      if(err){
-	put_str_packet ("E01");
-	return;
-      }
+      int bytes_to_read = (num_bytes_to_align >= len_cpy) ?  
+	len_cpy : num_bytes_to_align;
       
-      // Pack these bytes in first
-      if (num_bytes_to_align > len_cpy) num_bytes_to_align = len_cpy;
-      
-      // Data returns back in big endian format.
-      if (DEBUG_GDB_BLOCK_DATA)printf("rsp_read_mem: packing first bytes ");
-      i=addr&0x3; int buf_ctr = 0;
-      while (buf_ctr < num_bytes_to_align)
+      for (i=0;i<bytes_to_read;i++)
 	{
-	  rec_buf_ptr[buf_ctr] = tmp_word_ptr[i];
-	  if (DEBUG_GDB_BLOCK_DATA)printf("i=%d=0x%x, ", i,
-					  tmp_word_ptr[bytes_per_word-1-i]);
-	  i++;
-	  buf_ctr++;
-	}
-      
-      if (DEBUG_GDB_BLOCK_DATA)printf("\n");
+	  err = gdb_read_byte(addr++, (uint8_t*) &rec_buf[i]);
+	  if(err){
+	    put_str_packet ("E01");
+	    return;
+	  }
+      	}
       
       // Adjust our status
-      len_cpy -= num_bytes_to_align; addr += num_bytes_to_align; 
+      len_cpy -= bytes_to_read; 
       rec_buf_ptr += num_bytes_to_align;
     }
+  
   if (len_cpy/bytes_per_word) // Now perform all full word accesses
     {
       int words_to_read = len_cpy/bytes_per_word; // Full words to read
@@ -2289,26 +2269,16 @@ static void rsp_read_mem (struct rsp_buf *p_buf)
     }
   if (len_cpy) // Leftover bytes
     {
-      if (DEBUG_GDB) 
-	printf("rsp_read_mem: reading %d left-over bytes from 0x%.8x\n", 
-	       len_cpy, addr);      
+      for (i=0;i<len_cpy;i++)
+	{
+	  err = gdb_read_byte(addr++, (uint8_t*) &rec_buf_ptr[i]);
+	  if(err){
+	    put_str_packet ("E01");
+	    return;
+	  }
+      	}
       
-      err = gdb_read_reg(addr, &tmp_word);
-      
-      // Big endian - top byte first!
-      for(i=0;i<len_cpy;i++) 
-	rec_buf_ptr[i] = tmp_word_ptr[i];
-
     }
-  
-  if (DEBUG_GDB) 
-    printf("rsp_read_mem: err: %d\n",err);
-
-
-  if(err){
-    put_str_packet ("E01");
-    return;
-  }
 
   /* Refill the buffer with the reply */
   for( off = 0 ; off < len ; off ++ ) {
@@ -3519,6 +3489,20 @@ int gdb_write_byte(uint32_t adr, uint8_t data) {
   default:            return JTAG_PROXY_INVALID_CHAIN;
   }
 }
+int gdb_read_byte(uint32_t adr, uint8_t *data) {
+
+#ifdef OR32_KERNEL_DBG_COMPAT
+  if (IS_VM_ADDR(adr))
+    adr = adr & ~OR32_LINUX_VM_MASK;
+#endif
+  
+  switch (gdb_chain) {
+  case SC_WISHBONE:   return dbg_wb_read8(adr, data) ? ERR_CRC : ERR_NONE;
+  case SC_TRACE:      *data = 0; return 0;
+  default:            return JTAG_PROXY_INVALID_CHAIN;
+  }
+}
+
 
 int gdb_write_reg(uint32_t adr, uint32_t data) {
 

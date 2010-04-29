@@ -132,6 +132,8 @@ int dbg_set_tap_ir(uint32_t ir);
 int dbg_set_chain(uint32_t chain);
 /* read a byte from wishbone */
 int dbg_wb_write8(uint32_t adr, uint8_t data);
+/* read a byte from wishbone */
+int dbg_wb_read8(uint32_t adr, uint8_t *data);
 /* read a word from wishbone */
 int dbg_wb_read32(uint32_t adr, uint32_t *data);
 /* write a word to wishbone */

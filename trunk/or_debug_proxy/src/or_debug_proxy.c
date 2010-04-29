@@ -286,6 +286,18 @@ int dbg_go(unsigned char *data, uint16_t len, uint32_t read) {
   return DBG_ERR_INVALID_ENDPOINT;
 }
 
+/* read a byte from wishbone */
+int dbg_wb_read8(uint32_t adr, uint8_t *data) {
+#ifdef USB_ENDPOINT_ENABLED
+  if (endpoint_target == ENDPOINT_TARGET_USB) return usb_dbg_wb_read8(adr, data);
+#endif
+#ifdef VPI_ENDPOINT_ENABLED
+  if (endpoint_target == ENDPOINT_TARGET_VPI) return vpi_dbg_wb_read32(adr, data);
+#endif
+  return DBG_ERR_INVALID_ENDPOINT;
+}
+
+
 /* read a word from wishbone */
 int dbg_wb_read32(uint32_t adr, uint32_t *data) {
 #ifdef USB_ENDPOINT_ENABLED

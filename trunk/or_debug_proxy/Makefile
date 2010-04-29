@@ -54,7 +54,7 @@
 
 # Common Flags
 COMMON_CPPFLAGS = -I./includes
-COMMON_CXXFLAGS = -O2
+COMMON_CXXFLAGS = -O3
 COMMON_LDFLAGS  = 
 
 # Flags for static library
