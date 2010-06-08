@@ -1926,7 +1926,8 @@ rsp_continue (struct rsp_buf *p_buf)
 static void
 rsp_continue_with_signal (struct rsp_buf *p_buf)
 {
-  printf ("RSP continue with signal '%s' received\n", p_buf->data);
+  printf ("RSP continue with signal '%s' received, signal ignored\n", p_buf->data);
+  rsp_continue (p_buf);
 
 }	/* rsp_continue_with_signal () */
 
