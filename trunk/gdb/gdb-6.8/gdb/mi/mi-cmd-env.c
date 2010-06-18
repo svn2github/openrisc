@@ -64,9 +64,13 @@ env_execute_cli_command (const char *cmd, const char *args)
 
 
 /* Print working directory.  */
+/* JPB: Some picky Ubuntu GCC compilers don't like the result of getcwd being
+   ignored (even if you cast it to void). So capture the value and ignore
+   THAT. */
 enum mi_cmd_result
 mi_cmd_env_pwd (char *command, char **argv, int argc)
 {
+  char *res;			/* For getcwd result */
   if (argc > 0)
     error (_("mi_cmd_env_pwd: No arguments required"));
           
@@ -78,7 +82,7 @@ mi_cmd_env_pwd (char *command, char **argv, int argc)
      
   /* Otherwise the mi level is 2 or higher.  */
 
-  getcwd (gdb_dirbuf, sizeof (gdb_dirbuf));
+  res = getcwd (gdb_dirbuf, sizeof (gdb_dirbuf));	/* JPB */
   ui_out_field_string (uiout, "cwd", gdb_dirbuf);
 
   return MI_CMD_DONE;

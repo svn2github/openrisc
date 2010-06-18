@@ -315,12 +315,17 @@ quit_command (char *args, int from_tty)
   quit_force (args, from_tty);
 }
 
+
+/* JPB: Some picky Ubuntu GCC compilers don't like the result of getcwd being
+   ignored (even if you cast it to void). So capture the value and ignore
+   THAT. */
 static void
 pwd_command (char *args, int from_tty)
 {
+  char *res;			/* For getcwd result */
   if (args)
     error (_("The \"pwd\" command does not take an argument: %s"), args);
-  getcwd (gdb_dirbuf, sizeof (gdb_dirbuf));
+  res = getcwd (gdb_dirbuf, sizeof (gdb_dirbuf));
 
   if (strcmp (gdb_dirbuf, current_directory) != 0)
     printf_unfiltered (_("Working directory %s\n (canonically %s).\n"),

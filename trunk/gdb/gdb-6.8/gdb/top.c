@@ -1620,15 +1620,19 @@ Use \"on\" to enable the notification, and \"off\" to disable it."),
 			   &setlist, &showlist);
 }
 
+/* JPB: Some picky Ubuntu GCC compilers don't like the result of getcwd being
+   ignored (even if you cast it to void). So capture the value and ignore
+   THAT. */
 void
 gdb_init (char *argv0)
 {
+  char *res;			/* For getcwd result */
   if (pre_init_ui_hook)
     pre_init_ui_hook ();
 
   /* Run the init function of each source file */
 
-  getcwd (gdb_dirbuf, sizeof (gdb_dirbuf));
+  res = getcwd (gdb_dirbuf, sizeof (gdb_dirbuf));	/* JPB */
   current_directory = gdb_dirbuf;
 
 #ifdef __MSDOS__

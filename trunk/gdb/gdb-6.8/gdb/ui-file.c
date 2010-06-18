@@ -474,14 +474,18 @@ stdio_file_read (struct ui_file *file, char *buf, long length_buf)
   return read (fileno (stdio->file), buf, length_buf);
 }
 
+/* JPB: Some picky Ubuntu GCC compilers don't like the result of fwrite being
+   ignored (even if you cast it to void). So capture the value and ignore
+   THAT. */
 static void
 stdio_file_write (struct ui_file *file, const char *buf, long length_buf)
 {
+  int  res;			/* For fwrite result */
   struct stdio_file *stdio = ui_file_data (file);
   if (stdio->magic != &stdio_file_magic)
     internal_error (__FILE__, __LINE__,
 		    _("stdio_file_write: bad magic number"));
-  fwrite (buf, length_buf, 1, stdio->file);
+  res = fwrite (buf, length_buf, 1, stdio->file);
 }
 
 static void

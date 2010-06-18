@@ -301,7 +301,9 @@ jp1_ll_crc_calc (int  crc,
 /*----------------------------------------------------------------------------*/
 /*!Resets the local JTAG via JP1
 
-   Only works if this is a local connection
+   Only works if this is a local connection. The old code used to ignore the
+   write function results, but that upsets some particularly picky Ubuntu GCC
+   compilers, so we get the result and do nothing with it.
 
    Writes:
    @verbatim
@@ -317,6 +319,7 @@ jp1_ll_reset_jp1()
 {
   unsigned char  data;
   int            lp = or1k_jtag_connection.device.lp;         /* CZ */
+  ssize_t        res;			/* So don't ignore results */
 
   if (OR1K_JTAG_LOCAL != or1k_jtag_connection.location)
     {
@@ -324,11 +327,11 @@ jp1_ll_reset_jp1()
     }
 
   data = 0;
-  write (lp, &data, sizeof (data));
+  res  = write (lp, &data, sizeof (data));
   JP1_WAIT ();
 
   data = JP1_TRST;
-  write (lp, &data, sizeof (data) );
+  res = write (lp, &data, sizeof (data) );
   JP1_WAIT ();
 
 }	/* jp1_ll_reset_jp1() */
@@ -359,7 +362,7 @@ jp1_ll_reset_jp1()
 static unsigned char
 jp1_ll_read_jp1()
 {
-  int data = 0;				/* Initialize to keep GCC 4.4.1 OK */
+  int data;
 
   if (OR1K_JTAG_LOCAL != or1k_jtag_connection.location)
     {   /* CZ */
@@ -384,6 +387,10 @@ jp1_ll_read_jp1()
    Rewritten by Jeremy Bennett to work whatever the TMS and TDI bit positions
    in JP1.
 
+   The old code used to ignore the write function results, but that upsets
+   some particularly picky Ubuntu GCC compilers, so we get the result and do
+   nothing with it.
+
    Writes:
    @verbatim
      TCK=0 TRST=1 TMS=tms TDI=tdi
@@ -400,6 +407,7 @@ jp1_ll_write_jp1 (unsigned char  tms,
 {
   unsigned char  data;
   int            lp = or1k_jtag_connection.device.lp;    /* CZ */
+  ssize_t        res;			/* So don't ignore results */
 
   if (OR1K_JTAG_LOCAL != or1k_jtag_connection.location)
     {
@@ -409,12 +417,12 @@ jp1_ll_write_jp1 (unsigned char  tms,
   data = (tms ? JP1_TDI : 0) |
          (tdi ? JP1_TMS : 0) |
           JP1_TRST;
-  write (lp, &data, sizeof (data) );
+  res = write (lp, &data, sizeof (data) );
   JP1_WAIT ();
  
   /* rise clock */
   data |= JP1_TCK;
-  write (lp, &data, sizeof (data) );
+  res = write (lp, &data, sizeof (data) );
   JP1_WAIT ();
 
   /* Update the CRC for this TDI bit */

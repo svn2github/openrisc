@@ -113,9 +113,14 @@ captured_command_loop (void *data)
   return 1;
 }
 
+/* JPB: Some picky Ubuntu GCC compilers don't like the result of getcwd being
+   ignored (even if you cast it to void). So capture the value and ignore
+   THAT. */
 static int
 captured_main (void *data)
 {
+  char *res;			/* For getcwd result */
+
   struct captured_main_args *context = data;
   int argc = context->argc;
   char **argv = context->argv;
@@ -188,7 +193,7 @@ captured_main (void *data)
   line[0] = '\0';		/* Terminate saved (now empty) cmd line */
   instream = stdin;
 
-  getcwd (gdb_dirbuf, sizeof (gdb_dirbuf));
+  res = getcwd (gdb_dirbuf, sizeof (gdb_dirbuf));	/* JPB */
   current_directory = gdb_dirbuf;
 
   gdb_stdout = stdio_fileopen (stdout);

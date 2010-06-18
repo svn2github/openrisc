@@ -680,11 +680,15 @@ struct internal_problem
 /* Report a problem, internal to GDB, to the user.  Once the problem
    has been reported, and assuming GDB didn't quit, the caller can
    either allow execution to resume or throw an error.  */
+/* JPB: Some picky Ubuntu GCC compilers don't like the result of write being
+   ignored (even if you cast it to void). So capture the value and ignore
+   THAT. */
 
 static void ATTR_FORMAT (printf, 4, 0)
 internal_vproblem (struct internal_problem *problem,
 		   const char *file, int line, const char *fmt, va_list ap)
 {
+  int  res;			/* For write result */
   static int dejavu;
   int quit_p;
   int dump_core_p;
@@ -704,7 +708,7 @@ internal_vproblem (struct internal_problem *problem,
 	abort ();	/* NOTE: GDB has only three calls to abort().  */
       default:
 	dejavu = 3;
-	write (STDERR_FILENO, msg, sizeof (msg));
+	res = write (STDERR_FILENO, msg, sizeof (msg));
 	exit (1);
       }
   }

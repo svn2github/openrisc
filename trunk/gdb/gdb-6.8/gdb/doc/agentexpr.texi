@@ -12,8 +12,6 @@
 @c
 @c See the file gdb.texinfo for copying conditions.
 
-@c Revision: $Id$
-
 @node Agent Expressions
 @appendix The GDB Agent Expression Mechanism
 

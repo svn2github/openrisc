@@ -3,7 +3,6 @@
  ******************************************************************************
  *
  * COPYRIGHT (C) by EMC Corporation, 1997 All rights reserved.
- * $Id$
  * DESCRIPTION: This module has been provided for the purpose of testing GDB.
  *
  * NOTES:

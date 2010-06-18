@@ -509,9 +509,13 @@ new_tty_prefork (const char *ttyname)
   inferior_thisrun_terminal = ttyname;
 }
 
+/* JPB: Some picky Ubuntu GCC compilers don't like the result of dup being
+   ignored (even if you cast it to void). So capture the value and ignore
+   THAT. */
 void
 new_tty (void)
 {
+  int  res;			/* For dup result */
   int tty;
 
   if (inferior_thisrun_terminal == 0)
@@ -545,17 +549,17 @@ new_tty (void)
   if (tty != 0)
     {
       close (0);
-      dup (tty);
+      res = dup (tty);
     }
   if (tty != 1)
     {
       close (1);
-      dup (tty);
+      res = dup (tty);
     }
   if (tty != 2)
     {
       close (2);
-      dup (tty);
+      res = dup (tty);
     }
   if (tty > 2)
     close (tty);
