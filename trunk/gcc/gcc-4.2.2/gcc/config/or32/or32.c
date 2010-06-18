@@ -962,8 +962,16 @@ or32_expand_branch (enum rtx_code code, rtx label)
 				  pc_rtx);
       emit_jump_insn (gen_rtx_SET (VOIDmode, pc_rtx, tmp));
       return;
-
-
+      
+    case SFmode:
+      tmp = or32_expand_compare (code, or32_compare_op0, or32_compare_op1);
+      tmp = gen_rtx_IF_THEN_ELSE (VOIDmode,
+				  tmp,
+				  gen_rtx_LABEL_REF (VOIDmode, label),
+				  pc_rtx);
+      emit_jump_insn (gen_rtx_SET (VOIDmode, pc_rtx, tmp));
+      return;
+      
     default:
       abort ();
     }

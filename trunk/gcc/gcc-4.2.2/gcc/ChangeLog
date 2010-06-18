@@ -1,3 +1,25 @@
+2010-06-17  Jungsook yang  <jungsook.yang@uci.edu>
+
+	* config/or32/or32.c (or32_expand_branch): Added SFmode case.
+	* config/or32/or32.md <define_expand "*cmpsf">: Added.
+	<define_expand "*cmpsf_eq">: Added.
+	<define_expand "*cmpsf_ne">: Added.
+	<define_expand "*cmpsf_gt">: Added.
+	<define_expand "*cmpsf_ge">: Added.
+	<define_expand "*cmpsf_lt">: Added.
+	<define_expand "*cmpsf_le">: Added.
+	<define_insn "movdf">: Added.
+	<define_insn "movsf">: Added.
+	<define_insn "adddf3">: Added TARGET_DOUBLE_FLOAT.
+	<define_insn "subdf3">: Added TARGET_DOUBLE_FLOAT.
+	<define_insn "muldf3">: Added TARGET_DOUBLE_FLOAT.
+	<define_insn "divdf3">: Added TARGET_DOUBLE_FLOAT.
+	<define_insn "floatsisf2">: Added.
+	<define_insn "fixunssfsi2">: Added.
+	<define_insn "movdf">: Added.
+	<define_insn "movsf">: Added.
+	* config/or32/or32.opt: mdouble-float option added.
+
 2007-10-07  Release Manager
 
 	* GCC 4.2.2 released.
@@ -54,11 +76,11 @@
 	to a subvariable.
 
 2007-09-10  Bob Wilson  <bob.wilson@acm.org>
-	
+
 	* config/xtensa/xtensa.c (xtensa_output_literal): Mask out high bits
 	for floating-point values if HOST_BITS_PER_LONG > 32.  Use
 	split_double instead of operand_subword.
-	
+
 2007-09-10  Bob Wilson  <bob.wilson@acm.org>
 
 	* config/xtensa/xtensa.md (adddi3, adddi_carry): Delete.
@@ -825,9 +847,9 @@
 	* config/score/predicate.md (const_pow2, const_npow2): remove.
 	* config/score/score.h (ASM_OUTPUT_EXTERNAL): add ASM_OUTPUT_EXTERNAL undef.
 	PR target/30474
-	* config/score/score.c (score_print_operand): makes sure that only lower 
+	* config/score/score.c (score_print_operand): makes sure that only lower
 	bits are used.
-	
+
 2007-05-21  Uros Bizjak  <ubizjak@gmail.com>
 
 	PR target/31167
