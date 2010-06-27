@@ -87,6 +87,7 @@
 # 140310 - Fixed problem with mkdir command
 # 140310 - Fixed ncurses header checking
 # 010410 - Fixed ncurses header checking on Cygwin (added -I path to gcc cmd)
+# 270610 - Updated or1ksim version to 0.4.0
 
 # TODO: OS X build things - need an "elf.h" from some Linux machine's 
 #       /usr/local/include dir and put in Mac's /usr/local/include dir - 
@@ -227,7 +228,7 @@ GDB_VER=gdb-6.8
 UCLIB_VER=uClibc-0.9.29
 LINUX_VER=linux-2.6.24
 BUSY_VER=busybox-1.7.5
-SIM_VER=or1ksim-0.3.0
+SIM_VER=or1ksim-0.4.0
 
 ## Patches ##
 BINUTILS_PATCH="$BINUTILS_VER.or32_fixed_patch-v2.1.bz2"
