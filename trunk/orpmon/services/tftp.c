@@ -10,7 +10,8 @@
 #include "tftp.h"
 #include "bootp.h"
 
-#undef	ET_DEBUG
+//#undef	ET_DEBUG
+#define ET_DEBUG
 
 #define WELL_KNOWN_PORT	69		/* Well known TFTP port #		*/
 #define TIMEOUT		2		/* Seconds to timeout for a lost pkt	*/
@@ -40,6 +41,10 @@ static int	TftpState;
 #define STATE_BAD_MAGIC	4
 
 char *tftp_filename;
+
+
+// running TFTP CRC value
+unsigned long TFTP_CHKSUM;
 
 #ifdef CFG_DIRECT_FLASH_TFTP
 extern flash_info_t flash_info[CFG_MAX_FLASH_BANKS];
@@ -86,7 +91,58 @@ store_block (unsigned block, unsigned char * src, unsigned len)
 	}
 	else
 #endif /* CFG_DIRECT_FLASH_TFTP */
+
+//#define QUICK_ETHPACKET_COPY	  
+#ifdef QUICK_ETHPACKET_COPY
+	  {
+	    unsigned char * dst = (unsigned char*)(global.src_addr + offset);
+	    //printf("quick ethpacket copy: src: 0x%x dst: 0x%x, len: %d\n",(unsigned long)src, (unsigned long)dst, len);
+	    // First, align the destination address so we can copy words
+	    // If either src or dst are not word aligned, then we will never
+	    // be able to do word copies
+	    while((len) && ((((unsigned long)dst) & 0x3) || (((unsigned long)src) & 0x3)))
+	      {
+		//		printf("bc: src: 0x%x dst: 0x%x, len: %d\n",(unsigned long)src, (unsigned long)dst, len);
+		dst[0] = src[0];
+		len--;
+		dst++;
+		src++;
+		
+	      }
+	    unsigned long *wdst, *wsrc;
+	    wdst = (unsigned long*) dst;
+	    wsrc = (unsigned long*) src;
+	    while(len >= 4)
+	      {
+		//printf("wc: src: 0x%x dst: 0x%x, len: %d\n",(unsigned long)src, (unsigned long)dst, len);
+		wdst[0] = wsrc[0];
+		wdst++; wsrc++;
+		len -= 4;
+		dst+=4;
+		src+=4;
+
+	      }
+	    while (len)
+	      {
+		//printf("cu: src: 0x%x dst: 0x%x, len: %d\n",(unsigned long)src, (unsigned long)dst, len);
+		dst[0] = src[0];
+		len--;
+		dst++;
+		src++;
+	      }
+	  }
+#else
+	
+#ifdef TFTP_CALC_CRC
+	// Call special memcpy that calculates CRC for us:
+	TFTP_CHKSUM += memcpy_crc((void *)(global.src_addr + offset), src, len);
+#else
+	// Standard memcpy:
 	(void)memcpy((void *)(global.src_addr + offset), src, len);
+#endif
+	
+
+#endif	  
 
 	if (NetBootFileXferSize < newsize)
 		NetBootFileXferSize = newsize;
@@ -104,6 +160,11 @@ TftpSend (void)
 	volatile unsigned char *	xp;
 	int			len = 0;
 
+#ifdef ET_DEBUG
+	//printf("TftpSend: %d\n", TftpState);
+#endif
+
+
 	/*
 	 *	We will always be sending some sort of packet, so
 	 *	cobble together the packet headers now.
@@ -114,25 +175,31 @@ TftpSend (void)
 
 	case STATE_RRQ:
 		xp = pkt;
-		*((unsigned short *)pkt)++ = SWAP16c(TFTP_RRQ);
+		(*((unsigned short *)pkt)) = SWAP16c(TFTP_RRQ);
+		pkt += sizeof(short);
 		strcpy ((char *)pkt, tftp_filename);
 		pkt += strlen(tftp_filename) + 1;
 		strcpy ((char *)pkt, "octet");
 		pkt += 5 /*strlen("octet")*/ + 1;
 		len = pkt - xp;
+
 		break;
 
 	case STATE_DATA:
 		xp = pkt;
-		*((unsigned short *)pkt)++ = SWAP16c(TFTP_ACK);
-		*((unsigned short *)pkt)++ = SWAP16(TftpBlock);
+		*((unsigned short *)pkt) = SWAP16c(TFTP_ACK);
+		pkt += sizeof(short);
+		*((unsigned short *)pkt) = SWAP16(TftpBlock);
+		pkt += sizeof(short);
 		len = pkt - xp;
 		break;
 
 	case STATE_TOO_LARGE:
 		xp = pkt;
-		*((unsigned short *)pkt)++ = SWAP16c(TFTP_ERROR);
-		*((unsigned short *)pkt)++ = SWAP16(3);
+		*((unsigned short *)pkt) = SWAP16c(TFTP_ERROR);
+		pkt += sizeof(short);
+		*((unsigned short *)pkt) = SWAP16(3);
+		pkt += sizeof(short);
 		strcpy ((char *)pkt, "File too large");
 		pkt += 14 /*strlen("File too large")*/ + 1;
 		len = pkt - xp;
@@ -140,8 +207,10 @@ TftpSend (void)
 
 	case STATE_BAD_MAGIC:
 		xp = pkt;
-		*((unsigned short *)pkt)++ = SWAP16c(TFTP_ERROR);
-		*((unsigned short *)pkt)++ = SWAP16(2);
+		*((unsigned short *)pkt) = SWAP16c(TFTP_ERROR);
+		pkt += sizeof(short);
+		*((unsigned short *)pkt) = SWAP16(2);
+		pkt += sizeof(short);
 		strcpy ((char *)pkt, "File has bad magic");
 		pkt += 18 /*strlen("File has bad magic")*/ + 1;
 		len = pkt - xp;
@@ -152,12 +221,16 @@ TftpSend (void)
 	NetSetIP (NetTxPacket + ETHER_HDR_SIZE, NetServerIP,
 					TftpServerPort, TftpOurPort, len);
 	NetSendPacket (NetTxPacket, ETHER_HDR_SIZE + IP_HDR_SIZE + len);
+
 }
 
 
 static void
 TftpHandler (unsigned char * pkt, unsigned dest, unsigned src, unsigned len)
 {
+#ifdef ET_DEBUG
+  //  printf("TftpHandler\n");
+#endif
 	if (dest != TftpOurPort) {
 		return;
 	}
@@ -169,16 +242,18 @@ TftpHandler (unsigned char * pkt, unsigned dest, unsigned src, unsigned len)
 		return;
 	}
 	len -= 2;
-	switch (SWAP16(*((unsigned short *)pkt)++)) {
+	switch (SWAP16(*((unsigned short *)pkt))) {
 
 	case TFTP_RRQ:
 	case TFTP_WRQ:
 	case TFTP_ACK:
+             pkt += sizeof(short);
 		break;
 	default:
 		break;
 
 	case TFTP_DATA:
+	        pkt += sizeof(short);
 		if (len < 2)
 			return;
 		len -= 2;
@@ -234,12 +309,14 @@ TftpHandler (unsigned char * pkt, unsigned dest, unsigned src, unsigned len)
 		break;
 
 	case TFTP_ERROR:
+                pkt += sizeof(short);
 		printf ("\nTFTP error: '%s' (%d)\n",
-					pkt + 2, SWAP16(*(unsigned short *)pkt));
+			pkt + 2, SWAP16(*(unsigned short *)pkt));
 		printf ("Starting again\n\n");
 		NetStartAgain ();
 		break;
 	}
+	
 }
 
 
@@ -270,6 +347,8 @@ TftpStart (void)
 		NetServerEther[5]
 	);
 #endif /* DEBUG */
+
+	TFTP_CHKSUM = 0; // Reset checksum
 
 	printf ("TFTP from server ");	print_IPaddr (NetServerIP);
 	printf ("; our IP address is ");	print_IPaddr (NetOurIP);

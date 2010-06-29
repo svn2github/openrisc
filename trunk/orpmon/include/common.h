@@ -60,6 +60,9 @@ typedef struct {
   int (*func)(int argc, char *argv[]);
 } command_struct;
 
+// Keep a CRC during TFTP receive
+#define TFTP_CALC_CRC
+
 typedef struct  {
   unsigned long eth_ip;
   unsigned long eth_mask;
@@ -80,7 +83,7 @@ extern int testc (void);
 extern int ctrlc (void);
 extern void putc (const char c);
 extern int printf (const char *fmt, ...);
-
+extern void show_mem (int start, int stop);
 extern unsigned long parse_ip (char *ip);
 
 /* simulator stdout */

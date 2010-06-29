@@ -5,9 +5,10 @@
 #include "spr_defs.h"
 #include "net.h"
 
-#if 0
+#if 1
 extern int tx_pointer_index;
 unsigned long dest_mac_addr[6];
+
 
 void show_tx_bd(int start, int max)
 {
@@ -231,8 +232,10 @@ int init_txbd_pool_cmd (int argc, char *argv[])
 
 int init_rxbd_pool_cmd (int argc, char *argv[])
 {
-  if (argc == 1) init_rx_bd_pool(strtoul (argv[0], NULL, 0));
-  else return -1;
+  //if (argc == 1) init_rx_bd_pool(strtoul (argv[0], NULL, 0));
+  //else return -1;
+  init_rx_bd_pool();
+
   return 0;
 }
 
@@ -362,9 +365,15 @@ int eth_conf_cmd(int argc, char *argv[])
   return 0;
 }
 
+void toggle_eth_traffic_monitor_cmd(void)
+{
+  eth_toggle_traffic_mon();
+}
+
+
 void module_eth_init (void)
 {
-#if 0
+#if 1
   register_command ("eth_init", "",  "init ethernet", eth_init_cmd);
   register_command ("show_txbd", "[<start BD>] [<max>]", "show Tx buffer desc", show_txbd_cmd);
   register_command ("show_rxbd", "[<start BD>] [<max>]", "show Rx buffer desc", show_rxbd_cmd);
@@ -378,6 +387,7 @@ void module_eth_init (void)
   register_command ("eth_int_enable", "", "enable ethernet interrupt", eth_int_enable_cmd);
   register_command ("show_rx_buffs", "[<show_all>]", "show receive buffers (optional arg will also show empty buffers)", show_rx_buffs_cmd);
   register_command ("show_tx_buffs", "", "show transmit buffers", show_rx_buffs_cmd);
+  register_command ("eth_toggle_mon", "", "Toggle traffic monitor", toggle_eth_traffic_monitor_cmd );
 #endif
   /* Initialize controller */
   register_command ("eth_conf", "[<ip> [<mask> [<gw>]]]", "Get/set ethernet configuration", eth_conf_cmd);

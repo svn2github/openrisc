@@ -26,7 +26,8 @@
 
 LIB	= services.o
 
-OBJS	= net.o tftp.o bootp.o rarp.o arp.o dos.o modem.o
+#OBJS	= net.o tftp.o bootp.o rarp.o arp.o dos.o modem.o
+OBJS	= net.o tftp.o bootp.o rarp.o arp.o #dos.o modem.o
 
 all:	$(LIB)
 

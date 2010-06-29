@@ -62,7 +62,7 @@ void int_main(void)
   unsigned long i = 0;
 
   mtspr(SPR_PICSR, 0);
-  //  printf ("int :%08lx\n", picsr);
+  //printf ("int :%08lx\n", picsr);
 
   while(i < 32) {
     if((picsr & (0x01L << i)) && (int_handlers[i].handler != 0)) {

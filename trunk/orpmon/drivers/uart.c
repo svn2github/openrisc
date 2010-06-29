@@ -30,7 +30,8 @@ volatile int tx_level, rx_level;
 void uart_init(void)
 {
         int divisor;
- 
+	float float_divisor;
+	
         /* Reset receiver and transmiter */
         REG8(UART_BASE + UART_FCR) = UART_FCR_ENABLE_FIFO | UART_FCR_CLEAR_RCVR | UART_FCR_CLEAR_XMIT | UART_FCR_TRIGGER_4;
  
@@ -41,7 +42,10 @@ void uart_init(void)
         REG8(UART_BASE + UART_LCR) = UART_LCR_WLEN8 & ~(UART_LCR_STOP | UART_LCR_PARITY);
  
         /* Set baud rate */
-        divisor = IN_CLK/(16 * UART_BAUD_RATE);
+	float_divisor = (float) IN_CLK/(16 * UART_BAUD_RATE);
+	float_divisor += 0.50f; // Ensure round up
+        divisor = (int) float_divisor;
+
         REG8(UART_BASE + UART_LCR) |= UART_LCR_DLAB;
         REG8(UART_BASE + UART_DLL) = divisor & 0x000000ff;
         REG8(UART_BASE + UART_DLM) = (divisor >> 8) & 0x000000ff;

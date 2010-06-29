@@ -27,11 +27,11 @@ void putc (const char c)
   case CT_UART:
     uart_putc (c);
     break;
-#ifdef CRT_ENABLED
+#if CRT_ENABLED==1
   case CT_CRT:
-#endif
     screen_putc (c);
     break;
+#endif
   case CT_SIM:
     __printf ("%c", c);
     break;
@@ -43,7 +43,7 @@ int getc ()
   int ch = 0;
   debug ("getc %i\n", bd.bi_console_type);
   switch (bd.bi_console_type) {
-#if KBD_ENABLED
+#if KBD_ENABLED==1
   case CT_CRT:
     while ((volatile int)kbd_head == (volatile int)kbd_tail);
     ch = kbd_buf[kbd_tail];
@@ -125,7 +125,7 @@ void change_console_type (enum bi_console_type_t con_type)
     uart_init ();
     break;
   case CT_CRT:
-#if CRT_ENABLED
+#if CRT_ENABLED==1
     screen_init ();
 #endif
 #if KBD_ENABLED
@@ -228,12 +228,26 @@ void mon_command(void)
 }
 
 #if HELP_ENABLED
+extern unsigned long src_addr; // Stack section ends here
 /* Displays help screen */
 int help_cmd (int argc, char *argv[])
 {
   int i;
   for (i = 0; i < num_commands; i++)
     printf ("%-10s %-20s - %s\n", command[i].name, command[i].params, command[i].help);
+
+  // Build info....
+  printf("Info: CPU@ %dMHz", IN_CLK/1000000);
+#if IC_ENABLE==1
+  printf(" IC=%dB",IC_SIZE);
+#endif
+#if DC_ENABLE==1
+  printf(" DC=%dB",DC_SIZE);
+#endif
+  printf("\n");
+  printf("Info: Stack section addr 0x%x\n",(unsigned long) &src_addr);
+  printf("Build tag: %s", BUILD_VERSION);
+
   return 0;
 }
 #endif /* HELP_ENABLED */
@@ -266,21 +280,52 @@ void mon_init (void)
   global.ip = BOARD_DEF_IP;
   global.gw_ip = BOARD_DEF_GW;
   global.mask = BOARD_DEF_MASK;
+
+#define CPU_CMDS
+#define MEM_CMDS
+#define DHRY_CMDS
+  //#define CAMERA_CMDS
+#define LOAD_CMDS
+    //#define TOUCHSCREEN_CMDS
+    //#define ATA_CMDS
+    //#define HDBUG_CMDS
+#define TICK_CMDS
+#define ETH_CMDS
+#define LOAD_CMDS
   
   /* Init modules */
+#ifdef CPU_CMDS
   module_cpu_init ();
+#endif
+#ifdef MEM_CMDS
   module_memory_init ();
+#endif
+#ifdef ETH_CMDS
   module_eth_init ();
+#endif
+#ifdef DHRY_CMDS
   module_dhry_init ();
+#endif
+#ifdef CAMERA_CMDS
   module_camera_init ();
+#endif
+#ifdef LOAD_CMDS
   module_load_init ();
+#endif
+#ifdef TOUCHSCREEN_CMDS
   module_touch_init ();
+#endif
+#ifdef ATA_CMDS
   module_ata_init ();
+#endif
+#ifdef HDBUG_CMDS
   module_hdbug_init ();
+#endif
 
   tick_init();
-}
 
+}
+int tboot_cmd (int argc, char *argv[]);
 /* Main shell loop */
 int main(int argc, char **argv)
 {
@@ -288,6 +333,7 @@ int main(int argc, char **argv)
 #if 0
   extern unsigned long mycrc32, mysize;
 #endif
+  timestamp = 0; // clear timer counter
   
   int_init ();
   change_console_type (CONSOLE_TYPE);
@@ -300,7 +346,7 @@ int main(int argc, char **argv)
   else
       printf ("OK\n");
 #endif /* SELF_CHECK */
-
+  num_commands=0;
   mon_init ();
 
   if (HELP_ENABLED) register_command ("help", "", "shows this help", help_cmd);
@@ -308,8 +354,10 @@ int main(int argc, char **argv)
 #ifdef XESS
   printf ("\nORP-XSV Monitor (type 'help' for help)\n");
 #else
-  printf ("\n" BOARD_DEF_NAME " Monitor (type 'help' for help)\n");
+  printf ("\n" BOARD_DEF_NAME " monitor (type 'help' for help)\n");
+  printf("\tbuild: %s", BUILD_VERSION);
 #endif
 
   while(1) mon_command();
+  // Run tboot in sim for now:  tboot_cmd (0,0);
 }

@@ -1,6 +1,7 @@
 
 LIB	= cmds.o
-OBJS	= dhry.o eth.o cpu.o camera.o load.o memory.o global.o touch.o atabug.o hdbug.o
+#OBJS	= dhry.o eth.o cpu.o camera.o load.o memory.o global.o touch.o atabug.o hdbug.o
+OBJS	= dhry.o eth.o cpu.o load.o memory.o global.o #camera.o touch.o atabug.o hdbug.o
 
 all:	$(LIB)
 

@@ -13,6 +13,9 @@
 #define __NET_H__
 
 
+// TFTP running checksum defined here... tftp.h not in common include/ path
+extern unsigned long TFTP_CHKSUM;
+
 /*
  *	The number of receive packet buffers, and the required packet buffer
  *	alignment in memory.
@@ -137,12 +140,12 @@ typedef struct {
  */
 typedef struct
 {
-	unsigned short		ar_hrd;		/* Format of hardware address	*/
-#   define ARP_ETHER	    1		/* Ethernet  hardware address	*/
-	unsigned short		ar_pro;		/* Format of protocol address	*/
-	unsigned char		ar_hln;		/* Length of hardware address	*/
-	unsigned char		ar_pln;		/* Length of protocol address	*/
-	unsigned short		ar_op;		/* Operation			*/
+	unsigned short		ar_hrd;		/* Format of hardware address*/
+#   define ARP_ETHER	    1		        /* Ethernet  hardware address*/
+	unsigned short		ar_pro;		/* Format of protocol address*/
+	unsigned char		ar_hln;		/* Length of hardware address*/
+	unsigned char		ar_pln;		/* Length of protocol address*/
+	unsigned short		ar_op;		/* Operation		*/
 #   define ARPOP_REQUEST    1		/* Request  to resolve  address	*/
 #   define ARPOP_REPLY	    2		/* Response to previous request	*/
 
@@ -156,10 +159,10 @@ typedef struct
 	 */
 	unsigned char		ar_data[0];
 #if 0
-	unsigned char		ar_sha[];	/* Sender hardware address	*/
-	unsigned char		ar_spa[];	/* Sender protocol address	*/
-	unsigned char		ar_tha[];	/* Target hardware address	*/
-	unsigned char		ar_tpa[];	/* Target protocol address	*/
+	unsigned char		ar_sha[];	/* Sender hardware address*/
+	unsigned char		ar_spa[];	/* Sender protocol address*/
+	unsigned char		ar_tha[];	/* Target hardware address*/
+	unsigned char		ar_tpa[];	/* Target protocol address*/
 #endif /* 0 */
 } ARP_t;
 
@@ -238,7 +241,7 @@ extern unsigned char		NetOurEther[6];		/* Our ethernet address		*/
 extern unsigned char		NetServerEther[6];	/* Boot server enet address	*/
 extern IPaddr_t		NetOurIP;		/* Our    IP addr (0 = unknown)	*/
 extern IPaddr_t		NetServerIP;		/* Server IP addr (0 = unknown)	*/
-volatile unsigned char * NetTxPacket;		/* THE transmit packet		*/
+extern volatile unsigned char * NetTxPacket;		/* THE transmit packet		*/
 extern volatile unsigned char * NetRxPackets[PKTBUFSRX];/* Receive packets		*/
 extern volatile unsigned char * NetRxPkt;		/* Current receive packet	*/
 extern int		NetRxPktLen;		/* Current rx packet length	*/

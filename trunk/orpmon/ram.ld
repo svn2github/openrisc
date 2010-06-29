@@ -1,9 +1,15 @@
+
+/* Seen 3 bad pages, 180-182 (0xb400-0xb6ff), so put text after these pages */
 MEMORY
         {
         vectors : ORIGIN = 0x00000000, LENGTH = 0x00002000 
-        ram     : ORIGIN = 0x00002000, LENGTH = 0x00400000 - 0x00002000
-	flash   : ORIGIN = 0xf0000000, LENGTH = 0x04000000
+        /*ram     : ORIGIN = 0x00002000, LENGTH = 0x02000000 - 0x00002000*/
+        ram     : ORIGIN = 0x00001200, LENGTH = 0xB400 - 0x1200
+        ram2     : ORIGIN = 0xb700, LENGTH = 0x02000000 - 0xb700
+	/*flash   : ORIGIN = 0xf0000000, LENGTH = 0x04000000*/
         }
+
+
 
 SECTIONS
 {
@@ -18,17 +24,10 @@ SECTIONS
 	_text_begin = .;
         *(.text)
 	_text_end = .;
-        } > ram
-
-	.mytext :
-	{
-	*(.mytext)
-	_fprog_addr = .;
-	. += 0x500;
-	} > ram
+        } > ram2
 
         .data :
-	AT ( ADDR (.text) + SIZEOF(.text) + SIZEOF(.mytext))
+/*	AT ( ADDR (.text) + SIZEOF(.text) + SIZEOF(.mytext))*/
         {
         *(.data)
         } > ram
@@ -48,8 +47,26 @@ SECTIONS
         {
         *(.stack)
         _src_addr = .;
-        } > ram
+        } > ram2
+/*
+	.monitor :
+	{
+	*(.monitor)
+	} > ram
+*/
 
+/*
+	. += 0x100000;
+
+// This section was in cmds/load.c, but we don't need it -jb
+	.config :
+	{
+	_cfg_start = .;
+	*(.config)
+	_cfg_end = .;
+	} > ram
+*/
+/*
 	. = 0xf0000100;
 
 	.monitor ALIGN(0x40000) :
@@ -65,4 +82,5 @@ SECTIONS
 	*(.config)
 	_cfg_end = .;
 	} > flash
+*/
 }

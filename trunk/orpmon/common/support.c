@@ -22,12 +22,13 @@ void exit (int i)
 /* activate printf support in simulator */
 void __printf(const char *fmt, ...)
 {
-
+#if 0
   va_list args;
   va_start(args, fmt);
   __asm__ __volatile__ ("  l.addi\tr3,%1,0\n \
                            l.addi\tr4,%2,0\n \
                            l.nop %0": :"K" (NOP_PRINTF), "r" (fmt), "r"  (args) : "r3", "r4");
+#endif
 }
 
 /* print long */
@@ -116,8 +117,10 @@ unsigned long strtoul (const char *str, char **endptr, int base)
  
 unsigned long get_timer (unsigned long base)
 {
+  /*
 __printf("%s - %s: %d\n", __FILE__, __FUNCTION__, __LINE__);
 __printf("   timestamp = %.8lx base = %.8lx\n", timestamp, base);
+  */
   return (timestamp - base);
 }
  

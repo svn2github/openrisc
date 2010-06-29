@@ -38,10 +38,14 @@ void start_timer(void)
 
 unsigned long read_timer(void)
 {
+#if 0
 	unsigned long val;
 
 	asm("l.mfspr	%0,r0,%1": "=r" (val) : "i" (SPR_TTCR));
 	return val;
+#else
+	return timestamp;
+#endif
 }
 
 /* Global Variables: */
@@ -69,11 +73,8 @@ int             Arr_2_Glob [50] [50];
 
 /* variables for time measurement: */
 
-#if DLX || OR1K
-#define Too_Small_Time DLX_FREQ
-#else
-#define Too_Small_Time 1
-#endif
+#define Too_Small_Time US_PER_TICK
+
 
 #define TIMER0 0
 #define TIMER1 1
@@ -184,8 +185,8 @@ int dhry_main (int num_runs)
   /***************/
  
 /*  printf("%d", my_test2(Number_Of_Runs));*/
-	start_timer();
-	Begin_Time = read_timer();
+  //start_timer();
+  Begin_Time = read_timer();
 
   for (Run_Index = 1; Run_Index <= Number_Of_Runs; ++Run_Index)
   {
@@ -330,17 +331,23 @@ int dhry_main (int num_runs)
 */
 
 
+
   User_Time = End_Time - Begin_Time;
+
+  printf("Timer ticks (%d - %d) =\t%d\n",End_Time,Begin_Time, User_Time);
+
+
+
+  // This is in ticks, convert to mS
+  User_Time = User_Time * (MS_PER_SEC / TICKS_PER_SEC);
+  
  /* microseconds */
-
-  printf("Begin Time = %d\n",Begin_Time);
-  printf("End Time   = %d\n",End_Time);
-
+  
   printf ("\nNumber of Runs %i", num_runs);
-  printf ("\nBegin Time %i", Begin_Time);
-  printf ("\nEnd Time %i\n", End_Time);  
+  printf ("\nElapsed time %i ms\n", User_Time);
 
-  if (User_Time < Too_Small_Time)
+  
+  if (User_Time < MS_PER_SEC)
   {
     printf ("Measured time too small to obtain meaningful results\n");
     printf ("Please increase number of runs\n");
@@ -348,26 +355,13 @@ int dhry_main (int num_runs)
   }
   else
   {
-#if DLX || OR1K
-//    User_Time /= DLX_FREQ;
-#if DLX
-    printf("DLX ");
-#else
-#if OR1K
-    printf("OR1K ");
-#else
-    printf("Unknown CPU ");
-#endif
-#endif
-    printf("at %u MHz  ", DLX_FREQ);
-    if (PROC_6)
-	    printf("(+PROC_6)");
-    printf("\n");
-#endif
+    printf("Processor at %d MHz\n",(IN_CLK/1000000));
+
 //    Microseconds = User_Time / Number_Of_Runs;
 //    Dhrystones_Per_Second = Number_Of_Runs * 1000 / User_Time;
+    Dhrystones_Per_Second = (Number_Of_Runs * MS_PER_SEC) / User_Time;
     printf ("Microseconds for one run through Dhrystone: ");
-    printf ("%d us / %d runs\n", User_Time,Number_Of_Runs);
+    printf ("%d ms / %d runs\n", User_Time,Number_Of_Runs);
     printf ("Dhrystones per Second:                      ");
     printf ("%d \n", Dhrystones_Per_Second);
   }

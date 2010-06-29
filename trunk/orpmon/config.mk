@@ -5,7 +5,8 @@ CONFIG_SHELL	:= $(shell if [ -x "$$BASH" ]; then echo $$BASH; \
 		    else echo sh; fi ; fi)
 
 HOSTCC		= cc
-HOSTCFLAGS	= -Wall -Wstrict-prototypes -O2 -fomit-frame-pointer
+#HOSTCFLAGS	= -Wall -Wstrict-prototypes -O2 -fomit-frame-pointer
+HOSTCFLAGS	= -Wall -Wstrict-prototypes -O2 -fno-omit-frame-pointer -g
 
 #
 # Specify the path to the tool chain
@@ -28,10 +29,12 @@ OBJDUMP = $(CROSS_COMPILE)objdump
 RANLIB	= $(CROSS_COMPILE)ranlib
 
 CFLAGS += -I$(TOPDIR)/include -DOR1K -Wall -Wstrict-prototypes
-CFLAGS += -Werror-implicit-function-declaration -fomit-frame-pointer
+CFLAGS += -Werror-implicit-function-declaration -fno-omit-frame-pointer
 CFLAGS += -fno-strength-reduce -O2 -g -pipe -fno-builtin
 #CFLAGS += -msoft-mul -msoft-div -nostdlib
 CFLAGS += -nostdlib
+#CFLAGS += -DDEBUG
+
 
 LIBGCC := $(shell $(CC) $(CFLAGS) -print-libgcc-file-name)
 LDFLAGS+= $(LIBGCC)

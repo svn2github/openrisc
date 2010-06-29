@@ -197,6 +197,23 @@ void *memcpy(void *dest, const void *src, size_t n)
   return dest;
 }
 
+/* memcpy, return  checksum of bytes copied instead of pointer to dest */
+unsigned char memcpy_crc(void *dest, const void *src, size_t n)
+{
+  unsigned char sum = 0;
+  unsigned char tmp;
+
+  char *cs = (char *) src;
+  char *cd = (char *) dest;
+  
+  while (n--)
+    {
+      tmp = *cs++;
+      sum += tmp;
+      *cd++ = tmp;
+    }
+  return sum;
+}
 
 void *memmove(void *dest, void *src, size_t n)
 {
@@ -224,7 +241,7 @@ int memcmp(const void *s1, const void *s2, size_t n)
 }
 
 
-void *memchr(const void *s, int c, size_t n)
+void *memchr(const void *s, char c, size_t n)
 {
   char *p = (void *)s;
 

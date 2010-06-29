@@ -4,6 +4,7 @@ endif
 
 export	CROSS_COMPILE
 
+
 #########################################################################
 
 TOPDIR	:= $(shell if [ "$$PWD" != "" ]; then echo $$PWD; else pwd; fi)
@@ -34,8 +35,8 @@ reset-flash.o: reset.S Makefile
 	$(CC) -c -o $@ $< $(CFLAGS) -DIN_FLASH=1
 
 orpmon.or32: depend subdirs reset.o $(LIBS) Makefile gencrc
-	$(LD) -Tram.ld -o $@ reset.o $(LIBS) $(LDFLAGS) 
-#	$(OBJCOPY) -j .text -O binary $@ $@.tmp
+	$(LD) -Tram.ld -o $@ reset.o -e 256 $(LIBS) $(LDFLAGS) 
+	$(OBJCOPY) -O binary $@ $@.bin
 #-S -j .vectors -j .text -j .data -j .rodata
 #	./gencrc $@.tmp $@
 

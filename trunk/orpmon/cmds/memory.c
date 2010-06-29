@@ -1,6 +1,7 @@
 #include "common.h"
 #include "support.h"
 #include "spr_defs.h"
+#include "spincursor.h"
 
 void show_mem (int start, int stop)
 {
@@ -89,6 +90,93 @@ void testram (unsigned long start_addr, unsigned long stop_addr, unsigned long t
   }
 }
 
+
+// Do proper walking 0 as byte writes
+void better_ram_test (unsigned long start_addr, unsigned long stop_addr, unsigned test_no )
+{
+  unsigned long addr;
+  unsigned long err_addr = 0;
+  unsigned long err_no = 0;
+  int b;
+  printf ("\nSetting memory contents to all 1'b1  ");
+  //enable_spincursor();
+  for (addr = start_addr; addr <= stop_addr; addr += 1)
+    REG8(addr) = 0xff;
+  //disable_spincursor();
+  printf ("\rVerifying memory contents all set to 1'b1:  ");
+  //enable_spincursor();
+  /* Verify */
+  for (addr = start_addr; addr <= stop_addr; addr += 1)
+    {
+      if (REG8(addr) != 0xff) {
+	err_no++;
+	err_addr = addr;
+	//disable_spincursor();
+	printf ("\n%04lx times failed. Last at location %08lx  ", 
+		err_no, err_addr);
+	//enable_spincursor();
+      }
+    }
+  
+  if (err_no==0)
+    printf ("Passed");
+  else 
+    printf ("Finished");
+  
+  err_no = 0;
+  
+  printf ("\nWalking zero through memory, verify just itself: "); 
+  for (addr = start_addr; addr <= stop_addr; addr += 1)
+    {
+      for(b=0;b<8;b++)
+	{
+	  // Write, verify
+	  REG8(addr) = ~(1<<b);
+
+	  if (REG8(addr) != ~(1<<b))
+	    {
+	      err_no++;
+	      err_addr = addr;
+	      printf ("\n%04lx times failed. Last at location %08lx", err_no, err_addr);
+	    }
+	  REG8(addr) = 0xff;
+	}
+    }
+  if (err_no == 0)  
+    printf ("Passed");
+  else 
+    printf ("Finished");  
+  err_no = 0;
+  
+  printf ("\nWriting across rows, row size configured as %d bytes",SDRAM_ROW_SIZE); 
+  unsigned long start_row = start_addr / SDRAM_ROW_SIZE;
+  unsigned long end_row = stop_addr / SDRAM_ROW_SIZE;
+  for (addr = start_row; addr <= end_row; addr += 1)
+    {
+      REG32(addr*SDRAM_ROW_SIZE) = addr;      
+    }
+  
+  printf ("\rVerifying row write test: "); 
+  
+  for (addr = start_row; addr <= end_row; addr += 1)
+    {
+      if (REG32(addr*SDRAM_ROW_SIZE) != addr)
+	{
+	  err_no++;
+	  err_addr = addr*SDRAM_ROW_SIZE;
+	  printf ("\n%04lx times failed. Last at location %08lx (row %d)", err_no, err_addr, addr);
+	}
+    }
+  
+  if (err_no == 0)  
+    printf ("Passed");
+  else 
+    printf ("Finished");  
+  err_no = 0;
+	  
+}
+
+
 int dm_cmd (int argc, char *argv[])
 {
   unsigned long a1,a2;
@@ -132,6 +220,15 @@ int ram_test_cmd (int argc, char *argv[])
   }
 }
 
+int better_ram_test_cmd (int argc, char *argv[])
+{
+  if (argc < 2)
+    return -1;
+  
+  better_ram_test(strtoul (argv[0], 0, 0), strtoul (argv[1], 0, 0), 0); 
+  return 0;
+}
+
 unsigned long crc32 (unsigned long crc, const unsigned char *buf, unsigned long len)
 {
   /* Create bitwise CRC table first */
@@ -171,5 +268,7 @@ void module_memory_init (void)
   register_command ("dm", "<start addr> [<end addr>]", "display 32-bit memory location(s)", dm_cmd);
   register_command ("pm", "<addr> [<stop_addr>] <value>", "patch 32-bit memory location(s)", pm_cmd);
   register_command ("ram_test", "<start_addr> <stop_addr> [<test_no>]", "run a simple RAM test", ram_test_cmd); 
+  register_command ("better_ram_test", "<start_addr> <stop_addr>", "run a better RAM test", better_ram_test_cmd); 
+
   register_command ("crc", "[<src_addr> [<length> [<init_crc>]]]", "Calculates a 32-bit CRC on specified memory region", crc_cmd);
 }

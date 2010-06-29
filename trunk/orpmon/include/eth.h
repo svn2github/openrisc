@@ -1,12 +1,45 @@
 #define ETH_REG_BASE  ETH_BASE 
 #define ETH_BD_BASE   (ETH_BASE + 0x400)
-#define ETH_TOTAL_BD  128
+#define ETH_TOTAL_BD  32
 #define ETH_MAXBUF_LEN 0x600
 
-#define ETH_TXBD_NUM      8
+#define ETH_TXBD_NUM      16
 #define ETH_TXBD_NUM_MASK (ETH_TXBD_NUM - 1)
-#define ETH_RXBD_NUM      8
+#define ETH_RXBD_NUM      16
 #define ETH_RXBD_NUM_MASK (ETH_RXBD_NUM - 1)
+
+typedef unsigned int uint;
+
+/* Ethernet configuration registers */
+typedef struct _oeth_regs {
+        uint    moder;          /* Mode Register */
+        uint    int_src;        /* Interrupt Source Register */
+        uint    int_mask;       /* Interrupt Mask Register */
+        uint    ipgt;           /* Back to Bak Inter Packet Gap Register */
+        uint    ipgr1;          /* Non Back to Back Inter Packet Gap Register 1 */
+        uint    ipgr2;          /* Non Back to Back Inter Packet Gap Register 2 */
+        uint    packet_len;     /* Packet Length Register (min. and max.) */
+        uint    collconf;       /* Collision and Retry Configuration Register */
+        uint    tx_bd_num;      /* Transmit Buffer Descriptor Number Register */
+        uint    ctrlmoder;      /* Control Module Mode Register */
+        uint    miimoder;       /* MII Mode Register */
+        uint    miicommand;     /* MII Command Register */
+        uint    miiaddress;     /* MII Address Register */
+        uint    miitx_data;     /* MII Transmit Data Register */
+        uint    miirx_data;     /* MII Receive Data Register */
+        uint    miistatus;      /* MII Status Register */
+        uint    mac_addr0;      /* MAC Individual Address Register 0 */
+        uint    mac_addr1;      /* MAC Individual Address Register 1 */
+        uint    hash_addr0;     /* Hash Register 0 */
+        uint    hash_addr1;     /* Hash Register 1 */                           
+} oeth_regs;
+
+/* Ethernet buffer descriptor */
+typedef struct _oeth_bd {
+        uint    len_status;
+        uint    addr;           /* Buffer address */
+} oeth_bd;
+
 
 /* Ethernet buffer descriptor */
 typedef struct _eth_bd {
@@ -21,6 +54,8 @@ extern unsigned long eth_rx (void);
 extern void eth_halt(void);
 extern void init_rx_bd_pool(void);
 extern void init_tx_bd_pool(void);
+extern void eth_int_enable(void);
+extern void eth_toggle_traffic_mon(void);
 
 /* Tx BD */
 #define ETH_TX_BD_READY    0x8000 /* Tx BD Ready */

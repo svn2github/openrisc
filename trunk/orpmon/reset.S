@@ -55,6 +55,7 @@ _calc_mycrc32:
 .endif
 
         .org 0x100
+
 .if IN_FLASH
         .section .reset, "ax"
 .else
@@ -77,11 +78,25 @@ _reset:
 
 .if IN_FLASH
         .section .vectors, "ax"
+        .org 0x200
+.else
+        .org (0x200 - 0x100 + _reset)
+.endif
+_buserr:
+	/* Just trap */
+	l.trap 0
+	l.nop
+	l.j 0
+	l.nop
+
+	
+.if IN_FLASH
+        .section .vectors, "ax"
         .org 0x500
 .else
         .org (0x500 - 0x100 + _reset)
 .endif
-
+_tickint:	
         l.addi  r1,r1,-128
         l.sw    0x4(r1),r2
         l.movhi r2,hi(_tick)
@@ -95,20 +110,40 @@ _reset:
 .else
         .org (0x600 - 0x100 + _reset)
 .endif
-
+_alignerr:	
+.if 0
+	/* Let's crash on align errors */
         l.addi  r1,r1,-128
         l.sw    0x08(r1),r2
         l.movhi r2,hi(_align)
         l.ori   r2,r2,lo(_align)
         l.jr    r2
         l.nop
+.endif
+	l.trap 0
+	l.nop
+	l.j 0
+	l.nop
+	
+.if IN_FLASH
+        .org 0x700
+.else
+	.org (0x700 - 0x100 + _reset)
+.endif
+_illinsn:	
+	/* Just trap */
+	l.trap 0
+	l.nop
+	l.j 0
+	l.nop
+
 
 .if IN_FLASH
         .org 0x800
 .else
         .org (0x800 - 0x100 + _reset)
 .endif
-
+_userint:
         l.addi  r1,r1,-128
         l.sw    0x4(r1),r2
         l.movhi r2,hi(_int_wrapper)
@@ -119,9 +154,9 @@ _reset:
         .section .text
 _start:
 .if IN_FLASH
-        l.jal   _init_mc
+/*        l.jal   _init_mc
         l.nop
-
+*/
         /* Wait for SDRAM */
         l.addi  r3,r0,0x1000
 1:      l.sfeqi r3,0
@@ -166,7 +201,10 @@ _start:
         l.addi  r4,r0,0
 3:
 .endif
-
+/*
+	l.jal   _ic_disable
+        l.nop	
+*/
 .if IC_ENABLE
         l.jal   _ic_enable
         l.nop
@@ -211,6 +249,32 @@ _ic_enable:
         l.jr    r9
         l.nop
 
+_ic_disable:
+
+        l.addi  r10,r0,0
+        l.addi  r11,r0,IC_SIZE
+1:
+        l.mtspr r0,r10,SPR_ICBIR
+        l.sfne  r10,r11
+        l.bf    1b
+        l.addi  r10,r10,16
+	
+
+        l.mfspr r10,r0,SPR_SR
+	l.movhi r11, 0xffff
+	l.ori 	r11, r11, 0xffef
+	l.and   r10, r10, r11
+	l.ori   r10, r10, SPR_SR_SM
+        l.mtspr r0,r10,SPR_SR
+        l.nop
+        l.nop
+        l.nop
+        l.nop
+        l.nop
+
+        l.jr    r9
+        l.nop
+
 _dc_enable:
 
         /* Flush DC */
@@ -230,194 +294,6 @@ _dc_enable:
         l.jr    r9
         l.nop
 
-.if IN_FLASH
-#if CONFIG_OR32_MC_VERSION==1
-_init_mc:
-
-        l.movhi r3,hi(MC_BASE_ADDR)
-        l.ori   r3,r3,lo(MC_BASE_ADDR)
- 
-        l.addi  r4,r3,MC_CSC(0)
-        l.movhi r5,hi(FLASH_BASE_ADDR)
-        l.srai  r5,r5,6
-        l.ori   r5,r5,0x0025
-        l.sw    0(r4),r5
- 
-        l.addi  r4,r3,MC_TMS(0)
-        l.movhi r5,hi(FLASH_TMS_VAL)
-        l.ori   r5,r5,lo(FLASH_TMS_VAL)
-        l.sw    0(r4),r5
- 
-        l.addi  r4,r3,MC_BA_MASK
-        l.addi  r5,r0,MC_MASK_VAL
-        l.sw    0(r4),r5
- 
-        l.addi  r4,r3,MC_CSR
-        l.movhi r5,hi(MC_CSR_VAL)
-        l.ori   r5,r5,lo(MC_CSR_VAL)
-        l.sw    0(r4),r5
-
-        l.addi  r4,r3,MC_TMS(1)
-        l.movhi r5,hi(SDRAM_TMS_VAL)
-        l.ori   r5,r5,lo(SDRAM_TMS_VAL)
-        l.sw    0(r4),r5
-
-        l.addi  r4,r3,MC_CSC(1)
-        l.movhi r5,hi(SDRAM_BASE_ADDR)
-        l.srai  r5,r5,6
-        l.ori   r5,r5,0x0411
-        l.sw    0(r4),r5
- 
-#ifdef ETH_DATA_BASE
-        l.addi  r4,r3,MC_CSC(2)
-        l.movhi r5,hi(ETH_DATA_BASE)
-        l.srai  r5,r5,6
-        l.ori   r5,r5,0x0005
-        l.sw    0(r4),r5
- 
-        l.addi  r4,r3,MC_TMS(2)
-        l.movhi r5,0xffff
-        l.ori   r5,r5,0xffff
-        l.sw    0(r4),r5
-#endif
-#ifdef SANCHO_BASE_ADD
-        l.addi  r4,r3,MC_CSC(2)
-        l.movhi r5,hi(SANCHO_BASE_ADD)
-        l.srai  r5,r5,6
-        l.ori   r5,r5,0x0001
-        l.sw    0(r4),r5
-
-        l.addi  r4,r3,MC_TMS(2)
-        l.movhi r5,0x101
-        l.ori   r5,r5,0x101
-        l.sw    0(r4),r5
-#endif
-
-        l.jr    r9
-        l.nop
-#elif CONFIG_OR32_MC_VERSION==2
-_init_mc:
-
-        l.movhi r3,hi(MC_BASE_ADDR)
-        l.ori   r3,r3,lo(MC_BASE_ADDR)
-
-        l.addi  r4,r3,MC_BAR_0
-        l.movhi r5,hi(FLASH_BAR_VAL)
-        l.sw    0(r4),r5
-
-        l.addi  r4,r3,MC_AMR_0
-        l.movhi r5,hi(FLASH_AMR_VAL)
-        l.sw    0(r4),r5
-
-        l.addi  r4,r3,MC_WTR_0
-        l.movhi r5,hi(FLASH_WTR_VAL)
-        l.ori   r5,r5,lo(FLASH_WTR_VAL)
-        l.sw    0(r4),r5
-
-        l.addi  r4,r3,MC_RTR_0
-        l.movhi r5,hi(FLASH_RTR_VAL)
-        l.ori   r5,r5,lo(FLASH_RTR_VAL)
-        l.sw    0(r4),r5
-
-        l.addi  r4,r3,MC_OSR
-        l.movhi r5,hi(0x40000000)
-        l.ori   r5,r5,lo(0x40000000)
-        l.sw    0(r4),r5
-
-        l.addi  r4,r3,MC_BAR_4
-        l.movhi r5,hi(SDRAM_BAR_VAL)
-        l.sw    0(r4),r5
-
-        l.addi  r4,r3,MC_AMR_4
-        l.movhi r5,hi(SDRAM_AMR_VAL)
-        l.sw    0(r4),r5
-
-        l.addi  r4,r3,MC_CCR_4
-        l.movhi r5,hi(0x00ef0004)
-        l.ori   r5,r5,lo(0x00ef0004)
-        l.sw    0(r4),r5
-
-        l.addi  r4,r3,MC_RATR
-        l.movhi r5,hi(SDRAM_RATR_VAL)
-        l.ori   r5,r5,lo(SDRAM_RATR_VAL)
-        l.sw    0(r4),r5
-
-        l.addi  r4,r3,MC_RCDR
-        l.movhi r5,hi(SDRAM_RCDR_VAL)
-        l.ori   r5,r5,lo(SDRAM_RCDR_VAL)
-        l.sw    0(r4),r5
-
-        l.addi  r4,r3,MC_RCTR
-        l.movhi r5,hi(SDRAM_RCTR_VAL)
-        l.ori   r5,r5,lo(SDRAM_RCTR_VAL)
-        l.sw    0(r4),r5
-
-        l.addi  r4,r3,MC_REFCTR
-        l.movhi r5,hi(SDRAM_REFCTR_VAL)
-        l.ori   r5,r5,lo(SDRAM_REFCTR_VAL)
-        l.sw    0(r4),r5
-
-        l.addi  r4,r3,MC_PTR
-        l.movhi r5,hi(SDRAM_PTR_VAL)
-        l.ori   r5,r5,lo(SDRAM_PTR_VAL)
-        l.sw    0(r4),r5
-
-        l.addi  r4,r3,MC_RRDR
-        l.movhi r5,hi(SDRAM_RRDR_VAL)
-        l.ori   r5,r5,lo(SDRAM_RRDR_VAL)
-        l.sw    0(r4),r5
-
-        l.addi  r4,r3,MC_RIR
-        l.movhi r5,hi(SDRAM_RIR_VAL)
-        l.ori   r5,r5,lo(SDRAM_RIR_VAL)
-        l.sw    0(r4),r5
-
-        l.addi  r4,r3,MC_OSR
-        l.movhi r5,hi(0x5e000000)
-        l.ori   r5,r5,lo(0x5e000000)
-        l.sw    0(r4),r5
-
-        l.addi  r4,r3,MC_ORR
-        l.sw    0(r4),r5
-
-        l.addi  r4,r3,MC_OSR
-        l.movhi r5,hi(0x6e000000)
-        l.ori   r5,r5,lo(0x6e000000)
-        l.sw    0(r4),r5
-
-        l.addi  r4,r3,MC_ORR
-        l.sw    0(r4),r5
-        l.sw    0(r4),r5
-        l.sw    0(r4),r5
-        l.sw    0(r4),r5
-        l.sw    0(r4),r5
-        l.sw    0(r4),r5
-        l.sw    0(r4),r5
-        l.sw    0(r4),r5
-
-        l.addi  r4,r3,MC_OSR
-        l.movhi r5,hi(0x7e000023)
-        l.ori   r5,r5,lo(0x7e000023)
-        l.sw    0(r4),r5
-
-        l.addi  r4,r3,MC_ORR
-        l.sw    0(r4),r5
-
-#ifdef FLASH_ORG_16_1
-        l.addi  r4,r3,MC_CCR_4
-        l.movhi r5,hi(0xc0ae0004)
-        l.ori   r5,r5,lo(0xc0ae0004)
-        l.sw    0(r4),r5
-#else
-#  error "no configuration for this data bus width"
-#endif
-        l.jr    r9
-        l.nop
-#else
-#  error "no memory controler chosen"
-#endif
-	
-.endif
 
 _tick:
         l.sw    0x8(r1),r4

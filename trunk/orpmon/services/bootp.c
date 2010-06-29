@@ -7,7 +7,7 @@
  *	Copyright 2000 Paolo Scaffardi
  */
 
-#if 0
+#if 1
 #define	DEBUG		1	/* general debug */
 #define DEBUG_BOOTP_EXT	1	/* Debug received vendor fields	*/
 #endif
