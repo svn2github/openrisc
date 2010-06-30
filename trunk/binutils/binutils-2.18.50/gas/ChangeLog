@@ -1,3 +1,8 @@
+2010-06-21  Jeremy Bennett <jeremy.bennett@embecosm.com>
+
+	* config/tc-or32.c (machine_ip): Ensure operand is cleared before
+	use.
+
 2008-05-02  H.J. Lu  <hongjiu.lu@intel.com>
 
 	* NEWS: Mention XSAVE, EPT and MOVBE.

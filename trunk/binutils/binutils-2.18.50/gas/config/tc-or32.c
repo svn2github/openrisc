@@ -365,6 +365,8 @@ machine_ip (char *str)
 
   opcode = 0;
   memset (&the_insn, '\0', sizeof (the_insn));
+  memset (&operand, 0, sizeof (operand));
+
   the_insn.reloc = BFD_RELOC_NONE;
 
   reloc = BFD_RELOC_NONE;
