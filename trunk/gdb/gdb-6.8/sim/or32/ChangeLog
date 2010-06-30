@@ -1,0 +1,10 @@
+2010-06-30  Jeremy Bennett  <jeremy.bennett@embecosm.com>
+
+	* config.in: Generated.
+	* configure: Generated.
+	* configure.ac: Created.
+	* Makefile.in: Created.
+	* or32sim.h: Created.
+	* README: Created.
+	* tconfig.in: Created.
+	* wrapper.c: Created.

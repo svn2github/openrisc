@@ -1,3 +1,9 @@
+2010-06-30  Jeremy Bennett  <jeremy.bennett@embecosm.com>
+
+	* gennltvals.sh: Added search of sys/_default_fcntl.h. Added or32
+	as target.
+	* nltvals.def: Regenerated.
+
 2007-10-11  Jesper Nilsson  <jesper.nilsson@axis.com>
 
 	* callback.c (cb_is_stdin, cb_is_stdout, cb_is_stderr): Add functions.
