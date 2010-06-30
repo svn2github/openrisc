@@ -1,4 +1,24 @@
+2010-06-30  Jeremy Bennett  <jeremy.bennett@embecosm.com>
+
+	* or1k-tdep.c (or1k_fetch_instruction): Logic flow made clearer.
+	(or1k_analyse_inst, or1k_analyse_L_addi)
+	(or1k_analyse_l_sw): Added.
+	(or1k_frame_size, or1k_frame_fp_loc, or1k_frame_size_check)
+	(or1k_link_address, or1k_get_saved_reg): Removed.
+	(or1k_skip_prologue, or1k_frame_unwind_cache): Rewritten to use
+	or1k_analyse_inst functions.
+	* or1k_tdep.h <OR1K_FIRST_SAVED_REGNUM, OR1K_INSTBITLEN>: #define
+	added.
+
+2010-06-10  Jeremy Bennett  <jeremy.bennett@embecosm.com>
+
+	* eval.c (evaluate_subexp_standard): Initialize subscript_array,
+	to avoid picky compiler complaints.
+	* or1k-jtag.c (jp1_ll_read_jp1): Initialize data, to avoid picky
+	compiler complaints.
+
 2008-11-08  Jeremy Bennett  <jeremy.bennett@embecosm.com>
+
 	* or1k-tdep.c (or1k_read_spr, or1k_write_spr): Moved here from
 	remote-or1k.c and made local to this file. Rewritten to use
 	commands via the target remote command (to_rcmd) function.
@@ -13,7 +33,8 @@
 	* or1k-tdep.c (or1k_rcmd): Function added to process SPR access
 	requests.
 
-2008-10-23  
+2008-10-23  Jeremy Bennett  <jeremy.bennett@embecosm.com>
+
 	* or1k-tdep.h, or1k-tdep.c: Extend the number of registers to
 	include the PPC as well as the NPC
 
@@ -31,7 +52,7 @@
 	* gdb/breakpoint.c (bpstat_stop_status): The test to disallow a
 	read watchpoint if the value had changed was unreliable and has
 	been deleted. Trust the HW on this one.
-	
+
 2008-07-30  Jeremy Bennett  <jeremy.bennett@embecosm.com>
 
 	* NEWS: Details of OpenRISC 1000 port
@@ -45,7 +66,7 @@
 	targ_defvec=bfd_elf32_or32_big_vec
 	* doc/or1k.texinfo: New file: Documentation of the OpenRISC 1000
 	* doc/Makefile.in: Added OpenRISC 1000 document
-	
+
 2008-03-27  Joel Brobecker  <brobecker@adacore.com>
 
 	* NEWS: Replace "Changes since GDB 6.7" into changes in GDB 6.8".

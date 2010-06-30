@@ -82,134 +82,6 @@
 #include <inttypes.h>
 
 
-/* Forward declarations of support functions for the architecture definition */
-
-static unsigned long int
-                     or1k_fetch_instruction (struct frame_info *next_frame,
-					     CORE_ADDR          addr);
-static void          or1k_store_instruction( struct frame_info *next_frame,
-					   CORE_ADDR          addr,
-					   unsigned long int  insn);
-
-/* Forward declaration of support functions for frame handling */
-
-static int   or1k_frame_size (struct frame_info *next_frame,
-			      CORE_ADDR          func_start_addr);
-static int   or1k_frame_fp_loc (struct frame_info *next_frame,
-				CORE_ADDR          func_start_addr);
-static int   or1k_frame_size_check (struct frame_info *next_frame,
-				    CORE_ADDR          func_start_addr);
-static int   or1k_link_address (struct frame_info *next_frame,
-				CORE_ADDR          func_start_addr);
-static int   or1k_get_saved_reg (struct frame_info *next_frame,
-				 CORE_ADDR          instr_start_addr,
-				 int               *reg_offset);
-static struct trad_frame_cache
-            *or1k_frame_unwind_cache (struct frame_info  *next_frame,
-				      void              **this_prologue_cache);
-static void  or1k_frame_this_id (struct frame_info  *next_frame,
-				 void              **this_prologue_cache,
-				 struct frame_id    *this_id);
-static void  or1k_frame_prev_register (struct frame_info  *next_frame,
-				       void              **this_prologue_cache,
-				       int                 regnum,
-				       int                *optimizedp,
-				       enum lval_type     *lvalp,
-				       CORE_ADDR          *addrp,
-				       int                *realregp,
-				       gdb_byte           *bufferp);
-static CORE_ADDR 
-             or1k_frame_base_address (struct frame_info  *next_frame,
-				      void              **this_prologue_cache);
-
-/* Forward declarations of functions which define the architecture */
-
-static enum return_value_convention
-                        or1k_return_value (struct gdbarch  *gdbarch,
-					   struct type     *type,
-					   struct regcache *regcache,
-					   gdb_byte        *readbuf,
-					   const gdb_byte  *writebuf);
-static const gdb_byte  *or1k_breakpoint_from_pc (struct gdbarch *gdbarch,
-						 CORE_ADDR      *bp_addr,
-						 int            *bp_size);
-static int     or1k_single_step_through_delay (struct gdbarch    *gdbarch,
-					       struct frame_info *this_frame);
-static void             or1k_pseudo_register_read (struct gdbarch  *gdbarch,
-						   struct regcache *regcache,
-						   int              regnum,
-						   gdb_byte        *buf);
-static void             or1k_pseudo_register_write (struct gdbarch  *gdbarch,
-						    struct regcache *regcache,
-						    int              regnum,
-						    const gdb_byte  *buf);
-static const char      *or1k_register_name (struct gdbarch *gdbarch,
-					    int             regnum);
-static struct type     *or1k_register_type (struct gdbarch *arch,
-					    int             regnum);
-static void             or1k_registers_info (struct gdbarch    *gdbarch,
-					     struct ui_file    *file,
-					     struct frame_info *frame,
-					     int                regnum,
-					     int                all);
-static int              or1k_register_reggroup_p (struct gdbarch  *gdbarch,
-						  int              regnum,
-						  struct reggroup *group);
-static CORE_ADDR        or1k_skip_prologue (struct gdbarch *gdbarch,
-					    CORE_ADDR       pc);
-static CORE_ADDR        or1k_frame_align (struct gdbarch *gdbarch,
-					  CORE_ADDR       sp);
-static CORE_ADDR        or1k_unwind_pc (struct gdbarch    *gdbarch,
-					struct frame_info *next_frame);
-static CORE_ADDR        or1k_unwind_sp (struct gdbarch    *gdbarch,
-					struct frame_info *next_frame);
-static CORE_ADDR        or1k_push_dummy_call (struct gdbarch  *gdbarch,
-					      struct value    *function,
-					      struct regcache *regcache,
-					      CORE_ADDR        bp_addr,
-					      int              nargs,
-					      struct value   **args,
-					      CORE_ADDR        sp,
-					      int              struct_return,
-					      CORE_ADDR        struct_addr);
-static struct frame_id  or1k_unwind_dummy_id (struct gdbarch    *gdbarch,
-					      struct frame_info *next_frame);
-static const struct frame_unwind *
-                        or1k_frame_sniffer (struct frame_info *next_frame);
-
-/* Forward declaration of architecture set up functions */
-
-static struct gdbarch *or1k_gdbarch_init (struct gdbarch_info  info,
-					  struct gdbarch_list *arches);
-
-static void            or1k_dump_tdep (struct gdbarch *gdbarch,
-				       struct ui_file *file);
-
-/* Forward declarations of functions which extend GDB */
-
-static const char     *or1k_spr_group_name (int  group);
-static char           *or1k_spr_register_name (int   group,
-					       int   index,
-					       char *name);
-static int             or1k_groupnum_from_name (char *group_name);
-static int             or1k_regnum_from_name (int   group,
-					      char *name);
-static int             or1k_tokenize (char  *str,
-				      char **tok);
-static char           *or1k_parse_spr_params (char *args,
-					      int  *group,
-					      int  *index,
-					      int   is_set);
-static ULONGEST        or1k_read_spr (unsigned int  regnum);
-static void            or1k_write_spr (unsigned int  regnum,
-				       ULONGEST      data);
-static void            info_spr_command (char *args,
-					 int   from_tty);
-static void            or1k_spr_command (char *args,
-					 int   from_tty);
-static void            info_matchpoints_command (char *args,
-						 int   from_tty);
-
 
 
 /* Support functions for the architecture definition */
@@ -240,14 +112,15 @@ or1k_fetch_instruction (struct frame_info *next_frame,
   int   status;
 
   struct frame_info *this_frame = get_prev_frame (next_frame);
-  if (NULL != this_frame)
+
+  if (NULL == this_frame)
     {
-      status = !(safe_frame_unwind_memory (this_frame, addr, buf,
-					   OR1K_INSTLEN));
+      status = read_memory_nobpt (addr, buf, OR1K_INSTLEN);
     }
   else
     {
-      status = read_memory_nobpt (addr, buf, OR1K_INSTLEN);
+      status = !(safe_frame_unwind_memory (this_frame, addr, buf,
+					   OR1K_INSTLEN));
     }
 
   if (0 != status)
@@ -285,604 +158,217 @@ or1k_store_instruction (struct frame_info *next_frame,
 }	/* or1k_store_instruction() */
 
 
-
-
-
-/* Support functions for frame handling */
-
-
-/*----------------------------------------------------------------------------*/
-/*!Return the size of the new stack frame
-
-   Given the function start address, find the size of the stack frame. We are
-   looking for the instruction
-
-   @verbatim
-   l.addi  r1,r1,-<frame_size>
-   @endverbatim
-
-   If this is not found at the start address, then this must be frameless
-   invocation, for which we return size 0.
-
-   @see or1k_frame_unwind_cache() for details of the OR1K prolog
-
-   @param[in]  next_frame       The NEXT frame (i.e. inner from here, the one
-                                THIS frame called), or NULL if this
-                                information is not available.
-   @param[in]  instr_addr       Function start address
-
-   @return  The size of the new stack frame, or zero if this is frameless */
 /*---------------------------------------------------------------------------*/
+/*!Generic function to read bits from an instruction
 
-static int
-or1k_frame_size (struct frame_info *next_frame,
-		 CORE_ADDR          instr_addr) 
-{
-  uint32_t  instr  = or1k_fetch_instruction (next_frame, instr_addr);
-  int       opcode = OR1K_OPCODE1 (instr);
-  int       rd;
-  int       ra;
-  int       imm;
+   printf style. Basic syntax
 
-  if (OR1K_OP_ADDI != opcode)
-    {
-      return  0;
-    }
+      or1k_analyse_inst (inst, format, &arg1, &arg2 ...)
 
-  rd  = OR1K_D_REG (instr);
-  ra  = OR1K_A_REG (instr);
-  imm = OR1K_IMM (instr);
+   Format string can contain the following characters:
 
-  if((OR1K_SP_REGNUM == rd) && (OR1K_SP_REGNUM == ra))
-    {
-      return  -imm;		/* Falling stack */
-    }
-  else
-    {
-      return 0;
-    }
-}	/* or1k_frame_size() */
+   - SPACE:  Ignored, just for layout
+   - 0:      Match with a zero bit
+   - 1:      Match with a one bit
+   - %<n>b:  Match <n> bits to the next argument (n decimal)
 
+   If the arg corresponding to a bit field is non-null, the value will be
+   assigned to that argument (using NULL allows fields to be skipped).
 
-/*----------------------------------------------------------------------------*/
-/*!Return the offset from the stack pointer of the saved FP location
+   Any bad string will cause a fatal error. These are constant strings, so
+   should be correct.
 
-   Given the function start address, find the size of the stack frame. We are
-   looking for the instruction
+   The bit field must be 32 bits long. A failure here will cause a fatal error
+   for the same reason.
 
-   @verbatim
-   l.sw    <save_loc>(r1),r2
-   @endverbatim
+   @note The format string is presented MS field to LS field, left to
+         right. This means that it is read lowest numbered char first.
 
-   If this is not found at the start address + 4, then this is an error.
+   @note Some of the arg fields may be populated, even if recognition
+         ultimately fails.
 
-   @see or1k_frame_unwind_cache() for details of the OR1K prolog
+   @param[in]  inst    The instruction to analyse
+   @param[in]  format  The format string
+   @param[out] ...     Argument fields
 
-   @param[in]  next_frame   The NEXT frame (i.e. inner from here, the one THIS
-                            frame called), or NULL if this information is not
-                            available.
-   @param[in]  instr_addr   Address where we find this instruction (function
-                            start + OR1K_INSTLEN)
-
-   @return  The offset from the stack pointer where the old frame pointer is
-   saved or -1 if we don't find this instruction. */
-/*--------------------------------------------------------------------------*/
-
-static int
-or1k_frame_fp_loc (struct frame_info *next_frame,
-		   CORE_ADDR          instr_addr) 
-{
-  uint32_t  instr  = or1k_fetch_instruction (next_frame, instr_addr);
-  int       opcode = OR1K_OPCODE1 (instr);
-  int       ra;
-  int       rb;
-  int       imm;
-
-  if (OR1K_OP_SW != opcode)
-    {
-      return  -1;
-    }
-
-  ra  = OR1K_A_REG (instr);
-  rb  = OR1K_B_REG (instr);
-  imm = OR1K_IMM2 (instr);
-
-  if((OR1K_SP_REGNUM != ra) || (OR1K_FP_REGNUM != rb))
-    {
-      return  -1;
-    }
-
-  return imm;
-
-}	/* or1k_frame_fp_loc() */
-
-
-/*----------------------------------------------------------------------------*/
-/*!Check the frame size is what expected
-
-   Given the function start address, find the setting of the frame
-   pointer. This should choose a frame size matching that used earlier to set
-   the stack pointer. We look for the instruction:
-
-   @verbatim
-   l.addi  r2,r1,<frame_size>
-   @endverbatim
-
-   If this is not found at the start address + 8, with the expected frame size
-   then this is an error.
-
-   There is no return value - the function raises an error if the instruction
-   is not found.
-
-   @see or1k_frame_unwind_cache() for details of the OR1K prolog
-
-   @param[in]  next_frame  The NEXT frame (i.e. inner from here, the one THIS
-                           frame called), or NULL if this information is not
-                           available.
-   @param[in]  instr_addr  Address where we find this instruction (function
-                           start + 2*OR1K_INSTLEN)
-
-			   @return  The frame size found, or -1 if the instruction was not there. */
+   @return  1 (TRUE) if the instruction matches, 0 (FALSE) otherwise.        */
 /*---------------------------------------------------------------------------*/
-
 static int
-or1k_frame_size_check (struct frame_info *next_frame,
-		       CORE_ADDR          instr_addr) 
+or1k_analyse_inst (uint32_t    inst,
+		   const char *format,
+		   ...)
 {
-  uint32_t  instr  = or1k_fetch_instruction (next_frame, instr_addr);
-  int       opcode = OR1K_OPCODE1 (instr);
-  int       rd;
-  int       ra;
-  int       imm;
+  /* Break out each field in turn, validating as we go. */
+  va_list     ap;
 
-  if (OR1K_OP_ADDI != opcode)
+  int         i;
+  int         iptr = 0;			/* Instruction pointer */
+
+  va_start (ap, format);
+
+  for (i = 0; 0 != format[i];)
     {
-      return  -1;
-    }
+      const char *start_ptr;
+      char       *end_ptr;
 
-  rd  = OR1K_D_REG (instr);
-  ra  = OR1K_A_REG (instr);
-  imm = OR1K_IMM (instr);
+      uint32_t    bits;			/* Bit substring of interest */
+      uint32_t    width;		/* Substring width */
+      uint32_t   *arg_ptr;
 
-  if((OR1K_SP_REGNUM != ra) || (OR1K_FP_REGNUM != rd))
-    {
-      return -1;
-    }
-
-  return  imm;
-
-}	/* or1k_frame_size_check() */
-
-
-/*----------------------------------------------------------------------------*/
-/*!See if the link (return) address is saved as expected
-
-   Given the function start address, find the saving of the link address. The
-   location (as an offset from the stack pointer) should be 4 less than the
-   offset where the frame pointer was saved. We look for the instruction:
-
-   @verbatim
-   l.sw    <save_loc-4>(r1),r9
-   @endverbatim
-
-   This instruction may be missing - leaf functions do not necessarily save
-   the return address on the stack.
-
-   @see or1k_frame_unwind_cache() for details of the OR1K prolog
-
-   @param[in]  next_frame  The NEXT frame (i.e. inner from here, the one THIS
-                           frame called), or NULL if this information is not
-                           available.
-   @param[in]  instr_addr  Address where we find this instruction (function
-                           start + 12)
-
-			   @return  The link offset if the instruction was found, -1 otherwise */
-/*---------------------------------------------------------------------------*/
-
-static int
-or1k_link_address (struct frame_info *next_frame,
-		   CORE_ADDR          instr_addr) 
-{
-  uint32_t  instr  = or1k_fetch_instruction (next_frame, instr_addr);
-  int       opcode = OR1K_OPCODE1 (instr);
-  int       ra;
-  int       rb;
-  int       imm;
-
-  if (OR1K_OP_SW != opcode)
-    {
-      return  -1;
-    }
-
-  ra  = OR1K_A_REG (instr);
-  rb  = OR1K_B_REG (instr);
-  imm = OR1K_IMM2 (instr);
-
-  if((OR1K_SP_REGNUM != ra) || (OR1K_LR_REGNUM != rb))
-    {
-      return  -1;
-    }
-
-  return  imm;
-
-}	/* or1k_link_address() */
-
-
-/*----------------------------------------------------------------------------*/
-/*!Get a saved register's details
-
-   Given an address, see if it contains an instruction to save a register with
-   the specified offset from the stack pointer. The locations increment by 4
-   from the location where the FP was saved for each callee saved register. We
-   look for the instruction:
-
-   @verbatim
-   l.sw    x(r1),ry
-   @endverbatim
-
-   If this is found with the expected offset (x), then the register number
-   (y) is returned. If not -1 is returned (not a register). The register
-   must be one of the 10 callee saved registers (r10, r12, r14, r16, r18, r20,
-   r22, r24, r26, r28, r30).
-
-   @see or1k_frame_unwind_cache() for details of the OR1K prolog
-
-   @param[in]  next_frame  The NEXT frame (i.e. inner from here, the one THIS
-                           frame called), or NULL if this information is not
-                           available.
-   @param[in]  instr_addr  Location of this instruction
-   @param[out] reg_offset  Offset where the register is saved
-
-   @return  The register number if this instruction is found, otherwise -1 */
-/*---------------------------------------------------------------------------*/
-
-static int
-or1k_get_saved_reg (struct frame_info *next_frame,
-		    CORE_ADDR          instr_addr,
-		    int               *reg_offset) 
-{
-  uint32_t  instr  = or1k_fetch_instruction (next_frame, instr_addr);
-  int       opcode = OR1K_OPCODE1 (instr);
-  int       ra;
-  int       rb;
-  int       imm;
-
-  if (OR1K_OP_SW != opcode)
-    {
-      return -1;
-    }
-
-  ra  = OR1K_A_REG (instr);
-  rb  = OR1K_B_REG (instr);
-  imm = OR1K_IMM2 (instr);
-
-  if(OR1K_SP_REGNUM != ra)
-    {
-      return -1;
-    }
-
-  if ((1 == (rb % 2)) || rb < 10)
-    {
-      return  -1;			/* Not a callee saved register */
-    }
-
-  *reg_offset = imm;
-  return  rb;
-
-}	/* or1k_get_saved_reg() */
-
-
-/*----------------------------------------------------------------------------*/
-/*!Initialize a prologue (unwind) cache
-
-   Build up the information (saved registers etc) for the given frame if it
-   does not already exist.
-
-   The OR1K has a falling stack frame and a simple prolog. The Stack pointer
-   is R1 and the frame pointer R2. The frame base is therefore the address
-   held in R2 and the stack pointer (R1) is the frame base of the NEXT frame.
-
-   @verbatim
-   l.addi  r1,r1,-frame_size	# SP now points to end of new stack frame
-   l.sw    save_loc(r1),r2      # old FP saved in new stack frame
-   l.addi  r2,r1,frame_size     # FP now points to base of new stack frame
-   l.sw    save_loc-4(r1),r9    # Link (return) address
-   l.sw    x(r1),ry             # Save any callee saved regs
-   @endverbatim
-
-   The frame pointer is not necessarily saved right at the end of the stack
-   frame - OR1K saves enough space for any args to called functions right at
-   the end. The offsets x for the various registers saved always rise in
-   increments of 4, starting at save_loc+4.
-
-   This prolog is used, even for -O3 with GCC.
-
-   All this analysis must allow for the possibility that the PC is in the
-   middle of the prologue. Data should only be set up insofar as it has been
-   computed.
-
-   A suite of "helper" routines are used, allowing reuse for
-   or1k_skip_prologue().
-
-   Reportedly, this is only valid for frames less than 0x7fff in size.
-
-   @param[in]     next_frame           The NEXT frame (i.e. inner from here,
-                                       the one THIS frame called)
-   @param[in,out] this_prologue_cache  The prologue cache. If not supplied, we
-                                       build it.
-
-				       @return  The prolog cache (duplicates the return through the argument) */
-/*---------------------------------------------------------------------------*/
-
-static struct trad_frame_cache *
-or1k_frame_unwind_cache (struct frame_info  *next_frame,
-			 void              **this_prologue_cache) 
-{
-  struct gdbarch          *gdbarch;
-  struct trad_frame_cache *info;
-
-  CORE_ADDR                this_pc;
-  CORE_ADDR                this_sp;
-  int                      frame_size;
-  int                      fp_save_offset;
-  int                      tmp;
-
-  CORE_ADDR                start_iaddr;
-  CORE_ADDR                saved_regs_iaddr;
-  CORE_ADDR                prologue_end_iaddr;
-  CORE_ADDR                end_iaddr;
-  
-  int                      regnum;
-
-  /* Nothing to do if we already have this info */
-  if (NULL != *this_prologue_cache)
-    {
-      return *this_prologue_cache;
-    }
-
-  gdbarch = get_frame_arch (next_frame);
-
-  /* Get a new prologue cache and populate it with default values */
-  info                 = trad_frame_cache_zalloc (next_frame);
-  *this_prologue_cache = info;
-
-  /* Find the start address of THIS function (which is a NORMAL frame, even if
-     the NEXT frame is the sentinel frame) and the end of its prologue.  */
-  start_iaddr        = frame_func_unwind (next_frame, NORMAL_FRAME);
-  prologue_end_iaddr = skip_prologue_using_sal (start_iaddr);
-
-  /* Return early if GDB couldn't find the function.  */
-  if (start_iaddr == 0)
-    {
-      return  info;
-    }
-
-  /* Unwind key registers for THIS frame. */
-  this_pc = or1k_unwind_pc (gdbarch, next_frame);
-  this_sp = or1k_unwind_sp (gdbarch, next_frame);
-
-  /* The frame base of THIS frame is its stack pointer. This is the same
-     whether we are frameless or not. */
-  trad_frame_set_this_base (info, this_sp);
-
-  /* We should only examine code that is in the prologue and which has been
-     executed. This is all code up to (but not including) end_iaddr. */
-  end_iaddr = (this_pc > prologue_end_iaddr) ? prologue_end_iaddr : this_pc;
-
-  /* The default is to find the PC of the PREVIOUS frame in the link register
-     of this frame. This may be changed if we find the link register was saved
-     on the stack. */
-  trad_frame_set_reg_realreg (info, OR1K_NPC_REGNUM, OR1K_LR_REGNUM);
-
-  /* All the following analysis only occurs if we are in the prologue and have
-     executed the code. Get THIS frame size (which implies framelessness if
-     zero) */
-
-  if (end_iaddr > start_iaddr)
-    {
-      frame_size = or1k_frame_size (next_frame, start_iaddr);
-    }
-  else
-    {
-      frame_size = 0;
-    }
-
-  /* If we are not frameless, check the other standard components are present
-     as expected */
-  if ((0 != frame_size) && (end_iaddr > (start_iaddr + OR1K_INSTLEN)))
-    {
-      int  i;
-
-      /* If we are not frameless, the frame pointer of the PREVIOUS frame can
-	 be found at offset fp_save_offset from the stack pointer in THIS
-	 frame. */
-      fp_save_offset = or1k_frame_fp_loc (next_frame,
-					  start_iaddr + OR1K_INSTLEN);
-      if (-1 == fp_save_offset)
+      switch (format[i])
 	{
-	  error ("or1k_frame_unwind_cache: "
-		 "invalid frame pointer save instruction at address %08llx\n",
-		 (long long unsigned int)(ULONGEST)(start_iaddr + OR1K_INSTLEN));
-	}
-      else
-	{
-	  trad_frame_set_reg_addr (info, OR1K_FP_REGNUM,
-				   this_sp + fp_save_offset);
-	}
-
-      /* The frame pointer should be set up to match the allocated stack
-	 size */
-      if (end_iaddr > (start_iaddr + (2 * OR1K_INSTLEN)))
-	{
-	  tmp = or1k_frame_size_check (next_frame,
-				       start_iaddr + (2 * OR1K_INSTLEN));
-
-	  if (-1 == tmp)
+	case ' ': i++; break;	/* Formatting: ignored */
+	  
+	case '0': case '1':	/* Constant bit field */
+	  bits = (inst >> (OR1K_INSTBITLEN - iptr - 1)) & 0x1;
+	
+	  if ((format[i] - '0') != bits)
 	    {
-	      error ("or1k_frame_unwind_cache: "
-		     "no frame pointer set up instruction at address %08llx\n",
-		     (long long unsigned int)(ULONGEST)(start_iaddr + (2 * OR1K_INSTLEN)));
+	      return  0;
 	    }
-	  else if (frame_size != tmp)
+
+	  iptr++;
+	  i++;
+	  break;
+
+	case '%':		/* Bit field */
+	  i++;
+	  start_ptr = &(format[i]);
+	  width     = strtoul (start_ptr, &end_ptr, 10);
+
+	  /* Check we got something, and if so skip on */
+	  if (start_ptr == end_ptr)
 	    {
-	      error ("or1k_frame_unwind_cache: "
-		     "frame pointer set to wrong size  at address %08llx: "
-		     "expected %d, got %d\n",
-		     (long long unsigned int)(ULONGEST)(start_iaddr + (2* OR1K_INSTLEN)), frame_size,
-		     tmp);
+	      fatal ("bitstring \"%s\" at offset %d has no length field.\n",
+		     format, i);
+	    }
+
+	  i += end_ptr - start_ptr;
+
+	  /* Look for and skip the terminating 'b'. If it's not there, we
+	     still give a fatal error, because these are fixed strings that
+	     just should not be wrong. */
+	  if ('b' != format[i++])
+	    {
+	      fatal ("bitstring \"%s\" at offset %d has no terminating 'b'.\n",
+		     format, i);
+	    }
+
+	  /* Break out the field. There is a special case with a bit width of
+	     32. */
+	  if (32 == width)
+	    {
+	      bits = inst;
 	    }
 	  else
 	    {
-	      /* If we have got this far, the stack pointer of the PREVIOUS
-		 frame is the frame pointer of THIS frame. */
-	      trad_frame_set_reg_realreg (info, OR1K_SP_REGNUM, OR1K_FP_REGNUM);
-	    }
-	}
-      /* If the link register is saved in the THIS frame, it holds the value
-	 of the PC in the PREVIOUS frame. This overwrites the previous
-	 information about finding the PC in the link register. */
-      if (end_iaddr > (start_iaddr + (2 * OR1K_INSTLEN)))
-	{
-	  tmp = or1k_link_address (next_frame,
-				   start_iaddr + (3 * OR1K_INSTLEN));
-	  if ((-1 != tmp) && (tmp == (fp_save_offset - OR1K_INSTLEN)))
-	    {
-	      trad_frame_set_reg_addr (info, OR1K_LR_REGNUM, this_sp + tmp);
-	      trad_frame_set_reg_addr (info, OR1K_NPC_REGNUM, this_sp + tmp);
-	      saved_regs_iaddr = start_iaddr + (3 * OR1K_INSTLEN);
-	    }
-	  else
-	    {
-	      saved_regs_iaddr = start_iaddr + (2 * OR1K_INSTLEN);
+	      bits = (inst >> (OR1K_INSTBITLEN - iptr - width)) & ((1 << width) - 1);
 	    }
 
-	  /* Retrieve any saved register information */
-	  for (i = OR1K_INSTLEN;
-	       saved_regs_iaddr + i < end_iaddr;
-	       i += OR1K_INSTLEN)
-	    {
-	      regnum = or1k_get_saved_reg (next_frame, saved_regs_iaddr + i,
-					   &tmp);
+	  arg_ptr   = va_arg (ap, uint32_t *);
+	  *arg_ptr  = bits;
+	  iptr     += width;
+	  break;
 
-	      if ((regnum < 0) || (tmp != (fp_save_offset + i)))
-		{
-		  break;			/* End of register saves */
-		}
-
-	      /* The register in the PREVIOUS frame can be found at this
-		 location in THIS frame */
-	      trad_frame_set_reg_addr (info, regnum,
-				       this_sp + fp_save_offset + i);
-	    }
+	default:
+	  fatal ("invalid character in bitstring \"%s\" at offset %d.\n",
+		 format, i);
+	  break;
 	}
     }
 
-  /* Build the frame ID */
-  trad_frame_set_id (info, frame_id_build (this_sp, start_iaddr));
+  /* Is the length OK? */
+  gdb_assert (OR1K_INSTBITLEN == iptr);
 
-  return info;
+  return  1;				/* We succeeded */
 
-}	/* or1k_frame_unwind_cache() */
+}	/* or1k_analyse_inst () */
 
 
-/*----------------------------------------------------------------------------*/
-/*!Find the frame ID of this frame
-
-   Given a GDB frame (called by THIS frame), determine the address of oru
-   frame and from this create a new GDB frame struct. The info required is
-   obtained from the prologue cache for THIS frame.
-
-   @param[in] next_frame            The NEXT frame (i.e. inner from here, the
-                                    one THIS frame called)
-   @param[in]  this_prologue_cache  Any cached prologue for THIS function.
-   @param[out] this_id              Frame ID of our own frame.
-
-   @return  Frame ID for THIS frame */
 /*---------------------------------------------------------------------------*/
+/*!Analyse a l.addi instruction
 
-static void
-or1k_frame_this_id (struct frame_info  *next_frame,
-		    void              **this_prologue_cache,
-		    struct frame_id    *this_id) 
-{
-  struct trad_frame_cache *info =
-    or1k_frame_unwind_cache (next_frame, this_prologue_cache);
+   General form is:
 
-  trad_frame_get_id (info, this_id);
+     l.addi  rD,rA,I
 
-}	/* or1k_frame_this_id() */
+   Makes use of the generic analysis function (@see or1k_analyse_inst ()).
 
+   @param[in]  inst      The instruction to analyse.
+   @param[out] rd_ptr    Pointer to the rD value.
+   @param[out] ra_ptr    Pointer to the rA value.
+   @param[out] simm_ptr  Pointer to the signed immediate value.
 
-/*----------------------------------------------------------------------------*/
-/*!Get a register from THIS frame
-
-   Given a pointer to the NEXT frame, return the details of a register in the
-   PREVIOUS frame.
-
-   @param[in] next_frame            The NEXT frame (i.e. inner from here, the
-                                    one THIS frame called)
-   @param[in]  this_prologue_cache  Any cached prologue associated with THIS
-                                    frame, which may therefore tell us about
-                                    registers in the PREVIOUS frame.
-   @param[in]  regnum               The register of interest in the PREVIOUS
-                                    frame
-   @param[out] optimizedp           True (1) if the register has been
-                                    optimized out.
-   @param[out] lvalp                What sort of l-value (if any) does the
-                                    register represent
-   @param[out] addrp                Address in THIS frame where the register's
-                                    value may be found (-1 if not available)
-   @param[out] realregp             Register in this frame where the
-                                    register's value may be found (-1 if not
-                                    available)
-   @param[out] bufferp              If non-NULL, buffer where the value held
-   in the register may be put */
-/*--------------------------------------------------------------------------*/
-
-static void
-or1k_frame_prev_register (struct frame_info  *next_frame,
-			  void              **this_prologue_cache,
-			  int                 regnum,
-			  int                *optimizedp,
-			  enum lval_type     *lvalp,
-			  CORE_ADDR          *addrp,
-			  int                *realregp,
-			  gdb_byte           *bufferp) 
-{
-  struct trad_frame_cache *info =
-    or1k_frame_unwind_cache (next_frame, this_prologue_cache);
-
-  trad_frame_get_register (info, next_frame, regnum, optimizedp, lvalp, addrp,
-			   realregp, bufferp);
-
-}	/* or1k_frame_prev_register() */
-
-
-/*----------------------------------------------------------------------------*/
-/*!Return the base address of the frame
-
-   The commenting in the GDB source code could mean our stack pointer or our
-   frame pointer, since we have a falling stack, but index within the frame
-   using negative offsets from the FP.
-
-   This seems to be the function used to determine the value of $fp, but the
-   value required seems to be the stack pointer, so we return that, even if
-   the value of $fp will be wrong.
-
-   @param[in] next_frame            The NEXT frame (i.e. inner from here, the
-                                    one THIS frame called)
-   @param[in]  this_prologue_cache  Any cached prologue for THIS function.
-
-   @return  The frame base address */
+   @return  1 (TRUE) if the instruction matches, 0 (FALSE) otherwise.        */
 /*---------------------------------------------------------------------------*/
-
-static CORE_ADDR
-or1k_frame_base_address (struct frame_info  *next_frame,
-			 void              **this_prologue_cache) 
+static int
+or1k_analyse_l_addi (uint32_t      inst,
+		     unsigned int *rd_ptr,
+		     unsigned int *ra_ptr,
+		     int          *simm_ptr)
 {
-  return  frame_unwind_register_unsigned (next_frame, OR1K_SP_REGNUM);
+  /* Instruction fields */
+  uint32_t  rd, ra, i;
 
-}	/* or1k_frame_base_address() */
+  if (or1k_analyse_inst (inst, "10 0111 %5b %5b %16b", &rd, &ra, &i))
+    {
+      /* Found it. Construct the result fields */
+      *rd_ptr   = (unsigned int) rd;
+      *ra_ptr   = (unsigned int) ra;
+      *simm_ptr = (int) (((i & 0x8000) == 0x8000) ? 0xffff0000 | i : i);
+
+      return  1;		/* Success */
+    }
+  else
+    {
+      return  0;		/* Failure */
+    }
+}	/* or1k_analyse_l_addi () */
+
+
+/*---------------------------------------------------------------------------*/
+/*!Analyse a l.sw instruction
+
+   General form is:
+
+     l.sw  I(rA),rB
+
+   Makes use of the generic analysis function (@see or1k_analyse_inst ()).
+
+   @param[in]  inst      The instruction to analyse.
+   @param[out] simm_ptr  Pointer to the signed immediate value.
+   @param[out] ra_ptr    Pointer to the rA value.
+   @param[out] rb_ptr    Pointer to the rB value.
+
+   @return  1 (TRUE) if the instruction matches, 0 (FALSE) otherwise.        */
+/*---------------------------------------------------------------------------*/
+static int
+or1k_analyse_l_sw (uint32_t      inst,
+		   int          *simm_ptr,
+		   unsigned int *ra_ptr,
+		   unsigned int *rb_ptr)
+{
+  /* Instruction fields */
+  uint32_t  ihi, ilo, ra, rb;
+
+  if (or1k_analyse_inst (inst, "11 0101 %5b %5b %5b %11b", &ihi, &ra, &rb,
+			 &ilo))
+
+    {
+      /* Found it. Construct the result fields */
+      *simm_ptr  = (int) ((ihi << 11) | ilo);
+      *simm_ptr |= ((ihi & 0x10) == 0x10) ? 0xffff0000 : 0;
+
+      *ra_ptr    = (unsigned int) ra;
+      *rb_ptr    = (unsigned int) rb;
+
+      return  1;		/* Success */
+    }
+  else
+    {
+      return  0;		/* Failure */
+    }
+}	/* or1k_analyse_l_sw () */
 
 
 
@@ -1301,215 +787,92 @@ or1k_register_reggroup_p (struct gdbarch  *gdbarch,
    or1k_frame_unwind_cache().
 
    This function reuses the helper functions from or1k_frame_unwind_cache() to
-   locate the various parts of the prolog.
-
-   This is very tricky. Essentially we look for the parts of a prolog.  If we
-   get a mismatch, we never know if it is because we are not in prolog, or
-   because the prolog is broken.
+   locate the various parts of the prolog, any or all of which may be missing.
 
    @param[in] gdbarch  The GDB architecture being used
    @param[in] pc       Current program counter
 
    @return  The address of the end of the prolog if the PC is in a function
-   prologue, otherwise the input  address. */
-/*--------------------------------------------------------------------------*/
+            prologue, otherwise the input  address.                           */
+/*----------------------------------------------------------------------------*/
 
 static CORE_ADDR
 or1k_skip_prologue (struct gdbarch *gdbarch,
 		    CORE_ADDR       pc) 
 {
-  enum {
-    OR1K_FRAME_SIZE,
-    OR1K_FP_SAVED,
-    OR1K_NEW_FP,
-    OR1K_LR_SAVE,
-    OR1K_REG_SAVE,
-    OR1K_NO_PROLOGUE
-  } start_pos = OR1K_NO_PROLOGUE;
+  CORE_ADDR     addr;
+  uint32_t      inst;
 
-  CORE_ADDR  addr     = pc;
-  int        frame_size;
-  int        fp_save_offset;
-  int        tmp;
-  int        i;
+  unsigned int  ra, rb, rd;		/* For instruction analysis */
+  int           simm;
+      
+  int           frame_size = 0;
 
-  CORE_ADDR  start_addr;
-  CORE_ADDR  end_addr;
-  
-  /* Try using SAL first */
-  if (find_pc_partial_function (pc, NULL, &start_addr, &end_addr))
+  /* Try using SAL first if we have symbolic information available. */
+  if (find_pc_partial_function (pc, NULL, NULL, NULL))
     {
       CORE_ADDR  prologue_end = skip_prologue_using_sal( pc );
 
-      if (prologue_end > pc)
-	{
-	  return  prologue_end;
-	}
-      else
-	{
-	  return  pc;
-	}
+      return  (prologue_end > pc) ? prologue_end : pc;
     }
 
-  frame_size = or1k_frame_size (NULL, addr);
+  /* Look to see if we can find any of the standard prologue sequence. All
+     quite difficult, since any or all of it may be missing. So this is just a
+     best guess! */
+  addr = pc;				/* Where we have got to */
+  inst = or1k_fetch_instruction (NULL, addr);
 
-  if (0 != frame_size)
+  /* Look for the new stack pointer being set up. */
+  if (or1k_analyse_l_addi (inst, &rd, &ra, &simm) &&
+      (OR1K_SP_REGNUM == rd) && (OR1K_SP_REGNUM == ra) &&
+      (simm < 0) && (0 == (simm % 4)))
     {
-      /* We seem to have the start of a prolog */
-      start_pos = OR1K_FRAME_SIZE;
+      frame_size  = -simm;
+      addr       += OR1K_INSTLEN;
+      inst        = or1k_fetch_instruction (NULL, addr);
+    }
+
+  /* Look for the frame pointer being manipulated. */
+  if (or1k_analyse_l_sw (inst, &simm, &ra, &rb) &&
+      (OR1K_SP_REGNUM == ra) && (OR1K_FP_REGNUM == rb) &&
+      (simm >= 0) && (0 == (simm % 4)))
+    {
       addr += OR1K_INSTLEN;
+      inst  = or1k_fetch_instruction (NULL, addr);
+
+      gdb_assert (or1k_analyse_l_addi (inst, &rd, &ra, &simm) &&
+		  (OR1K_FP_REGNUM == rd) && (OR1K_SP_REGNUM == ra) &&
+		  (simm == frame_size));
+
+      addr += OR1K_INSTLEN;
+      inst  = or1k_fetch_instruction (NULL, addr);
     }
 
-  /* Look for the previous frame pointer being saved. If we are in a frame,
-     then this must be here. */
-  fp_save_offset = or1k_frame_fp_loc (NULL, addr);
+  /* Look for the link register being saved */
+  if (or1k_analyse_l_sw (inst, &simm, &ra, &rb) &&
+      (OR1K_SP_REGNUM == ra) && (OR1K_LR_REGNUM == rb) &&
+      (simm >= 0) && (0 == (simm % 4)))
+    {
+      addr += OR1K_INSTLEN;
+      inst  = or1k_fetch_instruction (NULL, addr);
+    }
 
-  switch (start_pos) 
-   {
-    case OR1K_FRAME_SIZE:
-      if (-1 == fp_save_offset)
+  /* Look for callee-saved register being saved. The register must be one
+     of the 10 callee saved registers (r10, r12, r14, r16, r18, r20, r22,
+     r24, r26, r28, r30).*/
+  while (1)
+    {
+      if (or1k_analyse_l_sw (inst, &simm, &ra, &rb) &&
+	  (OR1K_SP_REGNUM == ra) && (rb >= OR1K_FIRST_SAVED_REGNUM) &&
+	  (0 == rb % 2) && (simm >= 0) && (0 == (simm % 4)))
 	{
-	  error ("or1k_skip_prolog: "
-		 "old frame pointer not saved at address %08llx: giving up\n",
-		 (long long unsigned int)(ULONGEST)addr);
+	  addr += OR1K_INSTLEN;
+	  inst  = or1k_fetch_instruction (NULL, addr);
 	}
       else
 	{
-	  addr += OR1K_INSTLEN;
-	}
-
-      break;
-
-    default:
-      start_pos  = OR1K_FP_SAVED;
-      addr      += OR1K_INSTLEN;
-      break;
-    }
-
-  /* Look for new FP being set up. This must match the frame_size if that is
-     known. */
-  tmp = or1k_frame_size_check (NULL, addr);
-  switch (start_pos) 
-   {
-    case OR1K_FRAME_SIZE:
-      if (frame_size != tmp)
-	{
-	  error ("or1k_skip_prolog: "
-		 "frame pointer set to wrong size  at address %08llx: "
-		 "expected %d, got %d\n", (long long unsigned int)(ULONGEST)addr, frame_size, tmp);
-	}
-      else
-	{
-	  addr += OR1K_INSTLEN;
-	}
-
-      break;
-
-    case OR1K_FP_SAVED:
-      if (-1 == tmp)
-	{
-	  error ("or1k_skip_prolog: "
-		 "no frame pointer set up instruction at address %08llx\n",
-		 (long long unsigned int)(ULONGEST)addr);
-	}
-      else
-	{
-	  addr += OR1K_INSTLEN;
-	}
-
-      break;
-
-    default:
-      if (-1 != tmp)
-	{
-	  start_pos  = OR1K_NEW_FP;
-	  addr      += OR1K_INSTLEN;
-	}
-    }
-
-  /* Look for the link register being saved. If we are in a prolog sequence,
-     and is there then it should save to a particular location. */
-  tmp = or1k_link_address (NULL, addr);
-  switch (start_pos) 
-   {
-    case OR1K_FRAME_SIZE:
-    case OR1K_FP_SAVED:
-      if ((-1 != tmp) && (tmp != fp_save_offset - OR1K_INSTLEN))
-	{
-	  error ("or1k_skip_prolog: "
-		 "link address saved to wrong offset at address %08llx: "
-		 "expected %d, got %d\n", (long long unsigned int)(ULONGEST)addr,
-		 fp_save_offset - OR1K_INSTLEN, tmp);
-	}
-      else
-	{
-	  addr += OR1K_INSTLEN;
-	}
-
-      break;
-
-    default:
-      if (-1 != tmp)
-	{
-	  start_pos  = OR1K_LR_SAVE;
-	  addr      += OR1K_INSTLEN;
-	}
-    }
-
-  /* Skip saved registers */
-  for (i = 0;; i += OR1K_INSTLEN) 
-   {
-      int  regnum = or1k_get_saved_reg (NULL, addr, &tmp);
-
-      switch (start_pos) 
-	{
-	case OR1K_FRAME_SIZE:
-	case OR1K_FP_SAVED:
-	  if (-1  != regnum)
-	   {
-	      if (tmp != fp_save_offset + ((i - 1) * OR1K_INSTLEN))
-		{
-		  error ("or1k_skip_prolog: callee register saved to wrong "
-			 "offset at address %08llx: "
-			 "expected %d, got %d\n", (long long unsigned int)(ULONGEST)addr,
-			 fp_save_offset + ((i - 1) * OR1K_INSTLEN), tmp);
-		}
-	      else
-		{
-		  addr += 4;
-		}
-	    }
-	  else
-	   {
-	      return  addr;
-	    }
-
-	  break;
-
-	case OR1K_NEW_FP:
-	case OR1K_LR_SAVE:
-	case OR1K_REG_SAVE:
-	  if (-1 != regnum)
-	   {
-	      addr += 4;
-	    }
-	  else
-	   {
-	      return  addr;
-	    }
-
-	default:
-	  if (-1 != regnum)
-	   {
-	      start_pos  = OR1K_REG_SAVE;
-	      addr += 4;
-	    }
-	  else
-	   {
-	      return  pc;		/* Not in a prolog */
-	    }
-
-	  break;
+	  /* Nothing else to look for. We have found the end of the prologue. */
+	  return  addr;
 	}
     }
 }	/* or1k_skip_prologue() */
@@ -1551,7 +914,9 @@ static CORE_ADDR
 or1k_unwind_pc (struct gdbarch    *gdbarch,
 		struct frame_info *next_frame) 
 {
-  return frame_unwind_register_unsigned (next_frame, OR1K_NPC_REGNUM);
+  CORE_ADDR pc = frame_unwind_register_unsigned (next_frame, OR1K_NPC_REGNUM);
+
+  return pc;
 
 }	/* or1k_unwind_pc() */
 
@@ -1571,7 +936,9 @@ static CORE_ADDR
 or1k_unwind_sp (struct gdbarch    *gdbarch,
 		struct frame_info *next_frame) 
 {
-  return frame_unwind_register_unsigned (next_frame, OR1K_SP_REGNUM);
+  CORE_ADDR sp = frame_unwind_register_unsigned (next_frame, OR1K_SP_REGNUM);
+
+  return sp;
 
 }	/* or1k_unwind_sp() */
 
@@ -1795,6 +1162,351 @@ or1k_unwind_dummy_id (struct gdbarch    *gdbarch,
     }
 
 }	/* or1k_unwind_dummy_id() */
+
+
+
+
+
+/* Support functions for frame handling */
+
+
+/*----------------------------------------------------------------------------*/
+/*!Initialize a prologue (unwind) cache
+
+   Build up the information (saved registers etc) for the given frame if it
+   does not already exist.
+
+   STACK FORMAT
+   ============
+
+   The OR1K has a falling stack frame and a simple prolog. The Stack pointer
+   is R1 and the frame pointer R2. The frame base is therefore the address
+   held in R2 and the stack pointer (R1) is the frame base of the NEXT frame.
+
+   @verbatim
+   l.addi  r1,r1,-frame_size	# SP now points to end of new stack frame
+   @endverbatim
+
+   The stack pointer may not be set up in a frameless function (e.g. a simple
+   leaf function).
+
+   @verbatim
+   l.sw    fp_loc(r1),r2        # old FP saved in new stack frame
+   l.addi  r2,r1,frame_size     # FP now points to base of new stack frame
+   @endverbatim
+
+   The frame pointer is not necessarily saved right at the end of the stack
+   frame - OR1K saves enough space for any args to called functions right at
+   the end (this is a difference from the Architecture Manual).
+
+   @verbatim
+   l.sw    lr_loc(r1),r9        # Link (return) address
+   @endverbatim
+
+   The link register is usally saved at fp_loc - 4. It may not be saved at all
+   in a leaf function.
+
+   @verbatim
+   l.sw    reg_loc(r1),ry       # Save any callee saved regs
+   @endverbatim
+
+   The offsets x for the callee saved registers generally (always?) rise in
+   increments of 4, starting at fp_loc + 4. If the frame pointer is omitted
+   (an option to GCC), then it may not be saved at all. There may be no callee
+   saved registers.
+
+   So in summary none of this may be present. However what is present seems
+   always to follow this fixed order, and occur before any substantive code
+   (it is possible for GCC to have more flexible scheduling of the prologue,
+   but this does not seem to occur for OR1K).
+
+   ANALYSIS
+   ========
+
+   This prolog is used, even for -O3 with GCC.
+
+   All this analysis must allow for the possibility that the PC is in the
+   middle of the prologue. Data should only be set up insofar as it has been
+   computed.
+
+   A suite of "helper" routines are used, allowing reuse for
+   or1k_skip_prologue().
+
+   Reportedly, this is only valid for frames less than 0x7fff in size.
+
+   @param[in]     next_frame           The NEXT frame (i.e. inner from here,
+                                       the one THIS frame called)
+   @param[in,out] this_prologue_cache  The prologue cache. If not supplied, we
+                                       build it.
+
+   @return  The prolog cache (duplicates the return through the argument) */
+/*---------------------------------------------------------------------------*/
+
+static struct trad_frame_cache *
+or1k_frame_unwind_cache (struct frame_info  *next_frame,
+			 void              **this_prologue_cache) 
+{
+  struct gdbarch          *gdbarch;
+  struct trad_frame_cache *info;
+
+  CORE_ADDR                this_pc;
+  CORE_ADDR                this_sp;
+  int                      frame_size = 0;
+
+  CORE_ADDR                start_addr;
+  CORE_ADDR                end_addr;
+  
+  /* Nothing to do if we already have this info */
+  if (NULL != *this_prologue_cache)
+    {
+      return *this_prologue_cache;
+    }
+
+  /* Get a new prologue cache and populate it with default values */
+  info                 = trad_frame_cache_zalloc (next_frame);
+  *this_prologue_cache = info;
+
+  /* Find the start address of THIS function (which is a NORMAL frame, even if
+     the NEXT frame is the sentinel frame) and the end of its prologue.  */
+  start_addr = frame_func_unwind (next_frame, NORMAL_FRAME);
+
+  /* Return early if GDB couldn't find the function.  */
+  if (start_addr == 0)
+    {
+      return  info;
+    }
+
+  /* Unwind key registers for THIS frame. */
+  gdbarch = get_frame_arch (next_frame);
+  this_pc = or1k_unwind_pc (gdbarch, next_frame);
+  this_sp = or1k_unwind_sp (gdbarch, next_frame);
+
+  /* The frame base of THIS frame is its stack pointer. This is the same
+     whether we are frameless or not. */
+  trad_frame_set_this_base (info, this_sp);
+
+  /* The default is to find the PC of the PREVIOUS frame in the link register
+     of this frame. This may be changed if we find the link register was saved
+     on the stack. */
+  trad_frame_set_reg_realreg (info, OR1K_NPC_REGNUM, OR1K_LR_REGNUM);
+
+  /* We should only examine code that is in the prologue and which has been
+     executed. This is all code up to (but not including) end_addr or the PC,
+     whichever is first. */
+  end_addr = or1k_skip_prologue (gdbarch, start_addr);
+  end_addr = (this_pc > end_addr) ? end_addr : this_pc;
+
+  /* All the following analysis only occurs if we are in the prologue and have
+     executed the code. Check we have a sane prologue size, and if zero we
+     are frameless and can give up here. */
+  if (end_addr < start_addr)
+    {
+      fatal ("end addr 0x%08x is less than start addr 0x%08x\n",
+	     (unsigned int) end_addr, (unsigned int) start_addr);
+    }
+
+  if (end_addr == start_addr)
+    {
+      frame_size = 0;
+    }
+  else
+    {
+      /* have a frame. Look for the various components */
+      CORE_ADDR  addr = start_addr;	/* Where we have got to */
+      uint32_t   inst = or1k_fetch_instruction (next_frame, addr);
+
+      unsigned int  ra, rb, rd;		/* For instruction analysis */
+      int           simm;
+      
+      /* Look for the new stack pointer being set up. */
+      if (or1k_analyse_l_addi (inst, &rd, &ra, &simm) &&
+	  (OR1K_SP_REGNUM == rd) && (OR1K_SP_REGNUM == ra) &&
+	  (simm < 0) && (0 == (simm % 4)))
+	{
+	  frame_size  = -simm;
+	  addr       += OR1K_INSTLEN;
+	  inst        = or1k_fetch_instruction (next_frame, addr);
+
+	  /* The stack pointer of the PREVIOUS frame is frame_size greater
+	     than the stack pointer of THIS frame. */
+	  trad_frame_set_reg_value (info, OR1K_SP_REGNUM,
+				    this_sp + frame_size);
+	}
+
+      /* Look for the frame pointer being manipulated. */
+      if ((addr < end_addr) &&
+	  or1k_analyse_l_sw (inst, &simm, &ra, &rb) &&
+	  (OR1K_SP_REGNUM == ra) && (OR1K_FP_REGNUM == rb) &&
+	  (simm >= 0) && (0 == (simm % 4)))
+	{
+	  addr += OR1K_INSTLEN;
+	  inst  = or1k_fetch_instruction (next_frame, addr);
+
+	  /* At this stage, we can find the frame pointer of the PREVIOUS
+	     frame on the stack of the current frame. */
+	  trad_frame_set_reg_addr (info, OR1K_FP_REGNUM, this_sp + simm);
+
+	  /* Look for the new frame pointer being set up */
+	  if (addr < end_addr)
+	    {
+	      gdb_assert (or1k_analyse_l_addi (inst, &rd, &ra, &simm) &&
+			  (OR1K_FP_REGNUM == rd) && (OR1K_SP_REGNUM == ra) &&
+			  (simm == frame_size));
+
+	      addr += OR1K_INSTLEN;
+	      inst  = or1k_fetch_instruction (next_frame, addr);
+
+	      /* If we have got this far, the stack pointer of the PREVIOUS
+		 frame is the frame pointer of THIS frame. */
+	      trad_frame_set_reg_realreg (info, OR1K_SP_REGNUM, OR1K_FP_REGNUM);
+	    }
+	}
+
+      /* Look for the link register being saved */
+      if ((addr < end_addr) &&
+	  or1k_analyse_l_sw (inst, &simm, &ra, &rb) &&
+	  (OR1K_SP_REGNUM == ra) && (OR1K_LR_REGNUM == rb) &&
+	  (simm >= 0) && (0 == (simm % 4)))
+	{
+	  addr += OR1K_INSTLEN;
+	  inst  = or1k_fetch_instruction (next_frame, addr);
+
+	  /* If the link register is saved in the THIS frame, it holds the
+	     value of the PC in the PREVIOUS frame. This overwrites the
+	     previous information about finding the PC in the link
+	     register. */
+	  trad_frame_set_reg_addr (info, OR1K_NPC_REGNUM, this_sp + simm);
+	}
+
+      /* Look for callee-saved register being save. The register must be one
+	 of the 10 callee saved registers (r10, r12, r14, r16, r18, r20, r22,
+	 r24, r26, r28, r30).*/
+      while (addr < end_addr)
+	{
+	  if (or1k_analyse_l_sw (inst, &simm, &ra, &rb) &&
+	      (OR1K_SP_REGNUM == ra) && (rb >= OR1K_FIRST_SAVED_REGNUM) &&
+	      (0 == rb % 2) && (simm >= 0) && (0 == (simm % 4)))
+	    {
+	      addr += OR1K_INSTLEN;
+	      inst  = or1k_fetch_instruction (next_frame, addr);
+
+	      /* The register in the PREVIOUS frame can be found at this
+		 location in THIS frame */
+	      trad_frame_set_reg_addr (info, rb, this_sp + simm);
+	    }
+	  else
+	    {
+	      break;			/* Not a register save instruction */
+	    }
+	}
+    }
+
+  /* Build the frame ID */
+  trad_frame_set_id (info, frame_id_build (this_sp, start_addr));
+
+  return info;
+
+}	/* or1k_frame_unwind_cache() */
+
+
+/*----------------------------------------------------------------------------*/
+/*!Find the frame ID of this frame
+
+   Given a GDB frame (called by THIS frame), determine the address of oru
+   frame and from this create a new GDB frame struct. The info required is
+   obtained from the prologue cache for THIS frame.
+
+   @param[in] next_frame            The NEXT frame (i.e. inner from here, the
+                                    one THIS frame called)
+   @param[in]  this_prologue_cache  Any cached prologue for THIS function.
+   @param[out] this_id              Frame ID of our own frame.
+
+   @return  Frame ID for THIS frame */
+/*---------------------------------------------------------------------------*/
+
+static void
+or1k_frame_this_id (struct frame_info  *next_frame,
+		    void              **this_prologue_cache,
+		    struct frame_id    *this_id) 
+{
+  struct trad_frame_cache *info =
+    or1k_frame_unwind_cache (next_frame, this_prologue_cache);
+
+  trad_frame_get_id (info, this_id);
+
+}	/* or1k_frame_this_id() */
+
+
+/*----------------------------------------------------------------------------*/
+/*!Get a register from THIS frame
+
+   Given a pointer to the NEXT frame, return the details of a register in the
+   PREVIOUS frame.
+
+   @param[in] next_frame            The NEXT frame (i.e. inner from here, the
+                                    one THIS frame called)
+   @param[in]  this_prologue_cache  Any cached prologue associated with THIS
+                                    frame, which may therefore tell us about
+                                    registers in the PREVIOUS frame.
+   @param[in]  regnum               The register of interest in the PREVIOUS
+                                    frame
+   @param[out] optimizedp           True (1) if the register has been
+                                    optimized out.
+   @param[out] lvalp                What sort of l-value (if any) does the
+                                    register represent
+   @param[out] addrp                Address in THIS frame where the register's
+                                    value may be found (-1 if not available)
+   @param[out] realregp             Register in this frame where the
+                                    register's value may be found (-1 if not
+                                    available)
+   @param[out] bufferp              If non-NULL, buffer where the value held
+   in the register may be put */
+/*--------------------------------------------------------------------------*/
+
+static void
+or1k_frame_prev_register (struct frame_info  *next_frame,
+			  void              **this_prologue_cache,
+			  int                 regnum,
+			  int                *optimizedp,
+			  enum lval_type     *lvalp,
+			  CORE_ADDR          *addrp,
+			  int                *realregp,
+			  gdb_byte           *bufferp) 
+{
+  struct trad_frame_cache *info =
+    or1k_frame_unwind_cache (next_frame, this_prologue_cache);
+
+  trad_frame_get_register (info, next_frame, regnum, optimizedp, lvalp, addrp,
+			   realregp, bufferp);
+
+}	/* or1k_frame_prev_register() */
+
+
+/*----------------------------------------------------------------------------*/
+/*!Return the base address of the frame
+
+   The commenting in the GDB source code could mean our stack pointer or our
+   frame pointer, since we have a falling stack, but index within the frame
+   using negative offsets from the FP.
+
+   This seems to be the function used to determine the value of $fp, but the
+   value required seems to be the stack pointer, so we return that, even if
+   the value of $fp will be wrong.
+
+   @param[in] next_frame            The NEXT frame (i.e. inner from here, the
+                                    one THIS frame called)
+   @param[in]  this_prologue_cache  Any cached prologue for THIS function.
+
+   @return  The frame base address */
+/*---------------------------------------------------------------------------*/
+
+static CORE_ADDR
+or1k_frame_base_address (struct frame_info  *next_frame,
+			 void              **this_prologue_cache) 
+{
+  return  frame_unwind_register_unsigned (next_frame, OR1K_SP_REGNUM);
+
+}	/* or1k_frame_base_address() */
 
 
 /*----------------------------------------------------------------------------*/

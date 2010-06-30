@@ -219,16 +219,17 @@
 #define OR1K_DRR_SPRNUM      OR1K_SPR (OR1K_SPG_DEBUG, OR1K_SPG_DEBUG_DRR)
 
 /* General Purpose Registers */
-#define OR1K_ZERO_REGNUM       0
-#define OR1K_SP_REGNUM         1
-#define OR1K_FP_REGNUM         2
-#define OR1K_FIRST_ARG_REGNUM  3
-#define OR1K_LAST_ARG_REGNUM   8
-#define OR1K_LR_REGNUM         9
-#define OR1K_RV_REGNUM        11
-#define OR1K_PPC_REGNUM      (OR1K_MAX_GPR_REGS + 0)
-#define OR1K_NPC_REGNUM      (OR1K_MAX_GPR_REGS + 1)
-#define OR1K_SR_REGNUM       (OR1K_MAX_GPR_REGS + 2)
+#define OR1K_ZERO_REGNUM          0
+#define OR1K_SP_REGNUM            1
+#define OR1K_FP_REGNUM            2
+#define OR1K_FIRST_ARG_REGNUM     3
+#define OR1K_LAST_ARG_REGNUM      8
+#define OR1K_LR_REGNUM            9
+#define OR1K_FIRST_SAVED_REGNUM  10
+#define OR1K_RV_REGNUM           11
+#define OR1K_PPC_REGNUM          (OR1K_MAX_GPR_REGS + 0)
+#define OR1K_NPC_REGNUM          (OR1K_MAX_GPR_REGS + 1)
+#define OR1K_SR_REGNUM           (OR1K_MAX_GPR_REGS + 2)
 
 /* Defines for Debug Control Register bits */
 
@@ -326,6 +327,7 @@
 #define OR1K_MAX_HW_WATCHES          OR1K_MAX_MATCHPOINTS
 #define OR1K_STACK_ALIGN             4
 #define OR1K_INSTLEN                 4
+#define OR1K_INSTBITLEN              (OR1K_INSTLEN * 8)
 #define OR1K_NUM_TAP_RECORDS         8
 #define OR1K_FRAME_RED_ZONE_SIZE  2536
 
