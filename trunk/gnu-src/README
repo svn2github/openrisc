@@ -1,0 +1,20 @@
+		  OpenRISC Unified GNU Tool Chain Repository
+		  ==========================================
+
+This directory is where you will find all the source trees for the standard
+GNU tool chain. The newlib library is included, since that is required for GCC
+testing.
+
+The structure mirrors that of the main Free Software Foundation repository.
+
+Using a unified directory means that the entire tool chain can be built in a
+single pass. The script "bld.sh" will build a unified source tree in the
+directory "srcw" and then build and install all the tools using the directory
+"bld-or32". Use "./bld.sh --help" to check the options available.
+
+Any questions should be posted on the OpenRISC forum at
+opencores.org/forum,OpenRISC.
+
+
+Jeremy Bennett
+4 July 2010
