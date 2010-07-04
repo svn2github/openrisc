@@ -35,6 +35,12 @@ Boston, MA 02111-1307, USA.  */
     }						\
   while (0)
 
+/* If we are using newlib, then use this version of the library */
+#define LINK_SPEC "%{mor32-newlib:-T ldscripts/or32.ld%s}"
+
+/* Finally specify the newlib lirary */
+#define ENDFILE_SPEC "%{mor32-newlib:libor32.a%s -lc -lgcc}"
+
 #if 0
 
 /* Which library to get.  The only difference from the default is to get
@@ -646,8 +652,11 @@ enum reg_class
 /* Output assembler code to FILE to increment profiler label # LABELNO
    for profiling a function entry.  */
 
-#define FUNCTION_PROFILER(FILE, LABELNO)  \
-   fprintf (FILE, "\tl.load32u\tr0,LP%d\n\tcall\tmcount\n", (LABELNO));
+#define FUNCTION_PROFILER(FILE, LABELNO)                  \
+  fprintf (FILE, "\tl.movhi\tr3,hi(.LP%d)\n", (LABELNO)); \
+  fprintf (FILE, "\tl.ori\tr3,r3,lo(.LP%d)\n", (LABELNO)); \
+  fprintf (FILE, "\tl.j\tmcount\n");                      \
+  fprintf (FILE, "\tl.nop\n");
 
 /* EXIT_IGNORE_STACK should be nonzero if, when returning from a function,
    the stack pointer does not matter.  The value is tested only in

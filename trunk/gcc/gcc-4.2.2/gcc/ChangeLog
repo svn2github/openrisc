@@ -1,3 +1,15 @@
+2010-06-30  Jeremy Bennett  <jeremy.bennett@embecosm.com>
+
+	* config/or32/or32.h <FUNCTION_PROFILER>: Corrected definition.
+	<LINK_SPEC>: Pick up newlib specific linker script.
+	<ENDFILE_SPEC>: Specify newlib library.
+	* config/or32/or32.h <mor32-newlib>: New option added.
+
+2010-06-21  Jeremy Bennett  <jeremy.bennett@embecosm.com>
+
+	* config/or32/or32.md: Duplicate define_insn of "movdf" and "movsf"
+	removed.
+
 2010-06-17  Jungsook yang  <jungsook.yang@uci.edu>
 
 	* config/or32/or32.c (or32_expand_branch): Added SFmode case.

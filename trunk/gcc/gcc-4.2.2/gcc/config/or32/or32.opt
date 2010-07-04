@@ -51,3 +51,7 @@ Emit ROR instructions
 msibcall
 Target Mask(MASK_SIBCALL)
 Enable sibcall optimization
+
+mor32-newlib
+Target RejectNegative
+Link with the OR32 newlib library

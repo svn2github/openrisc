@@ -1,3 +1,9 @@
+2010-06-21  Jeremy Bennett  <jeremy.bennett@embecosm.com>
+
+	* decNumber.c (decNumberFromInt32, decNumberFromUInt32): Added.
+	* decNumber.h Added delarations of decNumberFromInt32 and
+	decNumberFromUInt32.
+
 2007-10-07  Release Manager
 
 	* GCC 4.2.2 released.

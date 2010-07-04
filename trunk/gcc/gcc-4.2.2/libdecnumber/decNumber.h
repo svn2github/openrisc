@@ -138,6 +138,13 @@ typedef struct
 #endif
 
   /* Conversions */
+
+/* The following two functions are copied from later versions, since  */
+/* they are needed by GDB which shares this library.                  */
+
+decNumber *decNumberFromInt32(decNumber *, int32_t);
+decNumber *decNumberFromUInt32(decNumber *, uint32_t);
+
 decNumber *decNumberFromString (decNumber *, const char *, decContext *);
 char *decNumberToString (const decNumber *, char *);
 char *decNumberToEngString (const decNumber *, char *);

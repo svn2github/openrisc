@@ -300,6 +300,44 @@ static void decDumpAr (char, const Unit *, Int);
 /* Conversions                                                        */
 /* ================================================================== */
 
+/* The following two functions are copied from later versions, since  */
+/* they are needed by GDB which shares this library.                  */
+
+/* ------------------------------------------------------------------ */
+/* from-int32 -- conversion from Int or uInt			      */
+/*								      */
+/*  dn is the decNumber to receive the integer			      */
+/*  in or uin is the integer to be converted			      */
+/*  returns dn							      */
+/*								      */
+/* No error is possible.					      */
+/* ------------------------------------------------------------------ */
+decNumber * decNumberFromInt32(decNumber *dn, Int in) {
+  uInt unsig;
+  if (in>=0) unsig=in;
+   else {				/* negative (possibly BADINT) */
+    if (in==BADINT) unsig=(uInt)1073741824*2; /* special case */
+     else unsig=-in;			/* invert */
+    }
+  /* in is now positive */
+  decNumberFromUInt32(dn, unsig);
+  if (in<0) dn->bits=DECNEG;		/* sign needed */
+  return dn;
+  } /* decNumberFromInt32 */
+
+decNumber * decNumberFromUInt32(decNumber *dn, uInt uin) {
+  Unit *up;				/* work pointer */
+  decNumberZero(dn);			/* clean */
+  if (uin==0) return dn;		/* [or decGetDigits bad call] */
+  for (up=dn->lsu; uin>0; up++) {
+    *up=(Unit)(uin%(DECDPUNMAX+1));
+    uin=uin/(DECDPUNMAX+1);
+    }
+  dn->digits=decGetDigits(dn->lsu, up-dn->lsu);
+  return dn;
+  } /* decNumberFromUInt32 */
+
+
 /* ------------------------------------------------------------------ */
 /* to-scientific-string -- conversion to numeric string               */
 /* to-engineering-string -- conversion to numeric string              */
