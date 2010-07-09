@@ -59,11 +59,14 @@ make_load="-j -l `(echo processor;cat /proc/cpuinfo 2>/dev/null || \
 
 # --force:      Ensure the unified source directory and build directory are
 #               recreated.
-# --dir:        Specify the build directory
+# --prefix:     Specify the install directory
+# --scdir:      Specify the unified source directory
+# --builddir:   Specify the build directory
 # --nolink:     Don't build the unified source directory
 # --noconfig:   Don't run configure
 # --noinstall:  Don't run install
 # --help:       List these options and exit
+doforce="false";
 nolink="false";
 noconfig="false";
 noinstall="false";
@@ -73,11 +76,22 @@ opt=$1
 case ${opt}
     in
     --force)
-	rm -rf ${unified_src} ${build_dir}
+	doforce="true";
 	;;
 
-    --dir)
-	build_dir=$2; shift
+    --prefix)
+	install_dir=$2;
+	shift;
+	;;
+
+    --srcdir)
+	unified_src=$2;
+	shift;
+	;;
+
+    --builddir)
+	build_dir=$2;
+	shift;
 	;;
 
     --nolink)
@@ -98,7 +112,9 @@ case ${opt}
 	echo "Options:"
 	echo "    --force       Ensure the unified source directory and build"
 	echo "                  directory are recreated."
-	echo "    --dir <dir>   Specify the build directory"
+	echo "    --prefix:     Specify the install directory"
+	echo "    --scdir:      Specify the unified source directory"
+	echo "    --builddir:   Specify the build directory"
 	echo "    --nolink      Don't build the unified source directory"
 	echo "    --noconfig    Don't run configure"
 	echo "    --noinstall   Don't run install"
@@ -114,6 +130,12 @@ esac;
 do 
     shift
 done
+
+# If --force was specified, delete the unified source and build directories
+if [ "x$doforce" == "xtrue" ]
+then
+    rm -rf ${unified_src} ${build_dir}
+fi
 
 # Create a unified source directory.
 if [ "x$nolink" == "xfalse" ]
@@ -203,15 +225,27 @@ then
     cd ..
 fi
 
-# Make everything
+# Make everything. GCC can handle parallel make, the others can't
 cd ${build_dir}
 
-make $make_load all-build all-binutils all-gas all-ld all-gcc \
-     all-target-libgcc all-target-libgloss all-target-newlib all-gdb
-
+make all-build all-binutils all-gas all-ld
 if [ $? != 0 ]
 then
-    echo "make failed."
+    echo "make (binutils) failed."
+    exit 1
+fi
+
+make $make_load all-gcc
+if [ $? != 0 ]
+then
+    echo "make (GCC) failed."
+    exit 1
+fi
+
+make all-target-newlib all-target-libgloss all-gdb
+if [ $? != 0 ]
+then
+    echo "make (newlib, gdb) failed."
     exit 1
 fi
 
@@ -219,8 +253,7 @@ fi
 if [ "x$noinstall" == "xfalse" ]
 then
     make install-binutils install-gas install-ld install-gcc \
-	 install-target-libgcc install-target-libgloss install-target-newlib \
-	 install-gdb
+	 install-target-newlib install-target-libgloss install-gdb
 
     if [ $? != 0 ];
     then
