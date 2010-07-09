@@ -1,3 +1,8 @@
+2010-07-07  Jeremy Bennett <jeremy.bennett@embecosm.com>
+
+	* emulparams/or32elf.sh: Load text at zero. Put .vectors section
+	first of all.
+
 2008-04-28  Nathan Sidwell  <nathan@codesourcery.com>
 
 	* ldlang.c (lang_size_sections_1): Don't check LMA overflow on
