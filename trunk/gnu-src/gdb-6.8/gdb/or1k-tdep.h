@@ -1,7 +1,7 @@
 /* Definitions to target GDB to OpenRISC 1000 targets.
 
    Copyright 2001 Free Software Foundation, Inc.
-   Copyright (C) 2008 Embecosm Limited
+   Copyright (C) 2008, 2010 Embecosm Limited
 
    Contributor Jeremy Bennett <jeremy.bennett@embecosm.com>
 

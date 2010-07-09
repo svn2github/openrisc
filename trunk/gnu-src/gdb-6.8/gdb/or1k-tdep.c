@@ -1,7 +1,7 @@
 /* Target-dependent code for the or1k architecture, for GDB, the GNU Debugger.
 
    Copyright 1988-2008, Free Software Foundation, Inc.
-   Copyright (C) 2008 Embecosm Limited
+   Copyright (C) 2008, 2010 Embecosm Limited
 
    Contributed by Alessandro Forin(af@cs.cmu.edu at CMU
    and by Per Bothner(bothner@cs.wisc.edu) at U.Wisconsin.
