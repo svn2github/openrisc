@@ -1,24 +1,66 @@
-/* Simple setjmp/longjmp for the OpenRISC 1000 (OR32 ISA).
-   Damjan Lampret, OpenCores.org, Aug 15 2000.  */
+/* setjmp.S. Implementation fo setjmp and longjmp.
 
-/* Until OR1K Arch is fixed, we just save entire register file. Should be fixed eventually. */
+   Copyright (C) 2000, Damjan Lampret
+   Copyright (C) 2004, Jacob Bower
+   Copyright (C) 2010, Embecosm Limited <info@embecosm.com>
 
+   Contributor Jeremy Bennett <jeremy.bennett@embecosm.com>
+
+   This file is part of Newlib.
+
+   The original work by Jacob Bower is provided as-is without any kind of
+   warranty. Use it at your own risk!
+
+   All subsequent work is bound by version 3 of the GPL as follows.
+
+   This program is free software; you can redistribute it and/or modify it
+   under the terms of the GNU General Public License as published by the Free
+   Software Foundation; either version 3 of the License, or (at your option)
+   any later version.
+
+   This program is distributed in the hope that it will be useful, but WITHOUT
+   ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+   FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+   more details.
+
+   You should have received a copy of the GNU General Public License along
+   with this program.  If not, see <http://www.gnu.org/licenses/>.            */
+/* -------------------------------------------------------------------------- */
+/* This program is commented throughout in a fashion suitable for processing
+   with Doxygen.                                                              */
+/* -------------------------------------------------------------------------- */
+
+	
+/* -------------------------------------------------------------------------- */
+/*!_setjmp
+
+   All processor state is saved in the buffer provided. We need not save r0
+   (it will always be zero) and we need not save r11 (it will always be
+   overridden here, and in _longjmp).
+
+   @todo We should prefer to save and restore the status register, but this is
+	 not directly possible in user code. There is some merit in code to
+	 set the flag, since in compiled C code, that might be expected to hold
+	 a value. We leave a space for this information for future enhancement.
+
+   @param[out] env(r3)  A buffer to save all the current processor state.
+
+   @return  zero.
+/* -------------------------------------------------------------------------- */
 	.align	4
-	.proc	setjmp
-        .global	setjmp
-	.extern setjmp
-setjmp:
-	l.sw	0(r3),r1
-	l.sw	4(r3),r2
-	l.sw	8(r3),r3
-	l.sw	12(r3),r4
-	l.sw	16(r3),r5
-	l.sw	20(r3),r6
-	l.sw	24(r3),r7
-	l.sw	28(r3),r8
-	l.sw	32(r3),r9
-	l.sw	36(r3),r10
-	l.sw	40(r3),r11
+        .global	_setjmp
+        .type	_setjmp,@function
+_setjmp:
+	l.sw	4(r3),r1		/* Slot 0 saved for flag in future */
+	l.sw	8(r3),r2
+	l.sw	12(r3),r3
+	l.sw	16(r3),r4
+	l.sw	20(r3),r5
+	l.sw	24(r3),r6
+	l.sw	28(r3),r7
+	l.sw	32(r3),r8
+	l.sw	36(r3),r9
+	l.sw	40(r3),r10		/* Skip r11 */
 	l.sw	44(r3),r12
 	l.sw	48(r3),r13
 	l.sw	52(r3),r14
@@ -39,61 +81,84 @@ setjmp:
 	l.sw	112(r3),r29
 	l.sw	116(r3),r30
 	l.sw	120(r3),r31
-/*
-        l.addi  r4,r0,SPR_SR
-        l.mfsr  r4,r4
-        l.sw    124(r3),r4
-*/	
-	l.jr	r11
-	l.addi	r3,r0,0
-.endproc setjmp
 
+	l.jr	r9
+	l.addi	r11,r0,0		/* Zero result */
+
+	.size	_setjmp, .-_setjmp
+
+/* -------------------------------------------------------------------------- */
+/*!_longjmp
+
+   All processor state is restored from the buffer provided. We need not restore
+   r0 (it will always be zero) and we need not restore r11 (it will always be
+   overridden here).
+
+   We need to take some care, since we cannot restore r3 until all other
+   registers are restore, and the value of r4 must first be saved in r11,
+   modifying it if its value is zero.
+
+   @todo We should prefer to save and restore the status register, but this is
+	 not directly possible in user code. There is some merit in code to
+	 set the flag, since in compiled C code, that might be expected to hold
+	 a value. We leave a space for this information for future enhancement.
+
+   @param[out] env(r3)  A buffer from which to restore all the current
+	                processor state.
+   @param[in]  val(r4)  A value to return
+
+   @return  val, unless val is zero, in which case 1 is returned.
+/* -------------------------------------------------------------------------- */
 	.align	4
-	.proc	longjmp
-        .global	longjmp
-longjmp:
-	l.lwz	r1,0(r3)
-	l.lwz	r2,4(r3)
-	l.lwz	r5,16(r3)
-	l.lwz	r6,20(r3)
-	l.lwz	r7,24(r3)
-	l.lwz	r8,28(r3)
-	l.lwz	r9,32(r3)
-	l.lwz	r10,36(r3)
-	l.lwz	r11,40(r3)
-	l.lwz	r12,44(r3)
-	l.lwz	r13,48(r3)
-	l.lwz	r14,52(r3)
-	l.lwz	r15,56(r3)
-	l.lwz	r16,60(r3)
-	l.lwz	r17,64(r3)
-	l.lwz	r18,68(r3)
-	l.lwz	r19,72(r3)
-	l.lwz	r20,76(r3)
-	l.lwz	r21,80(r3)
-	l.lwz	r22,84(r3)
-	l.lwz	r23,88(r3)
-	l.lwz	r24,92(r3)
-	l.lwz	r25,96(r3)
-	l.lwz	r26,100(r3)
-	l.lwz	r27,104(r3)
-	l.lwz	r28,108(r3)
-	l.lwz	r29,112(r3)
-	l.lwz	r30,116(r3)
-	l.lwz	r31,120(r3)
-/*
-        l.lwz    r5,124(r3)
-        l.addi  r3,r0,SPR_ESR_BASE
-        l.mtsr  r3,r5
-*/	
-	l.lwz	r5,16(r3)
+        .global	_longjmp
+        .type	_longjmp,@function
+_longjmp:
+	/* Sort out the return value */
 	l.sfne	r4,r0
 	l.bf	1f
 	l.nop
 
-	l.addi	r3,r0,1
+	l.j	2f
+	l.addi	r11,r0,1		/* 1 as result */
+
+1:	l.addi	r11,r4,0		/* val as result */
+
+	/* Restore all the other registers, leaving r3 to last. */
+2:	l.lwz	r31,120(r3)
+	l.lwz	r30,116(r3)
+	l.lwz	r29,112(r3)
+	l.lwz	r28,108(r3)
+	l.lwz	r27,104(r3)
+	l.lwz	r26,100(r3)
+	l.lwz	r25,96(r3)
+	l.lwz	r24,92(r3)
+	l.lwz	r23,88(r3)
+	l.lwz	r22,84(r3)
+	l.lwz	r21,80(r3)
+	l.lwz	r20,76(r3)
+	l.lwz	r19,72(r3)
+	l.lwz	r18,68(r3)
+	l.lwz	r17,64(r3)
+	l.lwz	r16,60(r3)
+	l.lwz	r15,56(r3)
+	l.lwz	r14,52(r3)
+	l.lwz	r13,48(r3)
+	l.lwz	r12,44(r3)
+	l.lwz	r10,40(r3)		/* Omit r11 */
+	l.lwz	r9,36(r3)
+	l.lwz	r8,32(r3)
+	l.lwz	r7,28(r3)
+	l.lwz	r6,24(r3)
+	l.lwz	r5,20(r3)
+	l.lwz	r4,16(r3)
+	l.lwz	r2,8(r3)		/* Skip r3 */
+	l.lwz	r1,4(r3)		/* Slot 0 saved for flag in future */
+	l.lwz	r3,12(r3)		/* Now safe */
 	
-1:	l.addi	r3,r4,0
-	l.jr	r11
+	/* Result is already in r11. Having restored r9, it will appear as
+	   though we have returned from the earlier call to _setjmp. The
+	   non-zero result gives it away though. */
+	l.jr	r9
 	l.nop
-.endproc longjmp
+
+	.size	_longjmp, .-_longjmp

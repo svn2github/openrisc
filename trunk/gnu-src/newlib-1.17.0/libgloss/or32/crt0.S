@@ -1,4 +1,4 @@
-/* Makefile.in. Autoconf input makefile.
+/* crt0.S. C Runtime startup file.
 
    Copyright (C) 2004, Jacob Bower
    Copyright (C) 2010, Embecosm Limited <info@embecosm.com>

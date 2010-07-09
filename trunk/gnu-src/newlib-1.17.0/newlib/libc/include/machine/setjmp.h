@@ -246,6 +246,7 @@ _BEGIN_STD_C
 #endif /* __m32c__ */
 
 #if defined(__or32__) || defined(__or1k__) || defined(__or16__) || defined(__OR32__) || defined(__OR1K__) 
+/* Enough space for all regs except r0 and r11 and the status register */
 #define _JBLEN 31
 #define _JBTYPE unsigned long
 #endif

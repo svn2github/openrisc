@@ -1,5 +1,11 @@
 2010-07-07  Jeremy Bennett <jeremy.bennett@embecosm.com>
 
+	* libc/machine/or32/setjmp.S: Rewritten - old code could never
+	have worked.
+	* libc/machine/or32/bits: Deleted.
+
+2010-07-07  Jeremy Bennett <jeremy.bennett@embecosm.com>
+
 	* configure.host: Updated for OpenRISC to use namespace clean
 	functions.
 
