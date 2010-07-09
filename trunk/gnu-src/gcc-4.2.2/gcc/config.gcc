@@ -295,6 +295,9 @@ mips*-*-*)
 	cpu_type=mips
 	need_64bit_hwint=yes
 	;;
+or32-*-*)
+	cpu_type=or32
+        ;;
 powerpc*-*-*)
 	cpu_type=rs6000
 	extra_headers="ppc-asm.h altivec.h spe.h"
@@ -1675,12 +1678,14 @@ ns32k-*-netbsd*)
 	use_collect2=yes
 	;;
 or32-*-elf*)
-	tm_file="${tm_file} dbxelf.h elfos.h or32/elf.h or32/or32.h"
+	tm_file="${tm_file} dbxelf.h elfos.h ${cpu_type}/elf.h"
+	extra_parts="crtinit.o crtfini.o"
+        tmake_file=${cpu_type}/t-${cpu_type}
 	;;
 or32-*linux*)
-       tm_file="${tm_file} dbxelf.h elfos.h or32/or32.h or32/elf.h or32/linux-gas.h or32/linux-elf.h"
-       tmake_file=or32/t-default
-       ;;
+        tm_file="${tm_file} dbxelf.h elfos.h or32/or32.h or32/elf.h or32/linux-gas.h or32/linux-elf.h"
+        tmake_file=or32/t-default
+        ;;
 
 pdp11-*-bsd)
 	tm_file="${tm_file} pdp11/2bsd.h"

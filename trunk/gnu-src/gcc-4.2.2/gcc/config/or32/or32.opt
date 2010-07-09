@@ -55,3 +55,7 @@ Enable sibcall optimization
 mor32-newlib
 Target RejectNegative
 Link with the OR32 newlib library
+
+mor32-newlib-uart
+Target RejectNegative
+Link with the OR32 newlib UART library

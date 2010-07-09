@@ -1,9 +1,24 @@
+2010-07-07  Jeremy Bennett <jeremy.bennett@embecosm.com>
+
+	* config.gcc: Specified cpu_type for or32. Corrected templates
+	specified for or32-*-elf*. Added extra_parts for
+	or32-*-elf*. Specified t-or32 as tmake_file for or32-*-elf*.
+	* config/or32/initfini.c: Created.
+	* config/or32/or32.h <LINK_SPEC>: Removed.
+	<STARTFILE_SPEC>: Add crtinit.o.
+	<ENDFILE_SPEC>: Just specify crtfini.o.
+	<LIB_SPEC>: Unified multiple definitions. Added newlib library
+	when specified.
+	* config/or32/or32.opt <mor32-newlib-uart>: New option added.
+	* config/or32/t-default: Added details for crtinit and crtfini.
+	* config/or32/t-or32: Added details for crtinit and crtfini.
+
 2010-06-30  Jeremy Bennett  <jeremy.bennett@embecosm.com>
 
 	* config/or32/or32.h <FUNCTION_PROFILER>: Corrected definition.
 	<LINK_SPEC>: Pick up newlib specific linker script.
 	<ENDFILE_SPEC>: Specify newlib library.
-	* config/or32/or32.h <mor32-newlib>: New option added.
+	* config/or32/or32.opt <mor32-newlib>: New option added.
 
 2010-06-21  Jeremy Bennett  <jeremy.bennett@embecosm.com>
 

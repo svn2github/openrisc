@@ -35,27 +35,32 @@ Boston, MA 02111-1307, USA.  */
     }						\
   while (0)
 
-/* If we are using newlib, then use this version of the library */
-#define LINK_SPEC "%{mor32-newlib:-T ldscripts/or32.ld%s}"
 
-/* Finally specify the newlib lirary */
-#define ENDFILE_SPEC "%{mor32-newlib:libor32.a%s -lc -lgcc}"
+/* Make sure we pick up the crtinit.o and crtfini.o files. */
+#define STARTFILE_SPEC "%{!shared:crt0.o%s} crtinit.o%s"
 
-#if 0
+#define ENDFILE_SPEC "crtfini.o%s"
 
+/* Override previous definitions (linux.h). We don't use libg.a */
+
+#undef LIB_SPEC 
+#define LIB_SPEC "%{!p:%{!pg:-lc}}%{p:-lc_p}%{pg:-lc_p}		\
+                  %{mor32-newlib:-lor32				\
+                      %{!p:%{!pg:-lc}}%{p:-lc_p}%{pg:-lc_p}}	\
+                  %{mor32-newlib-uart:-lor32uart		\
+                      %{!p:%{!pg:-lc}}%{p:-lc_p}%{pg:-lc_p}}"
+
+/* Old definition of LIB_SPEC, not longer used. */
 /* Which library to get.  The only difference from the default is to get
    libsc.a if -sim is given to the driver.  Repeat -lc -lsysX
    {X=sim,linux}, because libsysX needs (at least) errno from libc, and
    then we want to resolve new unknowns in libc against libsysX, not
    libnosys.  */
-/* Override previous definitions (linux.h).  */
-#undef LIB_SPEC
-#define LIB_SPEC \
- "%{sim*:-lc -lsyssim -lc -lsyssim}\
-  %{!sim*:%{g*:-lg}\
-    %{!p:%{!pg:-lc}}%{p:-lc_p}%{pg:-lc_p} -lbsp}\
-  -lnosys"
-#endif
+/* #define LIB_SPEC \ */
+/*  "%{sim*:-lc -lsyssim -lc -lsyssim}\ */
+/*   %{!sim*:%{g*:-lg}\ */
+/*     %{!p:%{!pg:-lc}}%{p:-lc_p}%{pg:-lc_p} -lbsp}\ */
+/*   -lnosys" */
 
 #define TARGET_VERSION fprintf (stderr, " (OpenRISC 1000)");
 
@@ -1178,9 +1183,5 @@ else {							\
 
 extern GTY(()) rtx or32_compare_op0;
 extern GTY(()) rtx or32_compare_op1;
-
-/* We don't use libg.a */
-#undef LIB_SPEC 
-#define LIB_SPEC "%{!p:%{!pg:-lc}}%{p:-lc_p}%{pg:-lc_p}"
 
 #endif /* _OR32_H_ */
