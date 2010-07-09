@@ -1,3 +1,8 @@
+2010-07-07  Jeremy Bennett <jeremy.bennett@embecosm.com>
+
+	* configure.host: Updated for OpenRISC to use namespace clean
+	functions.
+
 2008-12-19  Jeff Johnston  <jjohnstn@redhat.com>
 
 	* NEWS: Update with 1.17.0 info.

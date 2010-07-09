@@ -1,7 +1,56 @@
+2010-07-07  Jeremy Bennett <jeremy.bennett@embecosm.com>
+
+	* README: Updated for OpenRISC
+	* or32/_exit.c: Created.
+	* or32/close.c: Created.
+	* or32/close-uart.c: Created.
+	* or32/configure: Regenerated.
+	* or32/configure.in: Updated for new style AC_INIT.
+	* or32/COPYING: Created.
+	* or32/crt0.S: Rewritten to match updated linker. Calls init and
+	sets up fini functions to handle constructors and destructors
+	properly.
+	* or32/environ.c: Created.
+	* or32/exceptions.c: Deleted.
+	* or32/execve.c: Created.
+	* or32/fork.c: Created.
+	* or32/fstat.c: Created.
+	* or32/fstat-uart.c: Created.
+	* or32/getpid.c: Created.
+	* or32/io.c: Deleted.
+	* or32/isatty.c: Created.
+	* or32/isatty-uart.c: Created.
+	* or32/kill.c: Created.
+	* or32/link.c: Created.
+	* or32/lseek.c: Created.
+	* or32/lseek-uart.c: Created.
+	* or32/Makefile.in: Updated for new source code.
+	* or32/open.c: Created.
+	* or32/or32.ld: Deleted.
+	* or32/or1ksim-board.h: Renamed from board.h.
+	* or32/proc.c: Created.
+	* or32/read.c: Created.
+	* or32/read-uart.c: Created.
+	* or32/sbrk.c: Created.
+	* or32/sim.cfg: Created.
+	* or32/specs: Deleted.
+	* or32/spr-defs.h: Renamed from spr_defs.h.
+	* or32/stat.c: Created.
+	* or32/times.c: Created.
+	* or32/uart.c (_uart_init, _uart_putc, _uart_getc): Renamed from
+	uart_init, uart_putc and uart_getc respectively. Macros simplified.
+	* or32/uart-dummy.c: Created.
+	* or32/uart.h <_uart_init, _uart_putc, _uart_getc>: Renamed
+	external functions.
+	* or32/unlink.c: Created.
+	* or32/wait.c: Created.
+	* or32/write.c: Created.
+	* or32/write-uart.c: Created.
+
 2008-12-17  Jon Beniston <jon@beniston.com>
 
 	* README: Add description of lm32 directory.
-	* configure.in: Add lm32 target.        
+	* configure.in: Add lm32 target.
 	* configure: Regenerated.
 	* libnosys/configure.in: Add lm32 target.
 	* libnosys/configure: Regenerated.
@@ -132,7 +181,7 @@
 
 	* spu/Makefile.in: Add new file.
 	* spu/linux_syscalls.c: New file to add Linux syscall support.
-		
+
 2008-06-16  Corrin Meyer  <cjmeyer@gmail.com>
 
 	* m68k/cf-crt1.c[__mcf_family_m1qe]: Don't access CACR.
@@ -146,7 +195,7 @@
 2008-05-05  Ken Werner  <ken.werner@de.ibm.com>
 
 	* spu/readlink.c: Align readlink implementation to POSIX.
-	
+
 2008-04-25  Nick Clifton  <nickc@redhat.com>
 
 	* arm/crt0.S: Allow assembly under ARMv7 ISA.  Support for
@@ -156,7 +205,7 @@
 
 	* spu/sbrk.c: Remove "extern int errno", use whatever is supplied
 	by sys/errno.h.
-		  
+
 2008-04-04  DJ Delorie  <dj@redhat.com>
 
 	* hp74x/configure: Regenerate with autoconf 2.61.
@@ -215,7 +264,7 @@
 	* cris/Makefile.in (crt0.o): Add CFLAGS when compiling crt0.S.
 
 2007-11-06  Dave Brolley  <brolley@redhat.com>
- 
+
 	* syscall.h (SYS_reconfig): New macro.
 
 2007-10-11  Ulrich Weigand  <uweigand@de.ibm.com>
@@ -262,7 +311,7 @@
 	* spu/utime.c: New file add utime via assist call.
 	* spu/utimes.c: New file add utimes via assist call.
 	* spu/Makefile.in: Add new files.
-							
+
 2007-09-21  Patrick Mansfield  <patmans@us.ibm.com>
 
 	* spu/jsre.h: Add JSRE_SHM_OPEN and JSRE_SHM_UNLINK opcodes.
@@ -289,41 +338,41 @@
 	2007-07-12  Daniel Jacobowitz  <dan@codesourcery.com>
 
 	* arm/syscalls.c (_stat): Use _close
-	
+
 	* arm/syscalls.c (struct poslog): Rename to...
 	(struct fdent): ... this.
 	(FILE_HANDLE_OFFSET): Remove.
-	(findslot): Return a struct fdent* if fd is valid, otherwise return NULL.  
-	(newslot): New function.  
-	(remap_handle): Remove.  
-	(initialise_monitor_handles): Use stdout as fallback for stderr.  
-	(wrap): Rename to...  
-	(checkerror): ...  this.  
-	(_swiread): Use checkerror() for the return of SWI calls.  Correct the use of r0.  
-	(_read): Use findslot().  Return EBADF on bad handle.  
-	(_swilseek): Call findslot().  Check for valid whence.  Check for negative offset when using 
-	SEEK_CUR, and check for overflow.  Use checkerror().  Check *_Flen calls for errors.  
-	(_swiwrite): Correct the use of r0.  
-	(_write): Call findslot().  
-	(_swiopen): Call findslot().  Check for valid flags.  Use checkerror().  Call newslot().  
-	Handle O_TRUNC, and O_WRONLY.  Return index into openfiles[] for fd.  
-	(_swiclose): Correct the use of r0.  
-	(_close): Handle stderr == stdout case.  Only reclaim handle if _swiclose succeeded.  
-	(_getpid): Use __attribute__((unused)).  
-	(_sbrk): Fix formatting.  
-	(_swistat): New function.  
-	(_stat): Call _swistat().  
-	(_fstat): Call _swistat().  
-	(_unlink): Correct the use of r0.  
-	(isatty): Call finslot().  Correct the use of r0.  
-	(_system): Call checkerror().  Correct the use of r0.  
-	(_rename): Correct the use of r0.  
-	
-2007-07-13  Kevin Buettner  <kevinb@redhat.com> 
+	(findslot): Return a struct fdent* if fd is valid, otherwise return NULL.
+	(newslot): New function.
+	(remap_handle): Remove.
+	(initialise_monitor_handles): Use stdout as fallback for stderr.
+	(wrap): Rename to...
+	(checkerror): ...  this.
+	(_swiread): Use checkerror() for the return of SWI calls.  Correct the use of r0.
+	(_read): Use findslot().  Return EBADF on bad handle.
+	(_swilseek): Call findslot().  Check for valid whence.  Check for negative offset when using
+	SEEK_CUR, and check for overflow.  Use checkerror().  Check *_Flen calls for errors.
+	(_swiwrite): Correct the use of r0.
+	(_write): Call findslot().
+	(_swiopen): Call findslot().  Check for valid flags.  Use checkerror().  Call newslot().
+	Handle O_TRUNC, and O_WRONLY.  Return index into openfiles[] for fd.
+	(_swiclose): Correct the use of r0.
+	(_close): Handle stderr == stdout case.  Only reclaim handle if _swiclose succeeded.
+	(_getpid): Use __attribute__((unused)).
+	(_sbrk): Fix formatting.
+	(_swistat): New function.
+	(_stat): Call _swistat().
+	(_fstat): Call _swistat().
+	(_unlink): Correct the use of r0.
+	(isatty): Call finslot().  Correct the use of r0.
+	(_system): Call checkerror().  Correct the use of r0.
+	(_rename): Correct the use of r0.
 
-	* mep/fmax.ld, mep/gmap_default.ld, mep/min.ld, mep/simple.ld (.gcc_except_table): Add pattern 
-	for .gcc_except_table.*.  
-					
+2007-07-13  Kevin Buettner  <kevinb@redhat.com>
+
+	* mep/fmax.ld, mep/gmap_default.ld, mep/min.ld, mep/simple.ld (.gcc_except_table): Add pattern
+	for .gcc_except_table.*.
+
 2007-07-06  Jeff Johnston  <jjohnstn@redhat.com>
 
 	* arm/syscalls.c (gettimeofday): Change to POSIX signature
@@ -416,7 +465,7 @@
 	* spu/fstat.c: Move struct syscall_fstat_t to here.
 	* spu/ftruncate.c: Move struct syscall_ftruncate_t to here.
 	* spu/gettimeofday.c: Move struct syscall_gettimeofday_t to here.
-	* spu/lseek.c: Move struct syscall_lseek_t and JSRE_SEEK defines to 
+	* spu/lseek.c: Move struct syscall_lseek_t and JSRE_SEEK defines to
 	here.
 	* spu/open.c: Move struct syscall_open_t and JSRE_O_ defines to here.
 	* spu/read.c: Move struct syscall_read_t to here, and actually use
@@ -475,7 +524,7 @@
 	.ctor.*, and .dtor.*.  Wrap ctor/dtor-related sections with KEEP.
 
 2007-04-04  Patrick Mansfield  <patmans@us.ibm.com>
- 
+
 	* spu/syscalls.c: Rename _send_to_ppe __send_to_ppe, and set errno
 	on return from the offload call.
 	* spu/jsre.h: Include sys/syscall.h for the send_to_ppe prototype.
@@ -520,7 +569,7 @@
 
 	* sparc/cygmon.ld.src: Link .rodata.* input sections into .text
 	output section.
-	* sparc/cygmon-sparc64-ld.src: Likewise. 
+	* sparc/cygmon-sparc64-ld.src: Likewise.
 
 2007-02-08  Dave Brolley  <brolley@redhat.com>
 
@@ -891,7 +940,7 @@
 
 2006-10-03  Jeff Johnston  <jjohnstn@redhat.com>
 
-	* arm/linux-syscalls0.c: Rewrite bx insn architecture flag check 
+	* arm/linux-syscalls0.c: Rewrite bx insn architecture flag check
 	to avoid use of __ARM_ARCH__.
 
 2006-10-02  Nick Clifton  <nickc@redhat.com>
@@ -1073,7 +1122,7 @@
 
 2006-08-30  Kazunori Asayama  <asayama@sm.sony.co.jp>
 
-	* spu/syscalls.c: Add a new argument to _send_to_ppe() to 
+	* spu/syscalls.c: Add a new argument to _send_to_ppe() to
 	specify signal code.
 	* spu/jsre.h: Update declaration of _send_to_ppe().
 	* spu/close.c: Replace _send_to_ppe_0x2101() by _send_to_ppe().
@@ -1446,7 +1495,7 @@
 	* configure.in: Add m32c support.
 	* configure: Regenerated
 	* m32c: New directory, Renesas R8C/M16C/M32C support.
-	* m32c/abort.S m32c/argvlen.S m32c/argv.S m32c/chdir.S, 
+	* m32c/abort.S m32c/argvlen.S m32c/argv.S m32c/chdir.S,
 	m32c/chmod.S m32c/close.S m32c/configure m32c/configure.in,
 	m32c/crt0.S, m32c/crtn.S, m32c/exit.S, m32c/fstat.S,
 	m32c/genscript, m32c/getpid.S, m32c/gettimeofday.S,
@@ -1576,7 +1625,7 @@
 
 2005-04-12  Shaun Jackman  <sjackman@gmail.com>
 
-	* libgloss/arm/Makefile.in (RDPMON_BSP): librdpmon.a was empty due 
+	* libgloss/arm/Makefile.in (RDPMON_BSP): librdpmon.a was empty due
 	to a typo. Fixed.
 	(RDIMON_BSP): Ditto.
 
@@ -1637,20 +1686,20 @@
 	as-new and ld-new, not as.new and ld.new.
 
 2005-01-14  Hans-Peter Nilsson  <hp@axis.com>
-                                                                                
+
         * libnosys/warning.h (__make_section_unallocated)
         [HAVE_ASM_PREVIOUS_DIRECTIVE, HAVE_ASM_POPSECTION_DIRECTIVE]: Use "\n"
         instead of ";" to delimit assembly lines.
-                                                                                
+
 2005-01-07  Paul Brook  <paul@codesourcery.com>
-                                                                                
+
 	* arm/crt0.S: Call __libc_{init,fini}_array instead of
 	_init/_fini if they exist.
 
 2004-11-26  Paul Brook  <paul@codesourcery.com>
-                                                                                
+
         * arm/crt0.S (_start): Add .cantunwind annotation.
-                                                                                
+
 2004-10-28  Nick Clifton  <nickc@redhat.com>
 
 	* configure.in: Add support for iq2000 target.
@@ -1743,8 +1792,8 @@
 
 2004-06-09  Toralf Lund  <toralf@procaptura.com>
 
-	* arm/crt0.S: Copied from newlib and it now also sets up stacks for 
-	FIQ and IRQ mode, plus calls hardware_init_hook() and 
+	* arm/crt0.S: Copied from newlib and it now also sets up stacks for
+	FIQ and IRQ mode, plus calls hardware_init_hook() and
 	software_init_hook() if present.
 	* arm/libcfunc.c, arm/swi.h, arm/syscalls.c: Copied
 	from newlib.

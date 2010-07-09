@@ -215,7 +215,6 @@ case "${host_cpu}" in
 	;;
   or32)
 	machine_dir=or32
-	newlib_cflags="${newlib_cflags} -DREENTRANT_SYSCALLS_PROVIDED -DMISSING_SYSCALL_NAMES"
 	;;
   powerpc*)
 	machine_dir=powerpc
@@ -677,6 +676,9 @@ case "${host}" in
   mn10?00-*-*)
 	syscall_dir=syscalls
 	;;
+  or32-*-*)
+  	syscall_dir=syscalls
+        ;;
   powerpc*-*-eabialtivec*)
 	default_newlib_io_long_long="yes"
 	newlib_cflags="${newlib_cflags} -DMISSING_SYSCALL_NAMES"

@@ -1,4 +1,4 @@
-/* sbrk.c. Implementation of the _sbrk syscall for newlib
+/* write.c. Implementation of the _write syscall for newlib
 
    Copyright (C) 2004, Jacob Bower
    Copyright (C) 2010, Embecosm Limited <info@embecosm.com>
@@ -30,60 +30,65 @@
 /* -------------------------------------------------------------------------- */
 
 #include <errno.h>
+#include <unistd.h>
 
-/*! Reserved stack space inbytes. */
-#define STACK_BUFFER  65536
+#include "or1ksim-board.h"
 
-/*! Define NULL if not yet defined. */
-#ifndef NULL
-#define NULL ((void *) 0)
-#endif
+
+extern int  errno;
 
 
 /* -------------------------------------------------------------------------- */
-/*!Extend the heap
+/*!Write a single character to standard output for the simulator
 
-   We just increment a pointer in what's left of memory on the board.
+   @param[in] c  The character to write                                       */
+/* -------------------------------------------------------------------------- */
+static void
+outbyte (char  c)
+{
+  register char  t1 asm ("r3") = c;
 
-   While the heap grows upwards, the stack grows downwards.  Eventually these
-   two things may colide and sbrk() won't even be able to return properly.
+  asm volatile ("\tl.nop\t%0" : : "K" (NOP_PUTC), "r" (t1));
 
-   To mitigate this we reserve upto STACK_BUFFER _words_ at the top of memory.
-   Note this doesn't actually solve the problem, it just provides an error
-   margin. The real solution is to use an OS with a proper virtual memory
-   manager.
+}	/* outbyte () */
+
+
+/* -------------------------------------------------------------------------- */
+/*!Write a buffer to a file.
+
+   Only output to stdout or stderr is supported, and both of those are
+   directed to the single output stream.
 
    Remember that this function is *not* reentrant, so no static state should
    be held.
 
-   @todo  We break this rule with heap_ptr. This needs to be clean, so that a
-          re-entrant call to sbrk (e.g. in an ISR) is certain to work.
+   @param[in] file  The fileno for output.
+   @param[in] buf   The bytes to write.
+   @param[in] nbytes  The number of bytes to write.
 
-   @param[in] nbytes  The number of bytes to be allocated.
-
-   @return  The previous heap end on success, -1 on failure with an error
-            code in errno.                                                    */
+   @return  The number of bytes written on success, or -1 with an error code
+            in the global variable errno on failure.                          */
 /* -------------------------------------------------------------------------- */
-void *
-_sbrk (int nbytes)
+int
+_write (int   file,
+        char *buf,
+        int   nbytes)
 {
-  /* Symbols defined by linker map */
-  extern int  end;		/* start of free memory */
-  extern int  stack;		/* end of free memory */
+  int i;
 
-  /* The statically held previous end of the stack, with its initialization. */
-  static void *heap_ptr = (void *)&end;		/* Previous end */
+  /* We only handle stdout and stderr */
+  if ((file != STDOUT_FILENO) && (file != STDERR_FILENO))
+    {
+      errno = EBADF;
+      return -1;
+    }
 
-  if (((void *) &stack - (heap_ptr + nbytes)) > STACK_BUFFER )
+  /* Output character at at time */
+  for (i = 0; i < nbytes; i++)
     {
-      void * base  = heap_ptr;
-      heap_ptr    += nbytes;
-		
-      return  base;
+      outbyte (buf[i]);
     }
-  else
-    {
-      errno = ENOMEM;
-      return  (void *) -1;
-    }
-}	/* _sbrk () */
+	
+  return nbytes;
+
+}	/* _write () */

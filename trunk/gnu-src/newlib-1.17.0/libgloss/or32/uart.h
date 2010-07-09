@@ -1,5 +1,35 @@
-#ifndef _UART_H_
-#define _UART_H_
+/* uart.h. UART constant definitions.
+
+   Copyright (C) 2004, Jacob Bower
+   Copyright (C) 2010, Embecosm Limited <info@embecosm.com>
+ 
+   Contributor Jeremy Bennett <jeremy.bennett@embecosm.com>
+  
+   This file is part of Newlib.
+
+   The original work by Jacob Bower is provided as-is without any kind of
+   warranty. Use it at your own risk!
+
+   All subsequent work is bound by version 3 of the GPL as follows.
+ 
+   This program is free software; you can redistribute it and/or modify it
+   under the terms of the GNU General Public License as published by the Free
+   Software Foundation; either version 3 of the License, or (at your option)
+   any later version.
+
+   This program is distributed in the hope that it will be useful, but WITHOUT
+   ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+   FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+   more details.
+
+   You should have received a copy of the GNU General Public License along
+   with this program.  If not, see <http:#www.gnu.org/licenses/>.             */
+/* -------------------------------------------------------------------------- */
+/* This program is commented throughout in a fashion suitable for processing
+   with Doxygen.                                                              */
+/* -------------------------------------------------------------------------- */
+#ifndef UART__H
+#define UART__H
 
 #define UART_RX		0	/* In:  Receive buffer (DLAB=0) */
 #define UART_TX		0	/* Out: Transmit buffer (DLAB=0) */
@@ -118,8 +148,9 @@
 #define UART_EFR_SCD	0x20	/* Special character detect */
 #define UART_EFR_ENI	0x10	/* Enhanced Interrupt */
 
-void uart_init(void);
-void uart_putc(char c);
-char uart_getc(void);
+/* The library functions defined here, avoiding namespace polution. */
+extern void  _uart_init ();
+extern void  _uart_putc (char c);
+extern char  _uart_getc ();
 
-#endif /* _UART_H_ */
+#endif	/* UART__H */

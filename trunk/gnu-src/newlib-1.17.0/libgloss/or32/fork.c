@@ -1,4 +1,4 @@
-/* sbrk.c. Implementation of the _sbrk syscall for newlib
+/* fork.c. Implementation of the _fork syscall for newlib
 
    Copyright (C) 2004, Jacob Bower
    Copyright (C) 2010, Embecosm Limited <info@embecosm.com>
@@ -31,59 +31,25 @@
 
 #include <errno.h>
 
-/*! Reserved stack space inbytes. */
-#define STACK_BUFFER  65536
 
-/*! Define NULL if not yet defined. */
-#ifndef NULL
-#define NULL ((void *) 0)
-#endif
+extern int  errno;
 
 
 /* -------------------------------------------------------------------------- */
-/*!Extend the heap
+/*!Create a new process.
 
-   We just increment a pointer in what's left of memory on the board.
-
-   While the heap grows upwards, the stack grows downwards.  Eventually these
-   two things may colide and sbrk() won't even be able to return properly.
-
-   To mitigate this we reserve upto STACK_BUFFER _words_ at the top of memory.
-   Note this doesn't actually solve the problem, it just provides an error
-   margin. The real solution is to use an OS with a proper virtual memory
-   manager.
+   We have no other processes, so this always fails.
 
    Remember that this function is *not* reentrant, so no static state should
    be held.
 
-   @todo  We break this rule with heap_ptr. This needs to be clean, so that a
-          re-entrant call to sbrk (e.g. in an ISR) is certain to work.
-
-   @param[in] nbytes  The number of bytes to be allocated.
-
-   @return  The previous heap end on success, -1 on failure with an error
-            code in errno.                                                    */
+   @return  -1 to indicate failure, with an error code in the global variable
+            errno.                                                            */
 /* -------------------------------------------------------------------------- */
-void *
-_sbrk (int nbytes)
+int
+_fork ()
 {
-  /* Symbols defined by linker map */
-  extern int  end;		/* start of free memory */
-  extern int  stack;		/* end of free memory */
+  errno = EAGAIN;
+  return -1;			/* Always fails */
 
-  /* The statically held previous end of the stack, with its initialization. */
-  static void *heap_ptr = (void *)&end;		/* Previous end */
-
-  if (((void *) &stack - (heap_ptr + nbytes)) > STACK_BUFFER )
-    {
-      void * base  = heap_ptr;
-      heap_ptr    += nbytes;
-		
-      return  base;
-    }
-  else
-    {
-      errno = ENOMEM;
-      return  (void *) -1;
-    }
-}	/* _sbrk () */
+}	/* _fork () */

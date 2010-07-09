@@ -1,4 +1,4 @@
-/* sbrk.c. Implementation of the _sbrk syscall for newlib
+/* fstat-uart.c. Implementation of the _fstat syscall for newlib with UART
 
    Copyright (C) 2004, Jacob Bower
    Copyright (C) 2010, Embecosm Limited <info@embecosm.com>
@@ -30,60 +30,39 @@
 /* -------------------------------------------------------------------------- */
 
 #include <errno.h>
+#include <sys/stat.h>
+#include <unistd.h>
 
-/*! Reserved stack space inbytes. */
-#define STACK_BUFFER  65536
 
-/*! Define NULL if not yet defined. */
-#ifndef NULL
-#define NULL ((void *) 0)
-#endif
+extern int  errno;
 
 
 /* -------------------------------------------------------------------------- */
-/*!Extend the heap
+/*!Status of an open file when using a UART
 
-   We just increment a pointer in what's left of memory on the board.
-
-   While the heap grows upwards, the stack grows downwards.  Eventually these
-   two things may colide and sbrk() won't even be able to return properly.
-
-   To mitigate this we reserve upto STACK_BUFFER _words_ at the top of memory.
-   Note this doesn't actually solve the problem, it just provides an error
-   margin. The real solution is to use an OS with a proper virtual memory
-   manager.
+   We only know about stdin, stdout and stderr, and treat these as character
+   special files. All other files are erroneous.
 
    Remember that this function is *not* reentrant, so no static state should
    be held.
 
-   @todo  We break this rule with heap_ptr. This needs to be clean, so that a
-          re-entrant call to sbrk (e.g. in an ISR) is certain to work.
-
-   @param[in] nbytes  The number of bytes to be allocated.
-
-   @return  The previous heap end on success, -1 on failure with an error
-            code in errno.                                                    */
+   @return  0 on success, with the struct stat appropriately updated. -1 on
+            failure, with an error code in the global variable errno.         */
 /* -------------------------------------------------------------------------- */
-void *
-_sbrk (int nbytes)
+int
+_fstat (int          file,
+	struct stat *st)
 {
-  /* Symbols defined by linker map */
-  extern int  end;		/* start of free memory */
-  extern int  stack;		/* end of free memory */
-
-  /* The statically held previous end of the stack, with its initialization. */
-  static void *heap_ptr = (void *)&end;		/* Previous end */
-
-  if (((void *) &stack - (heap_ptr + nbytes)) > STACK_BUFFER )
+  if ((STDIN_FILENO  == file) ||
+      (STDERR_FILENO == file) ||
+      (STDOUT_FILENO == file))
     {
-      void * base  = heap_ptr;
-      heap_ptr    += nbytes;
-		
-      return  base;
+      st->st_mode = S_IFCHR;
+      return  0;
     }
   else
     {
-      errno = ENOMEM;
-      return  (void *) -1;
+      errno = EBADF;
+      return  -1;
     }
-}	/* _sbrk () */
+}	/* _fstat () */

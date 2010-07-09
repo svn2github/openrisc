@@ -1,29 +1,37 @@
 /* spr_defs.h -- Defines OR1K architecture specific special-purpose registers
-   Copyright (C) 1999 Damjan Lampret, lampret@opencores.org
 
-This file is part of OpenRISC 1000 Architectural Simulator.
+   Copyright (C) 1999 Damjan Lampret
+   Copyright (C) 2008, 2010 Embecosm Limited
+  
+   Contributor Damjan Lampret <lampret@opencores.org>
+   Contributor Jeremy Bennett <jeremy.bennett@embecosm.com>
+  
+   This file is part of Newlib.
+  
+   This program is free software; you can redistribute it and/or modify it
+   under the terms of the GNU General Public License as published by the Free
+   Software Foundation; either version 3 of the License, or (at your option)
+   any later version.
+  
+   This program is distributed in the hope that it will be useful, but WITHOUT
+   ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+   FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+   more details.
+  
+   You should have received a copy of the GNU General Public License along
+   with this program.  If not, see <http://www.gnu.org/licenses/>.            */
+/* -------------------------------------------------------------------------- */
+/* This program is commented throughout in a fashion suitable for processing
+   with Doxygen.                                                              */
+/* -------------------------------------------------------------------------- */
 
-This program is free software; you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation; either version 2 of the License, or
-(at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with this program; if not, write to the Free Software
-Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
-
-/* This file is also used by microkernel test bench. Among
-others it is also used in assembly file(s). */
+/* This file is also used by microkernel test bench. Among others it is also
+   used in assembly file(s). */
 
 /* Definition of special-purpose registers (SPRs) */
 
-#ifndef _SPR_DEFS_H
-#define _SPR_DEFS_H
+#ifndef SPR_DEFS__H
+#define SPR_DEFS__H
 
 #define MAX_GRPS (32)
 #define MAX_SPRS_PER_GRP_BITS (11)
@@ -431,4 +439,4 @@ others it is also used in assembly file(s). */
 #define SPR_TTMR_CR     0xc0000000  /* Continuous run */
 #define SPR_TTMR_M      0xc0000000  /* Tick mode */
 
-#endif
+#endif	/* SPR_DEFS__H */
