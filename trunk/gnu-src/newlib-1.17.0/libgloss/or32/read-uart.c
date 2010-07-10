@@ -67,9 +67,9 @@ _read (int   file,
 #ifdef UART_AUTO_ECHO
 	  _uart_putc (buf[i]);
 #endif
-	  if (('\n' == buf[i]) || ('\r' == buf[i]))
+	  /* Return partial buffer if we get EOL */
+	  if ('\n' == buf[i])
 	    {
-	      buf[i] = 0;		/* End of string */
 	      return  i;
 	    }
 	}

@@ -46,11 +46,6 @@ extern int  errno;
 static void
 outbyte (char  c)
 {
-  if ('\n' == c)
-    {
-      _uart_putc ('\r');
-    }
-
   _uart_putc (c);
 
 }	/* outbyte () */

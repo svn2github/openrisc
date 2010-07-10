@@ -108,16 +108,8 @@ void _uart_putc (char  c)
   /* Wait until we are free to transmit */
   WAIT_FOR_THRE;
 
-  /* Put the character to be trasmitted. If it is newline (line feed) add a
-     carriage return,  and wait until it has gone. */
+  /* Put the character to be transmitted and wait until it has gone. */
   UREG8 (UART_TX) = c;
-
-  if ('\n' == c)
-    {
-      WAIT_FOR_THRE;
-      UREG8 (UART_TX) = '\r';
-    }
-
   WAIT_FOR_XMITR;
 
 }	/* _uart_putc () */

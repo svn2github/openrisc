@@ -387,7 +387,7 @@ _start:
 
 	/* Initialise UART in a C function. If the UART isn't present, we'll */
 	/* link against a dummy function. */
-	l.jal    _uart_init
+	l.jal    __uart_init
 	l.nop
 
 	/* Jump to main program entry point (argc = argv = envp = 0) */
