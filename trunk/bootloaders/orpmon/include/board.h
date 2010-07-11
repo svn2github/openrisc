@@ -11,8 +11,8 @@
 /* BOARD
  * 0 - bender
  * 1 - marvin
- * 2 - ORSoC A3PE1500 usbethdev board
- * 3 - ORSoC A3P1000 usbethdev board
+ * 2 - ORSoC A3PE1500 board
+ * 3 - ORSoC A3P1000 board
  */
 #define BOARD                   3
 
@@ -20,6 +20,7 @@
  * 0 - JB ORSoC board
  * 1 - AE ORSoC board
  * 2 - JB Southpole board
+ * 3 - Unassigned
  */
 #define IPCONFIG                 0
 
@@ -94,7 +95,8 @@
 #  define SDRAM_SIZE             0x02000000
 #  define SDRAM_ROW_SIZE             0x00000400
 #  define SDRAM_BANK_SIZE             0x00800000
-#  define IN_CLK		  20000000
+//#  define IN_CLK		  20000000
+#  define IN_CLK		  24000000
 #  define FLASH_ORG_16_2          1
 #  define BOARD_DEF_NAME       	  "ORSoC A3P1000 devboard"
 
@@ -147,7 +149,7 @@
 #define ETH_MACADDR2      	0x34
 #define ETH_MACADDR3      	0x56
 #define ETH_MACADDR4      	0x78
-#define ETH_MACADDR5      	0x9a
+#define ETH_MACADDR5      	0x9b
 
 #elif IPCONFIG==2
 
@@ -163,14 +165,14 @@
 #define ETH_MACADDR2      	0x34
 #define ETH_MACADDR3      	0x56
 #define ETH_MACADDR4      	0x78
-#define ETH_MACADDR5      	0x9a
+#define ETH_MACADDR5      	0x9c
 
-#else // Some custom one
+#elif IPCONFIG==3 // Unassigned config...
 
 #define BOARD_DEF_IP    	0x0a01010a // 10.1.1.10
 #define BOARD_DEF_MASK  	0xffffff00 // 255.255.255.0
-#define BOARD_DEF_GW    	0x0a010101 // 10.1.1.10
-#define BOARD_DEF_TBOOT_SRVR 	0x0a010101 // 10.1.1.10
+#define BOARD_DEF_GW    	0x0a010101 // 10.1.1.1
+#define BOARD_DEF_TBOOT_SRVR 	0x0a010101 // 10.1.1.1
 #define BOARD_DEF_IMAGE_NAME    "boot.img"
 #define BOARD_DEF_LOAD_SPACE    0xa00000
 #define ETH_MDIOPHYADDR      	0x00
@@ -179,7 +181,7 @@
 #define ETH_MACADDR2      	0x34
 #define ETH_MACADDR3      	0x56
 #define ETH_MACADDR4      	0x78
-#define ETH_MACADDR5      	0x9a
+#define ETH_MACADDR5      	0x9d
 
 #endif
 
