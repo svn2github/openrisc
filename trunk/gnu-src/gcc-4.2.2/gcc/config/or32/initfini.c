@@ -94,7 +94,11 @@ init:\n\
 ");
 
 /* .fini section start.
-   This must appear at the start of the .init section.  */
+   This must appear at the start of the .init section.
+
+   Note that the prologue is slightly different order to standard. Saving the
+   link register in the delay slot will pick up the wrong value!
+*/
 
 asm ("\n\
 	.section .fini\n\
@@ -103,9 +107,9 @@ asm ("\n\
 fini:\n\
 	l.addi	r1,r1,-16\n\
 	l.sw	12(r1),r2\n\
-	l.addi	r2,r1,16\n\
 	l.sw	8(r1),r9\n\
-	l.j	__do_global_dtors\n\
+	l.jal	__do_global_dtors\n\
+	l.addi	r2,r1,16\n\
 ");
 
 #endif /* CRT_INIT */
@@ -145,7 +149,8 @@ _do_global_ctors (void)
 
 asm ("\n\
 	.section .init\n\
-	l.j	__do_global_ctors\n\
+	l.jal	__do_global_ctors\n\
+	l.nop\n\
 	l.lwz	r9,8(r1)\n\
 	l.lwz	r2,12(r1)\n\
 	l.jr	r9\n\
