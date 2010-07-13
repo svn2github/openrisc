@@ -111,12 +111,8 @@
 	/* 0x100: RESET exception */
         .org	0x100 	
 _reset:
-        l.nop
-
 	/* Jump to program initialisation code */
-	l.movhi r2,hi(_start)
-	l.ori   r2,r2,lo(_start)
-	l.jr    r2
+	l.j	_start
 	l.nop
 
 	/* 0x200: BUS exception is special, because during startup we use it
@@ -317,46 +313,20 @@ _start:
 
 	l.sw	0(r30),r26		/* Patch the instruction */
 	l.j	.L5
-	l.addi	r30,r30,4		/* Next instruction */
+	l.addi	r30,r30,4		/* Delay slot: next instruction */
 
 .L6:
-	/* Cache initialisation */
+	/* Cache initialisation. Enable IC and/or DC */
 .if IC_ENABLE || DC_ENABLE
-        /* Flush IC and/or DC */
-        l.addi  r10,r0,0   
-        l.addi  r11,r0,0   
-        l.addi  r12,r0,0   
+        l.mfspr	r10,r0,SPR_SR
 .if IC_ENABLE
-        l.addi  r11,r0,IC_SIZE
+        l.ori	r10,r10,SPR_SR_ICE
 .endif
 .if DC_ENABLE
-	l.addi	r12,r0,DC_SIZE
-.endif
-	l.sfleu	r12,r11
-	l.bf	.L0
-	l.nop
-	l.add	r11,r0,r12
-.L0:
-.if IC_ENABLE
-        l.mtspr r0,r10,SPR_ICBIR
-.endif
-.if DC_ENABLE
-        l.mtspr r0,r10,SPR_DCBIR
-.endif
-        l.sfne  r10,r11
-        l.bf    .L0   
-        l.addi  r10,r10,16
-
-        /* Enable IC and/or DC */
-        l.addi  r10,r0,(SPR_SR_SM)
-.if IC_ENABLE
-        l.ori	r10,r10,(SPR_SR_ICE)
-.endif
-.if DC_ENABLE
-        l.ori	r10,r10,(SPR_SR_DCE)
+        l.ori	r10,r10,SPR_SR_DCE
 .endif
         l.mtspr r0,r10,SPR_SR
-        l.nop
+        l.nop				/* Flush the pipeline. */
         l.nop
         l.nop
         l.nop
@@ -373,17 +343,16 @@ _start:
         l.sw    (0)(r28),r0
         l.sfltu r28,r30
         l.bf    .L1
-        l.addi  r28,r28,4
+        l.addi  r28,r28,4		/* Delay slot */
 
 	/* Call global and static constructors */
-	l.movhi	r3,hi(init)
-	l.ori	r3,r3,lo(init)
-	l.jalr	r3
-
+	l.jal	init
+	l.nop
+	
 	/* Set up destructors to be called from exit if main never returns */
 	l.movhi	r3,hi(fini)
-	l.ori	r3,r3,lo(fini)
 	l.jal	_atexit
+	l.ori	r3,r3,lo(fini)		/* Delay slot */
 
 	/* Initialise UART in a C function. If the UART isn't present, we'll */
 	/* link against a dummy function. */

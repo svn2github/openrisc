@@ -14,6 +14,35 @@
 
 @SET_MAKE@
 
+# Makefile.am: Automake file for OR32 setjmp
+
+# Copyright (C) 2000, Damjan Lampret
+# Copyright (C) 2004, Jacob Bower
+# Copyright (C) 2010, Embecosm Limited <info@embecosm.com>
+
+# Contributor Jeremy Bennett <jeremy.bennett@embecosm.com>
+
+# This file is part of Newlib.
+
+# The original work by Jacob Bower is provided as-is without any kind of
+# warranty. Use it at your own risk!
+
+# All subsequent work is bound by version 3 of the GPL as follows.
+
+# This program is free software; you can redistribute it and/or modify it
+# under the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 3 of the License, or (at your option)
+# any later version.
+
+# This program is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+# FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+# more details.
+
+# You should have received a copy of the GNU General Public License along
+# with this program.  If not, see <http://www.gnu.org/licenses/>.            
+# -----------------------------------------------------------------------------
+
 srcdir = @srcdir@
 top_srcdir = @top_srcdir@
 VPATH = @srcdir@
@@ -54,7 +83,7 @@ LIBRARIES = $(noinst_LIBRARIES)
 ARFLAGS = cru
 lib_a_AR = $(AR) $(ARFLAGS)
 lib_a_LIBADD =
-am_lib_a_OBJECTS = lib_a-setjmp.$(OBJEXT)
+am_lib_a_OBJECTS = lib_a-longjmp.$(OBJEXT) lib_a-setjmp.$(OBJEXT)
 lib_a_OBJECTS = $(am_lib_a_OBJECTS)
 DEFAULT_INCLUDES = -I. -I$(srcdir)
 depcomp =
@@ -128,11 +157,6 @@ STRIP = @STRIP@
 USE_LIBTOOL_FALSE = @USE_LIBTOOL_FALSE@
 USE_LIBTOOL_TRUE = @USE_LIBTOOL_TRUE@
 VERSION = @VERSION@
-ac_ct_AR = @ac_ct_AR@
-ac_ct_AS = @ac_ct_AS@
-ac_ct_RANLIB = @ac_ct_RANLIB@
-ac_ct_READELF = @ac_ct_READELF@
-ac_ct_STRIP = @ac_ct_STRIP@
 aext = @aext@
 am__fastdepCC_FALSE = @am__fastdepCC_FALSE@
 am__fastdepCC_TRUE = @am__fastdepCC_TRUE@
@@ -148,18 +172,23 @@ build_cpu = @build_cpu@
 build_os = @build_os@
 build_vendor = @build_vendor@
 datadir = @datadir@
+datarootdir = @datarootdir@
+docdir = @docdir@
+dvidir = @dvidir@
 exec_prefix = @exec_prefix@
 host = @host@
 host_alias = @host_alias@
 host_cpu = @host_cpu@
 host_os = @host_os@
 host_vendor = @host_vendor@
+htmldir = @htmldir@
 includedir = @includedir@
 infodir = @infodir@
 install_sh = @install_sh@
 libdir = @libdir@
 libexecdir = @libexecdir@
 libm_machine_dir = @libm_machine_dir@
+localedir = @localedir@
 localstatedir = @localstatedir@
 lpfx = @lpfx@
 machine_dir = @machine_dir@
@@ -168,18 +197,22 @@ mkdir_p = @mkdir_p@
 newlib_basedir = @newlib_basedir@
 oext = @oext@
 oldincludedir = @oldincludedir@
+pdfdir = @pdfdir@
 prefix = @prefix@
 program_transform_name = @program_transform_name@
+psdir = @psdir@
 sbindir = @sbindir@
 sharedstatedir = @sharedstatedir@
 sys_dir = @sys_dir@
 sysconfdir = @sysconfdir@
 target_alias = @target_alias@
+
+# This is boilerplate.
 AUTOMAKE_OPTIONS = cygnus
 INCLUDES = $(NEWLIB_CFLAGS) $(CROSS_CFLAGS) $(TARGET_CFLAGS)
 AM_CCASFLAGS = $(INCLUDES)
 noinst_LIBRARIES = lib.a
-lib_a_SOURCES = setjmp.S
+lib_a_SOURCES = longjmp.S setjmp.S
 lib_a_CCASFLAGS = $(AM_CCASFLAGS)
 lib_a_CFLAGS = $(AM_CFLAGS)
 ACLOCAL_AMFLAGS = -I ../../.. -I ../../../..
@@ -240,6 +273,12 @@ distclean-compile:
 
 .S.obj:
 	$(CCASCOMPILE) -c `$(CYGPATH_W) '$<'`
+
+lib_a-longjmp.o: longjmp.S
+	$(CCAS) $(lib_a_CCASFLAGS) $(CCASFLAGS) -c -o lib_a-longjmp.o `test -f 'longjmp.S' || echo '$(srcdir)/'`longjmp.S
+
+lib_a-longjmp.obj: longjmp.S
+	$(CCAS) $(lib_a_CCASFLAGS) $(CCASFLAGS) -c -o lib_a-longjmp.obj `if test -f 'longjmp.S'; then $(CYGPATH_W) 'longjmp.S'; else $(CYGPATH_W) '$(srcdir)/longjmp.S'; fi`
 
 lib_a-setjmp.o: setjmp.S
 	$(CCAS) $(lib_a_CCASFLAGS) $(CCASFLAGS) -c -o lib_a-setjmp.o `test -f 'setjmp.S' || echo '$(srcdir)/'`setjmp.S
