@@ -110,16 +110,21 @@ case ${opt}
 	echo "Usage: sh bld.sh [options]"
 	echo ""
 	echo "Options:"
-	echo "    --force       Ensure the unified source directory and build"
-	echo "                  directory are recreated."
-	echo "    --prefix:     Specify the install directory"
-	echo "    --scdir:      Specify the unified source directory"
-	echo "    --builddir:   Specify the build directory"
-	echo "    --nolink      Don't build the unified source directory"
-	echo "    --noconfig    Don't run configure"
-	echo "    --noinstall   Don't run install"
-	echo "    --help        List these options and exit"
+	echo "    --force           Ensure the unified source directory and"
+	echo "                      build directory are recreated."
+	echo "    --prefix <dir>:   Specify the install directory"
+	echo "    --scdir <dir:     Specify the unified source directory"
+	echo "    --builddir <dir>: Specify the build directory"
+	echo "    --nolink          Don't build the unified source directory"
+	echo "    --noconfig        Don't run configure"
+	echo "    --noinstall       Don't run install"
+	echo "    --help            List these options and exit"
 	exit 0
+	;;
+
+    --*)
+	echo "unrecognized option \"$1\""
+	exit 1
 	;;
 
     *)
