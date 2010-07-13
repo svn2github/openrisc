@@ -24,6 +24,7 @@ component_dirs='binutils-2.18.50 newlib-1.17.0 gcc-4.2.2 gdb-6.8'
 unified_src=srcw
 build_dir=bld-or32
 install_dir=/opt/or32-elf-new
+or1ksim_dir=/opt/or1ksim-new
 
 # Sanity check!
 case ${unified_src} in
@@ -62,6 +63,7 @@ make_load="-j -l `(echo processor;cat /proc/cpuinfo 2>/dev/null || \
 # --prefix:     Specify the install directory
 # --scdir:      Specify the unified source directory
 # --builddir:   Specify the build directory
+# --or1ksim:    Specify the or1ksim installation directory
 # --nolink:     Don't build the unified source directory
 # --noconfig:   Don't run configure
 # --noinstall:  Don't run install
@@ -94,6 +96,11 @@ case ${opt}
 	shift;
 	;;
 
+    --or1ksim)
+	or1ksim_dir=$2;
+	shift;
+	;;
+	
     --nolink)
 	nolink="true";
 	;;
@@ -115,6 +122,7 @@ case ${opt}
 	echo "    --prefix <dir>:   Specify the install directory"
 	echo "    --scdir <dir:     Specify the unified source directory"
 	echo "    --builddir <dir>: Specify the build directory"
+	echo "    --or1ksim <dir>:  Specify the Or1ksim installation directory"
 	echo "    --nolink          Don't build the unified source directory"
 	echo "    --noconfig        Don't run configure"
 	echo "    --noinstall       Don't run install"
@@ -216,7 +224,7 @@ then
 	  ../${unified_src}/configure --target=or32-elf \
 	  --with-pkgversion="OpenRISC 32-bit toolchain (built `date +%Y%m%d`)" \
 	  --with-bugurl=http://www.opencores.org/ \
-	  --with-or1ksim=/opt/or1ksim-new \
+	  --with-or1ksim=${or1ksim_dir} \
 	  --with-newlib \
 	  --enable-fast-install=N/A --disable-libssp \
 	  --enable-languages=c --prefix=${install_dir}
