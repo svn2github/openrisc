@@ -67,17 +67,19 @@
 void *
 _sbrk (int nbytes)
 {
-  /* Symbols defined by linker map */
-  extern int  end;		/* start of free memory */
-  extern int  stack;		/* end of free memory */
+  /* Symbol defined by linker map */
+  extern int  end;		/* start of free memory (as symbol) */
+
+  /* Value set by crt0.S */
+  extern void *stack;		/* end of free memory */
 
   /* The statically held previous end of the stack, with its initialization. */
   static void *heap_ptr = (void *)&end;		/* Previous end */
 
-  if (((void *) &stack - (heap_ptr + nbytes)) > STACK_BUFFER )
+  if ((stack - (heap_ptr + nbytes)) > STACK_BUFFER )
     {
-      void * base  = heap_ptr;
-      heap_ptr    += nbytes;
+      void *base  = heap_ptr;
+      heap_ptr   += nbytes;
 		
       return  base;
     }

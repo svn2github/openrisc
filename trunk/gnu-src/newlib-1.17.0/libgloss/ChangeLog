@@ -1,3 +1,8 @@
+2010-07-14  Jeremy Bennett <jeremy.bennett@embecosm.com>
+
+	* or32/crt0.S: Use l.j rather than l.jr for library calls.
+	* or32/sbrk.c (_sbrk): Use stack, rather than &stack.
+
 2010-07-07  Jeremy Bennett <jeremy.bennett@embecosm.com>
 
 	* README: Updated for OpenRISC
