@@ -64,6 +64,7 @@ make_load="-j -l `(echo processor;cat /proc/cpuinfo 2>/dev/null || \
 # --scdir:      Specify the unified source directory
 # --builddir:   Specify the build directory
 # --or1ksim:    Specify the or1ksim installation directory
+# --with-newlib:Build newlib
 # --nolink:     Don't build the unified source directory
 # --noconfig:   Don't run configure
 # --noinstall:  Don't run install
@@ -72,7 +73,9 @@ doforce="false";
 nolink="false";
 noconfig="false";
 noinstall="false";
-
+newlibconfigure=; # Default is without!
+newlibmake=;
+installnewlib=;
 until
 opt=$1
 case ${opt}
@@ -100,6 +103,11 @@ case ${opt}
 	or1ksim_dir=$2;
 	shift;
 	;;
+    --with-newlib)
+	newlibconfigure="--with-newlib";
+	newlibmake="all-target-newlib all-target-libgloss";
+	installnewlib="install-target-newlib install-target-libgloss";
+	;;
 	
     --nolink)
 	nolink="true";
@@ -123,6 +131,7 @@ case ${opt}
 	echo "    --scdir <dir:     Specify the unified source directory"
 	echo "    --builddir <dir>: Specify the build directory"
 	echo "    --or1ksim <dir>:  Specify the Or1ksim installation directory"
+	echo "    --with-newlib     Build newlib"
 	echo "    --nolink          Don't build the unified source directory"
 	echo "    --noconfig        Don't run configure"
 	echo "    --noinstall       Don't run install"
@@ -225,7 +234,7 @@ then
 	  --with-pkgversion="OpenRISC 32-bit toolchain (built `date +%Y%m%d`)" \
 	  --with-bugurl=http://www.opencores.org/ \
 	  --with-or1ksim=${or1ksim_dir} \
-	  --with-newlib \
+	  ${newlibconfigure} \
 	  --enable-fast-install=N/A --disable-libssp \
 	  --enable-languages=c --prefix=${install_dir}
 
@@ -255,18 +264,19 @@ then
     exit 1
 fi
 
-make all-target-newlib all-target-libgloss all-gdb
+make ${newlibmake} all-gdb
 if [ $? != 0 ]
 then
-    echo "make (newlib, gdb) failed."
+    echo "make ($newlibmake gdb) failed."
     exit 1
 fi
+
 
 # Install everything
 if [ "x$noinstall" == "xfalse" ]
 then
     make install-binutils install-gas install-ld install-gcc \
-	 install-target-newlib install-target-libgloss install-gdb
+	 ${newlibinstall} install-gdb
 
     if [ $? != 0 ];
     then
