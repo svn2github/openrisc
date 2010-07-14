@@ -1,9 +1,11 @@
 #!/bin/bash
 
-# Copyright (C) 2009 Embecosm Limited
+# Copyright (C) 2009, 2010 Embecosm Limited
+# Copyright (C) 2010 ORSoC AB
 
 # Contributor Joern Rennecke <joern.rennecke@embecosm.com>
 # Contributor Jeremy Bennett <jeremy.bennett@embecosm.com>
+# Contributor Julius Baxter <julius.baxter@orsoc.se>
 
 # This file is a script to build key elements of the OpenRISC tool chain
 
@@ -58,24 +60,24 @@ make_load="-j -l `(echo processor;cat /proc/cpuinfo 2>/dev/null || \
 
 # Parse options
 
-# --force:      Ensure the unified source directory and build directory are
-#               recreated.
-# --prefix:     Specify the install directory
-# --scdir:      Specify the unified source directory
-# --builddir:   Specify the build directory
-# --or1ksim:    Specify the or1ksim installation directory
-# --with-newlib:Build newlib
-# --nolink:     Don't build the unified source directory
-# --noconfig:   Don't run configure
-# --noinstall:  Don't run install
-# --help:       List these options and exit
+# --force:       Ensure the unified source directory and build directory are
+#                recreated.
+# --prefix:      Specify the install directory
+# --scdir:       Specify the unified source directory
+# --builddir:    Specify the build directory
+# --or1ksim:     Specify the or1ksim installation directory
+# --with-newlib: Build newlib
+# --nolink:      Don't build the unified source directory
+# --noconfig:    Don't run configure
+# --noinstall:   Don't run install
+# --help:        List these options and exit
 doforce="false";
 nolink="false";
 noconfig="false";
 noinstall="false";
 newlibconfigure=; # Default is without!
 newlibmake=;
-installnewlib=;
+newlibinstall=;
 until
 opt=$1
 case ${opt}
@@ -103,10 +105,11 @@ case ${opt}
 	or1ksim_dir=$2;
 	shift;
 	;;
+
     --with-newlib)
 	newlibconfigure="--with-newlib";
 	newlibmake="all-target-newlib all-target-libgloss";
-	installnewlib="install-target-newlib install-target-libgloss";
+	newlibinstall="install-target-newlib install-target-libgloss";
 	;;
 	
     --nolink)
