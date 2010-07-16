@@ -36,13 +36,30 @@ Boston, MA 02111-1307, USA.  */
   while (0)
 
 
-/* Make sure we pick up the crtinit.o and crtfini.o files. */
-#define STARTFILE_SPEC "%{!shared:crt0.o%s} crtinit.o%s"
+/* A string corresponding to the installation directory for target libraries
+   and includes. Make it available to SPEC definitions via EXTRA_SPECS */
+#define CONC_DIR(dir1, dir2) dir1 "/../../" dir2
+#define TARGET_PREFIX CONC_DIR (STANDARD_EXEC_PREFIX, DEFAULT_TARGET_MACHINE)
 
+#define EXTRA_SPECS                                   \
+  { "target_prefix", TARGET_PREFIX }
+
+#undef CPP_SPEC
+#define CPP_SPEC "%{mor32-newlib*:-I%(target_prefix)/newlib-include}"
+
+/* Make sure we pick up the crtinit.o and crtfini.o files. */
+#undef STARTFILE_SPEC
+#define STARTFILE_SPEC "%{!shared:%{mor32-newlib*:%(target_prefix)/newlib/crt0.o} \
+                        %{!mor32-newlib*:crt0%s}} crtinit.o%s"
+
+#undef ENDFILE_SPEC
 #define ENDFILE_SPEC "crtfini.o%s"
 
-/* Override previous definitions (linux.h). We don't use libg.a */
+/* Specify the newlib library path if necessary */
+#undef LINK_SPEC
+#define LINK_SPEC "%{mor32-newlib*:-L%(target_prefix)/newlib}"
 
+/* Override previous definitions (linux.h). We don't use libg.a */
 #undef LIB_SPEC 
 #define LIB_SPEC "%{!p:%{!pg:-lc}}%{p:-lc_p}%{pg:-lc_p}		\
                   %{mor32-newlib:-lor32				\

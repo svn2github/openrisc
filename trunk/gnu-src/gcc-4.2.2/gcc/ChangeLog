@@ -1,3 +1,8 @@
+2010-07-16  Jeremy Bennett <jeremy.bennett@embecosm.com>
+
+	* config/or32/or32.h: Updated SPEC definitions to pick up newlib
+	in custom location.
+
 2010-07-13  Jeremy Bennett <jeremy.bennett@embecosm.com>
 
 	* config/or32/initfini.c: Corrected assembler sequences.
