@@ -33,6 +33,7 @@
 #include <sys/times.h>
 
 
+#undef errno
 extern int  errno;
 
 

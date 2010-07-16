@@ -363,11 +363,11 @@ _start:
 	l.or	r3,r0,r0
 	l.or	r4,r0,r0
 	l.jal   _main
-	l.or	r5,r0,r0
+	l.or	r5,r0,r0		/* Delay slot */
 
 	/* If program exits, call exit routine */
 	l.jal   _exit
-	l.addi  r3,r11,0
+	l.addi  r3,r11,0		/* Delay slot */
 
 	/* Loop forever */
 .L2:

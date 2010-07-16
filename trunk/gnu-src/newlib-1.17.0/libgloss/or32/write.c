@@ -35,6 +35,7 @@
 #include "or1ksim-board.h"
 
 
+#undef errno
 extern int  errno;
 
 

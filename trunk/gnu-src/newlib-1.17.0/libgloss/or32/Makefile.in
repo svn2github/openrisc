@@ -94,7 +94,7 @@ OR32_OBJS = _exit.o      \
             wait.o       \
             write.o
 UART_OBJS = _exit.o       \
-            close-uart.o  \
+            close.o       \
             environ.o     \
             execve.o      \
             fork.o        \

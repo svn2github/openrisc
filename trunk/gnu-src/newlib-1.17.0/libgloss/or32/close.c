@@ -30,9 +30,9 @@
 /* -------------------------------------------------------------------------- */
 
 #include <errno.h>
-#include <unistd.h>
 
 
+#undef errno
 extern int  errno;
 
 
@@ -53,7 +53,7 @@ extern int  errno;
 int
 _close (int   file)
 {
-  errno = (STDOUT_FILENO == file) || (STDERR_FILENO == file) ? EIO : EBADF;
+  errno = EBADF;
   
   return -1;			/* Always fails */
 

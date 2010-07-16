@@ -33,6 +33,7 @@
 #include <unistd.h>
 
 
+#undef errno
 extern int  errno;
 
 

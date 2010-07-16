@@ -1,3 +1,31 @@
+2010-07-16  Jeremy Bennett <jeremy.bennett@embecosm.com>
+
+	* or32/_exit.c: Removed redundant header.
+	* or32/close-uart.c: Deleted.
+	* or32/close.c: Undefined #errno. Fail for all streams.
+	* or32/crt0.S; Simplified cache initialization.
+	* or32/execve.c: Undefined #errno.
+	* or32/fork.c: Undefined #errno.
+	* or32/fstat-uart.c: Undefined #errno.
+	* or32/fstat.c: Undefined #errno.
+	* or32/isatty-uart.c: Undefined #errno.
+	* or32/isatty.c: Undefined #errno.
+	* or32/kill.c: Undefined #errno.
+	* or32/link.c: Undefined #errno.
+	* or32/lseek-uart.c: Undefined #errno.
+	* or32/lseek.c: Undefined #errno.
+	* or32/Makefile.in: Replaced close-uart.c by close.c
+	* or32/open.c: Undefined #errno.
+	* or32/read-uart.c: Undefined #errno.
+	* or32/read.c: Undefined #errno.
+	* or32/sbrk.c: Undefined #errno.
+	* or32/stat.c: Undefined #errno.
+	* or32/times.c: Undefined #errno.
+	* or32/unlink.c: Undefined #errno.
+	* or32/wait.c: Undefined #errno.
+	* or32/write-uart.c: Undefined #errno.
+	* or32/write.c: Undefined #errno.
+
 2010-07-14  Jeremy Bennett <jeremy.bennett@embecosm.com>
 
 	* or32/crt0.S: Use l.j rather than l.jr for library calls.

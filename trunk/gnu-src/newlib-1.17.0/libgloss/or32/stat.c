@@ -33,6 +33,7 @@
 #include <sys/stat.h>
 
 
+#undef errno
 extern int  errno;
 
 

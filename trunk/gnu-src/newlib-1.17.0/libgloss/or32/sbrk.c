@@ -31,13 +31,11 @@
 
 #include <errno.h>
 
-/*! Reserved stack space inbytes. */
-#define STACK_BUFFER  65536
 
-/*! Define NULL if not yet defined. */
-#ifndef NULL
-#define NULL ((void *) 0)
-#endif
+#undef errno
+extern int  errno;
+
+#define STACK_BUFFER  65536	/*!< Reserved stack space in bytes. */
 
 
 /* -------------------------------------------------------------------------- */
@@ -73,7 +71,7 @@ _sbrk (int nbytes)
   /* Value set by crt0.S */
   extern void *stack;		/* end of free memory */
 
-  /* The statically held previous end of the stack, with its initialization. */
+  /* The statically held previous end of the heap, with its initialization. */
   static void *heap_ptr = (void *)&end;		/* Previous end */
 
   if ((stack - (heap_ptr + nbytes)) > STACK_BUFFER )

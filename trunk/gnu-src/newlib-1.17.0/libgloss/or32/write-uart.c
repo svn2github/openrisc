@@ -35,6 +35,7 @@
 #include "uart.h"
 
 
+#undef errno
 extern int  errno;
 
 
