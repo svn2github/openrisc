@@ -66,7 +66,7 @@ make_load="-j -l `(echo processor;cat /proc/cpuinfo 2>/dev/null || \
 # --scdir:       Specify the unified source directory
 # --builddir:    Specify the build directory
 # --or1ksim:     Specify the or1ksim installation directory
-# --with-newlib: Build newlib
+# --no-newlib:   Don't build newlib
 # --nolink:      Don't build the unified source directory
 # --noconfig:    Don't run configure
 # --noinstall:   Don't run install
@@ -75,9 +75,10 @@ doforce="false";
 nolink="false";
 noconfig="false";
 noinstall="false";
-newlibconfigure=; # Default is without!
-newlibmake=;
-newlibinstall=;
+newlibconfigure="--with-newlib";
+newlibmake="all-target-newlib all-target-libgloss";
+newlibinstall="install-target-newlib install-target-libgloss";
+
 until
 opt=$1
 case ${opt}
@@ -106,10 +107,10 @@ case ${opt}
 	shift;
 	;;
 
-    --with-newlib)
-	newlibconfigure="--with-newlib";
-	newlibmake="all-target-newlib all-target-libgloss";
-	newlibinstall="install-target-newlib install-target-libgloss";
+    --no-newlib)
+	newlibconfigure=;
+	newlibmake=;
+	newlibinstall=;
 	;;
 	
     --nolink)
@@ -134,7 +135,7 @@ case ${opt}
 	echo "    --scdir <dir:     Specify the unified source directory"
 	echo "    --builddir <dir>: Specify the build directory"
 	echo "    --or1ksim <dir>:  Specify the Or1ksim installation directory"
-	echo "    --with-newlib     Build newlib"
+	echo "    --no-newlib       Don't build newlib"
 	echo "    --nolink          Don't build the unified source directory"
 	echo "    --noconfig        Don't run configure"
 	echo "    --noinstall       Don't run install"
@@ -270,13 +271,12 @@ fi
 make ${newlibmake} all-gdb
 if [ $? != 0 ]
 then
-    echo "make ($newlibmake gdb) failed."
+    echo "make (Newlib and GDB) failed."
     exit 1
 fi
 
-
 # Install everything
-if [ "x$noinstall" == "xfalse" ]
+if [ "x${noinstall}" == "xfalse" ]
 then
     make install-binutils install-gas install-ld install-gcc \
 	 ${newlibinstall} install-gdb
@@ -287,3 +287,17 @@ then
 	exit 1
     fi
 fi
+
+# If we have built newlib, move it. This means the target specific include
+# directory and the crt0.o and libraries from the target specific lib
+# directory.
+if [ "x${newlibconfigure}" != "x" ]
+then
+    mkdir -p ${install_dir}/or32-elf/newlib
+    rm -rf ${install_dir}/or32-elf/newlib-include
+    mv ${install_dir}/or32-elf/include ${install_dir}/or32-elf/newlib-include
+    mv ${install_dir}/or32-elf/lib/*.a ${install_dir}/or32-elf/newlib
+    mv ${install_dir}/or32-elf/lib/crt0.o ${install_dir}/or32-elf/newlib
+fi
+
+# uClibc could be safely built and installed now
