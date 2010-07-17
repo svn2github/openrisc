@@ -50,7 +50,7 @@ Boston, MA 02111-1307, USA.  */
 /* Make sure we pick up the crtinit.o and crtfini.o files. */
 #undef STARTFILE_SPEC
 #define STARTFILE_SPEC "%{!shared:%{mor32-newlib*:%(target_prefix)/newlib/crt0.o} \
-                        %{!mor32-newlib*:crt0%s}} crtinit.o%s"
+                        %{!mor32-newlib*:crt0.o%s} crtinit.o%s}"
 
 #undef ENDFILE_SPEC
 #define ENDFILE_SPEC "crtfini.o%s"
@@ -59,13 +59,14 @@ Boston, MA 02111-1307, USA.  */
 #undef LINK_SPEC
 #define LINK_SPEC "%{mor32-newlib*:-L%(target_prefix)/newlib}"
 
-/* Override previous definitions (linux.h). We don't use libg.a */
+/* Override previous definitions (linux.h). Newlib doesn't have a profiling
+   version of the library, but it does have a debugging version (libg.a) */
 #undef LIB_SPEC 
-#define LIB_SPEC "%{!p:%{!pg:-lc}}%{p:-lc_p}%{pg:-lc_p}		\
-                  %{mor32-newlib:-lor32				\
-                      %{!p:%{!pg:-lc}}%{p:-lc_p}%{pg:-lc_p}}	\
-                  %{mor32-newlib-uart:-lor32uart		\
-                      %{!p:%{!pg:-lc}}%{p:-lc_p}%{pg:-lc_p}}"
+#define LIB_SPEC "%{!mor32-newlib*:%{!p:%{!pg:-lc}}%{p:-lc_p}%{pg:-lc_p}} \
+                  %{mor32-newlib:%{!g:-lc -lor32 -lc}                     \
+                                 %{g:-lg -lor32 -lg}}                      \
+                  %{mor32-newlib-uart:%{!g:-lc -lor32uart -lc}            \
+                                 %{g:-lg -lor32uart -lg}}"
 
 /* Old definition of LIB_SPEC, not longer used. */
 /* Which library to get.  The only difference from the default is to get
