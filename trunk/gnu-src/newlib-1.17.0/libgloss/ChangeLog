@@ -1,5 +1,15 @@
 2010-07-16  Jeremy Bennett <jeremy.bennett@embecosm.com>
 
+	* or32/configure.in: Tidied up and made consistent with nosyslib.
+	* or32/Makefile.in: Tidied up and made consistent with nosyslib.
+
+2010-07-16  Jeremy Bennett <jeremy.bennett@embecosm.com>
+
+	* libnosys/configure.in: Add or32 as using namespace clean
+	  implementation.
+
+2010-07-16  Jeremy Bennett <jeremy.bennett@embecosm.com>
+
 	* or32/_exit.c: Removed redundant header.
 	* or32/close-uart.c: Deleted.
 	* or32/close.c: Undefined #errno. Fail for all streams.

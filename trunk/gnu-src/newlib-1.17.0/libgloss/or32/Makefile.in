@@ -1,5 +1,6 @@
 # Makefile.in. Autoconf input makefile.
 
+# Copyright (c) 1998 Cygnus Support
 # Copyright (C) 2004, Jacob Bower
 # Copyright (C) 2010, Embecosm Limited <info@embecosm.com>
 
@@ -42,19 +43,18 @@ bindir = @bindir@
 libdir = @libdir@
 tooldir = $(exec_prefix)/$(target_alias)
 
-INSTALL = @INSTALL@
-INSTALL_PROGRAM = @INSTALL_PROGRAM@
-INSTALL_DATA = @INSTALL_DATA@
-
 # Multilib support variables.
 # TOP is used instead of MULTI{BUILD,SRC}TOP.
 MULTIDIRS =
 MULTISUBDIR =
 
+INSTALL = @INSTALL@
+INSTALL_PROGRAM = @INSTALL_PROGRAM@
+INSTALL_DATA = @INSTALL_DATA@
+
 SHELL =	/bin/sh
 
 CC = @CC@
-
 AS = @AS@
 AR = @AR@
 LD = @LD@
@@ -67,32 +67,38 @@ OBJCOPY = `if [ -f ${objroot}/../binutils/objcopy ] ; \
 	then echo ${objroot}/../binutils/objcopy ; \
 	else t='$(program_transform_name)'; echo objcopy | sed -e $$t ; fi`
 
-OBJS		= putnum.o unlink.o
-CFLAGS		= -g
+# Add our own flags for C compilation
+CFLAGS =  -g
 
-BSP = libor32.a libor32uart.a
+# Our own C runtime startup and BSPs
+CRT0     = crt0.o
+BSP      = libor32.a
+BSP_UART = libor32uart.a
 
-CRT0      = crt0.o
-OR32_OBJS = _exit.o      \
-            close.o      \
-            environ.o    \
-            execve.o     \
-            fork.o       \
-            fstat.o      \
-            getpid.o     \
-            isatty.o     \
-            kill.o       \
-            link.o       \
-            lseek.o      \
-            open.o       \
-            read.o       \
-            sbrk.o       \
-            stat.o       \
-            times.o      \
-	    uart-dummy.o \
-            unlink.o     \
-            wait.o       \
-            write.o
+OUTPUTS  = $(CRT0) $(BSP) $(BSP_UART)
+
+# The object files for each BSP
+OBJS = _exit.o      \
+       close.o      \
+       environ.o    \
+       execve.o     \
+       fork.o       \
+       fstat.o      \
+       getpid.o     \
+       isatty.o     \
+       kill.o       \
+       link.o       \
+       lseek.o      \
+       open.o       \
+       read.o       \
+       sbrk.o       \
+       stat.o       \
+       times.o      \
+       uart-dummy.o \
+       unlink.o     \
+       wait.o       \
+       write.o
+
 UART_OBJS = _exit.o       \
             close.o       \
             environ.o     \
@@ -114,49 +120,46 @@ UART_OBJS = _exit.o       \
             wait.o        \
             write-uart.o
 
-# Host specific makefile fragment comes in here.
+# Host specific makefile fragment specifies the automatic rules
 @host_makefile_frag@
 
-#
-# build a test program for each target board. Just trying to get
-# it to link is a good test, so we ignore all the errors for now.
-#
-all: ${CRT0} ${BSP}
+# Build crt0.o and all the BSPs
+all: ${CRT0} ${BSP} ${BSP_UART}
 
-#
-# here's where we build the board support packages for each target
-#
-libor32.a: $(OR32_OBJS)
-	${AR} ${ARFLAGS} $@ $(OR32_OBJS)
+# Rules to build the BSPs from their objects. No need for a rule to build
+# crt0.o, that happens autmatically from .S
+$(BSP): $(OBJS)
+	${AR} ${ARFLAGS} $@ $(OBJS)
 	${RANLIB} $@
 
-libor32uart.a: $(UART_OBJS)
+$(BSP_UART): $(UART_OBJS)
 	${AR} ${ARFLAGS} $@ $(UART_OBJS)
 	${RANLIB} $@
 
-crt0.o: crt0.S
-	$(CC) -c $(CFLAGS)  $(<) -o $@
 
-
+# Standard clean up rules.
 clean mostlyclean:
-	rm -f a.out core *.i *.o *-test *.srec *.dis *.x $(SIM_BSP) $(MON_BSP)
+	rm -f $(OUTPUTS) *.i *~ *.o *-test *.srec *.dis *.map *.x
 
 distclean maintainer-clean realclean: clean
 	rm -f Makefile config.status *~
 
+# Standard install rules
 .PHONY: install info install-info clean-info
 install:
-	$(INSTALL_PROGRAM) $(CRT0) \
-		$(DESTDIR)$(tooldir)/lib${MULTISUBDIR}/$(CRT0)
-	@for bsp in ${BSP}; do\
-	    $(INSTALL_PROGRAM) $${bsp} $(DESTDIR)$(tooldir)/lib${MULTISUBDIR}; \
+	@for outputs in ${OUTPUTS}; do\
+	     mkdir -p $(DESTDIR)$(tooldir)/lib${MULTISUBDIR}; \
+	     $(INSTALL_PROGRAM) $${outputs} \
+				$(DESTDIR)$(tooldir)/lib${MULTISUBDIR}; \
 	done
 
+# Deal with info if we had any.
 info:
 install-info:
 clean-info:
 
 
+# Standard make and configure dependencies.
 Makefile: Makefile.in config.status @host_makefile_frag_path@
 	$(SHELL) config.status
 
