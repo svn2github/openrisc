@@ -45,7 +45,7 @@ Boston, MA 02111-1307, USA.  */
   { "target_prefix", TARGET_PREFIX }
 
 #undef CPP_SPEC
-#define CPP_SPEC "%{mor32-newlib*:-I%(target_prefix)/newlib-include}"
+#define CPP_SPEC "%{mor32-newlib*:-idirafter %(target_prefix)/newlib-include}"
 
 /* Make sure we pick up the crtinit.o and crtfini.o files. */
 #undef STARTFILE_SPEC
