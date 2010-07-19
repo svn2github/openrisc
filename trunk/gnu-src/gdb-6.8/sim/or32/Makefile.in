@@ -24,7 +24,7 @@
 ## COMMON_PRE_CONFIG_FRAG
 
 SIM_EXTRA_CFLAGS = @SIM_CPPFLAGS@
-SIM_EXTRA_LIBS   = @SIM_LDFLAGS@ -lsim
+SIM_EXTRA_LIBS   = @SIM_LDFLAGS@ -lz -lsim
 SIM_OBJS         = sim-load.o \
 	   	   wrapper.o
 

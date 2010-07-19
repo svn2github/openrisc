@@ -121,7 +121,7 @@ LIBIBERTY = ../libiberty/libiberty.a
 
 # Where is the BFD library?  Typically in ../bfd.
 BFD_DIR = ../bfd
-BFD = $(BFD_DIR)/libbfd.a
+BFD = $(BFD_DIR)/libbfd.a -lz
 BFD_SRC = $(srcdir)/$(BFD_DIR)
 BFD_CFLAGS = -I$(BFD_DIR) -I$(BFD_SRC)
 
