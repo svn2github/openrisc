@@ -121,7 +121,7 @@ LIBIBERTY = ../libiberty/libiberty.a
 
 # Where is the BFD library?  Typically in ../bfd.
 BFD_DIR = ../bfd
-BFD = $(BFD_DIR)/libbfd.a -lz
+BFD = $(BFD_DIR)/libbfd.a
 BFD_SRC = $(srcdir)/$(BFD_DIR)
 BFD_CFLAGS = -I$(BFD_DIR) -I$(BFD_SRC)
 
@@ -390,7 +390,7 @@ INSTALLED_LIBS=-lbfd -lreadline -lopcodes -liberty -ldecnumber \
 	$(XM_CLIBS) $(TM_CLIBS) $(NAT_CLIBS) $(GDBTKLIBS) @LIBS@ \
 	-lintl -liberty
 CLIBS = $(SIM) $(READLINE) $(OPCODES) $(BFD) $(INTL) $(LIBIBERTY) $(LIBDECNUMBER) \
-	$(XM_CLIBS) $(TM_CLIBS) $(NAT_CLIBS) $(GDBTKLIBS) @LIBS@ \
+	$(XM_CLIBS) $(TM_CLIBS) $(NAT_CLIBS) $(GDBTKLIBS) @LIBS@ -lz \
 	$(LIBICONV) $(LIBEXPAT) \
 	$(LIBIBERTY) $(WIN32LIBS)
 CDEPS = $(XM_CDEPS) $(TM_CDEPS) $(NAT_CDEPS) $(SIM) $(BFD) $(READLINE_DEPS) \

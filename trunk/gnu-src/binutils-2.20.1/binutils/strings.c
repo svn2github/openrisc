@@ -88,8 +88,14 @@ typedef off_t file_off;
 #define file_open(s,m) fopen(s, m)
 #endif
 #ifdef HAVE_STAT64
+# ifndef __APPLE__
 typedef struct stat64 statbuf;
 #define file_stat(f,s) stat64(f, s)
+# else
+// On OS X was getting errors to do with stat64() being deprecated
+typedef struct stat statbuf;
+#define file_stat(f,s) stat(f, s)
+# endif
 #else
 typedef struct stat statbuf;
 #define file_stat(f,s) stat(f, s)

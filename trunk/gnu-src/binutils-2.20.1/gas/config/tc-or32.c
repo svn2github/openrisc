@@ -291,6 +291,7 @@ parse_operand (char *s, expressionS *operandp, int opt)
     {
       operandp->X_add_number = strtol (s + 1, NULL, 10);
       operandp->X_op = O_register;
+      operandp->X_add_symbol = NULL;// Added to stop a know() in machine_ip()
       operandp->X_op_symbol = NULL; // Added to stop a know() in machine_ip()
                                     // erroring out - it appears this wasn't 
                                     // getting cleared sometimes. - JB 100718
