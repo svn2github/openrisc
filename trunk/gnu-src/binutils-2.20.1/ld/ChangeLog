@@ -1,3 +1,8 @@
+2010-07-07  Jeremy Bennett <jeremy.bennett@embecosm.com>
+
+	* emulparams/or32elf.sh: Load text at zero. Put .vectors section
+	first of all.
+
 2010-02-10  Richard Sandiford  <r.sandiford@uk.ibm.com>
 
 	* Makefile.am (CFILES): Add ldlex-wrapper.c.
