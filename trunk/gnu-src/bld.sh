@@ -261,7 +261,11 @@ then
     exit 1
 fi
 
-make $make_load all-gcc
+# Actually GCC seems to have minor problems at 4.2.2 with parallel make. We
+# leave the structure here, since we'll reinstate it on a future release.
+
+# make $make_load all-gcc
+make all-gcc
 if [ $? != 0 ]
 then
     echo "make (GCC) failed."
