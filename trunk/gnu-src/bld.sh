@@ -22,7 +22,7 @@
 # You should have received a copy of the GNU General Public License along
 # with this program.  If not, see <http://www.gnu.org/licenses/>.          
 
-component_dirs='binutils-2.20.1 newlib-1.17.0 gcc-4.2.2 gdb-6.8'
+component_dirs='binutils-2.20.1 newlib-1.18.0 gcc-4.2.2 gdb-6.8'
 unified_src=srcw
 build_dir=bld-or32
 install_dir=/opt/or32-elf-new
