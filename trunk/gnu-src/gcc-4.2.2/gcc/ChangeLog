@@ -1,12 +1,18 @@
+2010-07-20  Jeremy Bennett <jeremy.bennett@embecosm.com>
+
+	* config/or32/or32.h: Updated LIB_SPEC for newlib 1.18.0 to force
+	linking of _malloc and _free against a weak reference also when
+	using -lg.
+
+2010-07-19  Jeremy Bennett <jeremy.bennett@embecosm.com>
+
+	* config/or32/or32.h: Updated LIB_SPEC for newlib 1.18.0 to force
+	linking of _malloc and _free against a weak reference.
+
 2010-07-17  Jeremy Bennett <jeremy.bennett@embecosm.com>
 
 	* config/or32/or32.h: Updated STARTFILE_SPEC and LIB_SPEC
 	definition for newlib.
-
-2010-07-17  Jeremy Bennett <jeremy.bennett@embecosm.com>
-
-	* config/or32/or32.h: Updated LIB_SPEC for newlib 1.18.0 to force
-	linking of _malloc and _free against a weak reference.
 
 2010-07-16  Jeremy Bennett <jeremy.bennett@embecosm.com>
 

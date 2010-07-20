@@ -64,9 +64,9 @@ Boston, MA 02111-1307, USA.  */
 #undef LIB_SPEC 
 #define LIB_SPEC "%{!mor32-newlib*:%{!p:%{!pg:-lc}}%{p:-lc_p}%{pg:-lc_p}} \
                   %{mor32-newlib:%{!g:-lc -lor32 -u _free -lc}            \
-                                 %{g:-lg -lor32 -lg}}                     \
+                                 %{g:-lg -lor32 -u _free -lg}}            \
                   %{mor32-newlib-uart:%{!g:-lc -lor32uart -u _free -lc}   \
-                                 %{g:-lg -lor32uart -lg}}"
+                                 %{g:-lg -lor32uart -u _free -lg}}"
 
 /* Old definition of LIB_SPEC, not longer used. */
 /* Which library to get.  The only difference from the default is to get
