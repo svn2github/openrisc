@@ -1,5 +1,12 @@
 2010-07-07  Jeremy Bennett <jeremy.bennett@embecosm.com>
 
+	* testsuite/lib/newlibprocs.exp: Renamed from newlib.exp, since
+	DejaGNU does not like loading libraries with the same name as the
+	tool.
+	* testsuite/lib/passfail.exp: Loads newlibprocs.exp.
+
+2010-07-07  Jeremy Bennett <jeremy.bennett@embecosm.com>
+
 	* libc/machine/or32/setjmp.S: Rewritten - old code could never
 	have worked.
 	* libc/machine/or32/bits: Deleted.
@@ -55,7 +62,7 @@
 2009-12-17  Ralf CorsÃ©pius <ralf.corsepius@rtems.org>
 
 	* libc/include/machine/ieeefp.h: Rework __IEEE_*_ENDIAN handling.
-	* libc/machine/arm/machine/endian.h: Remove (Conflicts with 
+	* libc/machine/arm/machine/endian.h: Remove (Conflicts with
 	libc/include/machine/endian.h)
 
 2009-12-17  Ralf CorsÃ©pius <ralf.corsepius@rtems.org>
@@ -64,7 +71,7 @@
 
 2009-12-17  Ralf Corsepius <ralf.corsepius@rtems.org>
 
-	* libc/include/pthread.h: Add pthread_atfork, pthread_rwlock_unlock 
+	* libc/include/pthread.h: Add pthread_atfork, pthread_rwlock_unlock
 	* libc/include/sys/stat.h: Use struct timespec st_*tim,
 	blksize_t st_blksize, blkcnt_t st_blocks.
 	Add st_*time compatibility macros.

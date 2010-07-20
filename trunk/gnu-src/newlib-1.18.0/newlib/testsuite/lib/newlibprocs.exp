@@ -4,6 +4,8 @@
 # is freely granted, provided that this notice is preserved.
 #
 
+send_user "Loaded newlib.exp\n"
+
 # flags.exp overrides the dejagnu versions of libgloss_link_flags,
 # newlib_link_flags, and newlib_include_flags.
 load_lib flags.exp
