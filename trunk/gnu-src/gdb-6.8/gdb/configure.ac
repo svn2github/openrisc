@@ -477,6 +477,11 @@ else
   fi
 fi
 
+# Added from binutils 2.20.1/bfd
+#Link in zlib if we can.  This allows us to read compressed debug sections.
+# This is used only by compress.c.
+AC_SEARCH_LIBS(zlibVersion, z, [AC_CHECK_HEADERS(zlib.h)])
+
 # ------------------------- #
 # Checks for header files.  #
 # ------------------------- #
