@@ -1,3 +1,8 @@
+2010-07-20  Jeremy Bennett  <jeremy.bennett@embecosm.com>
+
+	* configure.ac: Added test for zlib from binutils/bfd
+	* configure: Regenerated.
+
 2010-06-30  Jeremy Bennett  <jeremy.bennett@embecosm.com>
 
 	* or1k-tdep.c (or1k_fetch_instruction): Logic flow made clearer.

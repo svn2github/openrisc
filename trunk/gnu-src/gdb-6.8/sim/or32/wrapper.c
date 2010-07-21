@@ -129,7 +129,7 @@ sim_open (SIM_OPEN_KIND                kind,
   /* Count the number of arguments */
   for (argc = 0; NULL != argv[argc]; argc++)
     {
-      printf ("argv[%d] = %s\n", argc, argv[argc]);
+      /* printf ("argv[%d] = %s\n", argc, argv[argc]); */
     }
 
   /* Configuration file may be passed using the -f <filename> */
