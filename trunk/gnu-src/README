@@ -9,13 +9,16 @@ The structure mirrors that of the main Free Software Foundation repository.
 
 Using a unified directory means that the entire tool chain can be built in a
 single pass. The script "bld.sh" will build a unified source tree in the a
-directory (default name "srcw") and then build and install all the tools using
-a separate build directory (default "bld-or32"). The default install directory
-is "/opt/or32-elf-new").
+directory (default name "srcw") and then configure, build, check and install
+all the tools using a separate build directory (default "bld-or32"). The
+default install directory is "/opt/or32-elf-new").
 
 Use "./bld.sh --help" to check the options available, which includes options
-to change all the default directories and to omit any of the phases of the
-build process (linking, configuring, building,installing).
+to change all the default directories, omit building newlib and to control
+whichphases of the build process (linking, configuring, building, checking and
+installing) are run.
+
+By default the tests (which require DejaGnu to be installed) are *not* run.
 
 Note in particular that the script requires a version of Or1ksim built from
 SVN (not Or1ksim 0.4.0 release) and that the --or1ksim parameter should be
@@ -27,4 +30,4 @@ opencores.org/forum,OpenRISC.
 
 
 Jeremy Bennett
-13 July 2010
+22 July 2010

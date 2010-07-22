@@ -1,0 +1,42 @@
+# This is a list of toolchains that are supported on this board.
+set_board_info target_install {or32-elf}
+
+# Load the generic configuration for this board. This will define a basic set
+# of routines needed by the tool to communicate with the board.
+load_generic_config "sim"
+
+# basic-sim.exp is a basic description for the standard Cygnus simulator.
+load_base_board_description "basic-sim"
+
+# The name of the sim subdir in src/sim.
+setup_sim or32
+
+# Options for the simulator
+set cfg_file [lookfor_file ${srcdir} libgloss/or32/sim.cfg]
+set_board_info sim,options "-a \"-f ${cfg_file}\""
+
+# No multilib options needed by default.
+process_multilib_options ""
+
+# We only support newlib on this
+# target.  We assume that all multilib options have been specified
+# before we get here.
+
+set_board_info compiler  "[find_gcc]"
+set_board_info cflags    "[libgloss_include_flags] [newlib_include_flags]"
+set_board_info ldflags   "[libgloss_link_flags] -mor32-newlib [newlib_link_flags]"
+# No linker script needed.
+set_board_info ldscript ""
+
+# This simulator isn't slow.
+set_board_info slow_simulator 0
+
+# Can't pass arguments to programs on this target..
+set_board_info noargs  1
+
+# And there's no support for signals.
+set_board_info gdb,nosignals  1
+
+# Used by a few gcc.c-torture testcases to delimit how large the stack can
+# be.
+set_board_info gcc,stack_size 65536

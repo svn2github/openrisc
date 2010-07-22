@@ -1,0 +1,17 @@
+#Make sure we look in the right place for the board description files
+if ![info exists boards_dir] {
+        set boards_dir {}
+}
+
+# Crude way of finding the boards directory
+lappend boards_dir "${tool_root_dir}/../boards"
+lappend boards_dir "${tool_root_dir}/../../boards"
+lappend boards_dir "${tool_root_dir}/../../../boards"
+lappend boards_dir "${tool_root_dir}/../../../../boards"
+
+global target_list
+  case "$target_triplet" in {
+    { "or32-*-elf" } {
+        set target_list { "or32-sim" }
+    }
+  }

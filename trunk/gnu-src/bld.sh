@@ -69,14 +69,17 @@ make_load="-j -l `(echo processor;cat /proc/cpuinfo 2>/dev/null || \
 # --no-newlib:   Don't build newlib
 # --nolink:      Don't build the unified source directory
 # --noconfig:    Don't run configure
+# --check:       Run DejaGnu tests
 # --noinstall:   Don't run install
 # --help:        List these options and exit
 doforce="false";
 nolink="false";
 noconfig="false";
+docheck="false";
 noinstall="false";
 newlibconfigure="--with-newlib";
 newlibmake="all-target-newlib all-target-libgloss";
+newlibcheck="check-target-newlib check-target-libgloss";
 newlibinstall="install-target-newlib install-target-libgloss";
 
 until
@@ -110,6 +113,7 @@ case ${opt}
     --no-newlib)
 	newlibconfigure=;
 	newlibmake=;
+	newlibcheck=;
 	newlibinstall=;
 	;;
 	
@@ -119,6 +123,10 @@ case ${opt}
 
     --noconfig)
 	noconfig="true";
+	;;
+
+    --check)
+	docheck="true";
 	;;
 
     --noinstall)
@@ -138,6 +146,7 @@ case ${opt}
 	echo "    --no-newlib       Don't build newlib"
 	echo "    --nolink          Don't build the unified source directory"
 	echo "    --noconfig        Don't run configure"
+        echo "    --check:          Run DejaGnu tests"
 	echo "    --noinstall       Don't run install"
 	echo "    --help            List these options and exit"
 	exit 0
@@ -277,6 +286,24 @@ if [ $? != 0 ]
 then
     echo "make (Newlib and GDB) failed."
     exit 1
+fi
+
+# Optionally check everything. We do each target in turn and don't blow out
+# here if the RC is not zero. Most of the test suites fail somewhere.
+if [ "x${docheck}" == "xtrue" ]
+then
+    export DEJAGNU=`pwd`/../site.exp
+
+    for tool_check in check-binutils check-gas check-ld check-gcc \
+	              ${newlibcheck} check-gdb
+    do
+	make ${tool_check}
+
+	if [ $? != 0 ];
+	then
+	    echo "make ${tool_check} failed."
+	fi
+    done
 fi
 
 # Install everything
