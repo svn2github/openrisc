@@ -128,7 +128,6 @@ case "${target}" in
 	;;
   or32-*-*)
 	AC_CONFIG_SUBDIRS(or32)
-	config_testsuite=false
 	;;
   iq2000-*-*)
 	AC_CONFIG_SUBDIRS([iq2000])
