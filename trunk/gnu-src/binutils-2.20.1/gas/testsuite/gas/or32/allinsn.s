@@ -1,15 +1,11 @@
- .data
-foodata: .word 42
- .text
-footext:
 	.text
 	.global l_j
 l_j:
-	l.j footext
+	l.j l_j
 	.text
 	.global l_jal
 l_jal:
-	l.jal footext
+	l.jal l_jal
 	.text
 	.global l_jr
 l_jr:
@@ -19,25 +15,21 @@ l_jr:
 l_jalr:
 	l.jalr r0
 	.text
-	.global l_bal
-l_bal:
-	l.bal footext
-	.text
 	.global l_bnf
 l_bnf:
-	l.bnf footext
+	l.bnf l_bnf
 	.text
 	.global l_bf
 l_bf:
-	l.bf footext
+	l.bf l_bf
 	.text
-	.global l_brk
-l_brk:
-	l.brk 0
+	.global l_trap
+l_trap:
+	l.trap 0
 	.text
 	.global l_rfe
 l_rfe:
-	l.rfe r0
+	l.rfe
 	.text
 	.global l_sys
 l_sys:
@@ -51,17 +43,21 @@ l_nop:
 l_movhi:
 	l.movhi r0,0
 	.text
-	.global l_mfsr
-l_mfsr:
-	l.mfsr r0,r0
+	.global l_mfspr
+l_mfspr:
+	l.mfspr r0,r0,0
 	.text
-	.global l_mtsr
-l_mtsr:
-	l.mtsr r0,r0
+	.global l_mtspr
+l_mtspr:
+	l.mtspr r0,r0,0
 	.text
-	.global l_lw
-l_lw:
-	l.lw r0,0(r0)
+	.global l_lwz
+l_lwz:
+	l.lwz r0,0(r0)
+	.text
+	.global l_lws
+l_lws:
+	l.lws r0,0(r0)
 	.text
 	.global l_lbz
 l_lbz:
@@ -134,10 +130,6 @@ l_addi:
 	.global l_sub
 l_sub:
 	l.sub r0,r0,r0
-	.text
-	.global l_subi
-l_subi:
-	l.subi r0,r0,0
 	.text
 	.global l_and
 l_and:

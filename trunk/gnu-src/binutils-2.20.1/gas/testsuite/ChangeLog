@@ -1,3 +1,24 @@
+2010-07-23  Jeremy Bennett  <jeremy.bennett@embecosm.com>
+
+	* gas/all/gas.exp <run_dump_test redef3>: Not expected to fail for
+	or32.
+	<run_dump_test forward>: Expected to fail for OR32 (assume this,
+	since it is the case for MIPS).
+	* gas/or32/addi.d: Corrected l.addi opcode value and negative
+	operand format.
+	* gas/or32/allinsns.d: Updated to match allinsns.s. Opcode value
+	for l.addi, l.rfe, l.mfspr, l.mtspr corrected. Hex immediate
+	operands used.
+	* gas/or32/allinsns.s: Removed l_bal, changed l_brk to l_trap,
+	removed operand from l_rfe, l_mfsr changed to l_mfspr and operand
+	format changed, l_mtsr changed to l_mtspr and operand
+	format changed, l_lw changed to l_lwz, test for l.lws added,
+	removed l_subi.
+	* gas/or32/lohi.d: Corrected l.addi opcode value and negative
+	operand format.
+	* gas/or32/store.d: Corrected to use l.lwz
+	* gas/or32/store.s: Corrected to use l.lwz
+
 2010-02-08  Christophe Lyon  <christophe.lyon@st.com>
 
 	* gas/arm/branch-reloc.s, gas/arm/branch-reloc.d,
