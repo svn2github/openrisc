@@ -31,9 +31,9 @@
 #ifndef OR1KSIM_BOARD__H
 #define OR1KSIM_BOARD__H
 
-/* Cache information */
+/* Cache information (no longer used, cache configured through UPR and CCFGRs)*/
 #define IC_ENABLE 	    1
-#define IC_SIZE          4096
+#define IC_SIZE          8192
 
 #define DC_ENABLE 	    0
 #define DC_SIZE          8192

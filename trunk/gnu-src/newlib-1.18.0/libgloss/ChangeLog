@@ -1,3 +1,9 @@
+2010-07-30  Julius Baxter <julius.baxter@orsoc.se>
+
+	* or32/crt0.S: Added cache initilisation routines using config regs
+	* or32/spr-defs.h: Replaced with or1ksim's golden version
+	* or32/or1ksim-board.h: Noted that cache config no longer necessary
+
 2010-07-16  Jeremy Bennett <jeremy.bennett@embecosm.com>
 
 	* or32/configure.in: Tidied up and made consistent with nosyslib.
