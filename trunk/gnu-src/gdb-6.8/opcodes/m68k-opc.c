@@ -1,6 +1,6 @@
 /* Opcode table for m680[012346]0/m6888[12]/m68851/mcf5200.
    Copyright 1989, 1991, 1992, 1993, 1994, 1995, 1996, 1997, 1998, 1999,
-   2000, 2001, 2003, 2004, 2005, 2006, 2007
+   2000, 2001, 2003, 2004, 2005, 2006, 2007, 2009
    Free Software Foundation, Inc.
 
    This file is part of the GNU opcodes library.
@@ -2025,7 +2025,9 @@ const struct m68k_opcode m68k_opcodes[] =
 
 {"sbcd", 2,	one(0100400),		one(0170770), "DsDd", m68000up },
 {"sbcd", 2,	one(0100410),		one(0170770), "-s-d", m68000up },
-
+  
+{"stldsr", 6,   two(0x40e7, 0x46fc),    two(0xffff, 0xffff), "#w", mcfisa_c },
+  
   /* Traps have to come before conditional sets, as they have a more
      specific opcode.  */
 {"trapcc", 2,	one(0052374),	one(0177777), "", m68020up | cpu32 | fido_a },

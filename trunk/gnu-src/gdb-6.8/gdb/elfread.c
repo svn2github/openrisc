@@ -332,8 +332,11 @@ elf_symtab_read (struct objfile *objfile, int type,
 		 with special section indices for dynamic symbols.
 
 		 NOTE: uweigand-20071112: Synthetic symbols do not
-		 have an ELF-private part, so do not touch those.  */
-	      unsigned short shndx = type == ST_SYNTHETIC ? 0 : 
+		 have an ELF-private part, so do not touch those.
+
+                 JPB - updated to use int rather than short for compatiblity
+                 with latest binutils.  */
+	      unsigned int shndx = type == ST_SYNTHETIC ? 0 : 
 		((elf_symbol_type *) sym)->internal_elf_sym.st_shndx;
 
 	      switch (shndx)

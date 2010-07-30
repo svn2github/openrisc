@@ -32,6 +32,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <signal.h>
+#include <string.h>
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <sys/un.h>
@@ -45,15 +46,6 @@
 
 #include "or1ksim.h"
 #include "or32sim.h"
-
-/*!A global record of the simulator description */
-static SIM_DESC  global_sd = NULL;
-
-/*!The last reason we stopped */
-enum sim_stop  last_reason = sim_running;
-
-/*!The last return code from a resume/step call */
-static unsigned long int  last_rc = 0;
 
 
 /* ------------------------------------------------------------------------- */
@@ -74,10 +66,13 @@ static unsigned long int  last_rc = 0;
    For a process simulator, the process is not created until a call to
    sim_create_inferior.
 
-   This function creates a socket pair, which will be used to communicate to
-   and from the process model, then forks off a process to run the SystemC
-   model. Communication is via RSP packets across the socket pair, but with
-   simplified hand-shaking.
+   We do the following on a first call.
+   - parse the options
+   - 
+   @todo Eventually we should use the option parser built into the GDB
+         simulator (see common/sim-options.h). However since this is minimally
+         documented, and we have only the one option, for now we do it
+         ourselves.
 
    @note We seem to capable of being called twice. We use the static
          "global_sd" variable to keep track of this. Second and subsequent
@@ -112,60 +107,96 @@ sim_open (SIM_OPEN_KIND                kind,
 	  struct bfd                  *abfd,
 	  char                        *argv[])
 {
-  int   argc;
-  char *config_file;
-  char *image_file;
+  /*!A global record of the simulator description */
+  static SIM_DESC  static_sd = NULL;
 
-  /* If the global_sd is currently set, we just return it. */
-  if (NULL != global_sd)
+  int    local_argc;			/* Our local argv with extra args */
+  char **local_argv;
+
+  /* If static_sd is not yet allocated, we allocate it and mark the simulator
+     as not yet open. */
+  if (NULL == static_sd)
     {
-      return  global_sd;
+      static_sd = (SIM_DESC) malloc (sizeof (*static_sd));
+      static_sd->sim_open = 0;
     }
 
-  /* Eventually we should use the option parser built into the GDB simulator
-     (see common/sim-options.h). However since this is minimally documented,
-     and we have only the one option, for now we do it ourselves. */
-
-  /* Count the number of arguments */
-  for (argc = 0; NULL != argv[argc]; argc++)
+  /* If this is a second call, we cannot take any new configuration
+     arguments. We silently ignore them. */
+  if (!static_sd->sim_open)
     {
-      /* printf ("argv[%d] = %s\n", argc, argv[argc]); */
+      int    argc;			/* How many args originally */
+      int    i;				/* For local argv */
+      int    mem_defined_p = 0;		/* Have we requested a memory size? */
+
+      /* Count the number of arguments and see if we have specified either a
+	 config file or a memory size. */
+      for (argc = 1; NULL != argv[argc]; argc++)
+	{
+	  /* printf ("argv[%d] = %s\n", argc, argv[argc]); */
+
+	  if ((0 == strcmp (argv[argc], "-f"))    ||
+	      (0 == strcmp (argv[argc], "-file")) ||
+	      (0 == strcmp (argv[argc], "-m"))    ||
+	      (0 == strcmp (argv[argc], "-memory")))
+	    {
+	      mem_defined_p = 1;
+	    }
+	}
+
+      /* If we have no memory defined, we give it a default 8MB. We also always
+	 run quiet. So we must define our own argument vector */
+      local_argc = mem_defined_p ? argc + 1 : argc + 3;
+      local_argv = malloc ((local_argc + 1) * sizeof (char *));
+
+      for (i = 0 ; i < argc; i++)
+	{
+	  local_argv[i] = argv[i];
+	}
+
+      local_argv[i++] = "--quiet";
+
+      if (!mem_defined_p)
+	{
+	  local_argv[i++] = "--memory";
+	  local_argv[i++] = "8M";
+	}
+
+      local_argv[i] = NULL;
     }
 
-  /* Configuration file may be passed using the -f <filename> */
-  if ((argc > 2) && (0 == strcmp (argv[1], "-f")))
+  /* We just pass the arguments to the simulator initialization. No class
+     image nor upcalls. Having initialized, stall the processor, free the
+     argument vector and return the SD (or NULL on failure) */
+  if (0 == or1ksim_init (local_argc, local_argv, NULL, NULL, NULL))
     {
-      config_file = argv[2];
-      image_file  = argc > 3 ? argv[3] : NULL;
+
+      static_sd->callback    = callback;
+      static_sd->is_debug    = (kind == SIM_OPEN_DEBUG);
+      static_sd->myname      = (char *)xstrdup (argv[0]);
+      static_sd->sim_open    = 1;
+      static_sd->last_reason = sim_running;
+      static_sd->last_rc     = TARGET_SIGNAL_NONE;
+      static_sd->entry_point = OR32_RESET_EXCEPTION;
+      static_sd->resume_npc  = OR32_RESET_EXCEPTION;
+
+      or1ksim_set_stall_state (0);
+      free (local_argv);
+      return  static_sd;
     }
   else
     {
-      config_file = NULL;
-      image_file  = argc > 1 ? argv[1] : NULL;
+      /* On failure return a NULL sd */
+      free (local_argv);
+      return  NULL;
     }
-
-  /* Initialize the simulator. No class image nor upcalls */
-  if (0 == or1ksim_init (config_file, image_file, NULL, NULL, NULL))
-    {
-      global_sd = (SIM_DESC) malloc (sizeof (*global_sd));
-
-      global_sd->callback = callback;
-      global_sd->is_debug = (kind == SIM_OPEN_DEBUG);
-      global_sd->myname   = (char *)xstrdup (argv[0]);
-    }
-
-  return  global_sd;
-
 }	/* sim_open () */
 
 
 /* ------------------------------------------------------------------------- */
 /*!Destroy a simulator instance.
 
-   This may involve freeing target memory and closing any open files and
-   mmap'd areas.
-
-   We cannot assume sim_kill () has already been called.
+   We only have one instance, but we mark it as closed, so it can be reused.
 
    @param[in] sd        Simulation descriptor from sim_open ().
    @param[in] quitting  Non-zero if we cannot hang on errors.                */
@@ -174,10 +205,15 @@ void
 sim_close (SIM_DESC  sd,
 	   int       quitting)
 {
-  if (NULL != sd)
+  if (NULL == sd)
+    {
+      fprintf (stderr,
+	       "Warning: Attempt to close non-open simulation: ignored.\n");
+    }
+  else
     {
       free (sd->myname);
-      free (sd);
+      sd->sim_open = 0;
     }
 }	/* sim_close () */
 
@@ -257,6 +293,13 @@ sim_load (SIM_DESC    sd,
    ABFD, if not NULL, provides initial processor state information.
    ARGV and ENV, if non NULL, are NULL terminated lists of pointers.
 
+   We perform the following steps:
+   - stall the processor
+   - set the entry point to the entry point in the BFD, or the reset
+     vector if the BFD is not available.
+   - set the resumption NPC to the reset vector. We always do this, to ensure
+     the library is initialized.
+
    @param[in] sd    Simulation descriptor from sim_open ().
    @param[in] abfd  If non-NULL provides initial processor state information.
    @param[in] argv  Vector of arguments to the program. We don't use this
@@ -270,11 +313,11 @@ sim_create_inferior (SIM_DESC     sd,
 		     char       **argv  ATTRIBUTE_UNUSED,
 		     char       **env   ATTRIBUTE_UNUSED)
 {
-  /* We set the starting PC if we have that data */
-  unsigned long int  pc     = (NULL == abfd) ? 0 : bfd_get_start_address (abfd);
-  unsigned char     *pc_ptr = (unsigned char *)(&pc);
-  
-  sim_store_register (sd, OR32_NPC_REGNUM, pc_ptr, sizeof (pc));
+  or1ksim_set_stall_state (1);
+  sd->entry_point = (NULL == abfd) ? OR32_RESET_EXCEPTION :
+                                    bfd_get_start_address (abfd);
+  sd->resume_npc  = OR32_RESET_EXCEPTION;
+
   return  SIM_RC_OK;
 
 }	/* sim_create_inferior () */
@@ -297,7 +340,11 @@ sim_read (SIM_DESC       sd  ATTRIBUTE_UNUSED,
 	  unsigned char *buf,
 	  int            len)
 {
-  return  or1ksim_read_mem (buf, (unsigned int) mem, len);
+  int res = or1ksim_read_mem (mem, buf, len);
+
+  /* printf ("Reading %d bytes from 0x%08p\n", len, mem); */
+
+  return  res;
 
 }      /* sim_read () */
 
@@ -319,13 +366,21 @@ sim_write (SIM_DESC       sd  ATTRIBUTE_UNUSED,
 	   unsigned char *buf,
 	   int            len)
 {
-  return  or1ksim_write_mem (buf, (unsigned int) mem, len);
+  /* printf ("Writing %d bytes to 0x%08p\n", len, mem); */
+
+  return  or1ksim_write_mem ((unsigned int) mem, buf, len);
 
 }	/* sim_write () */
 
 
 /* ------------------------------------------------------------------------- */
 /*!Fetch a register from the simulation
+
+   We get the register back as a 32-bit value. However we must convert it to a
+   character array <em>in target endian order</em>.
+
+   The exception is if the register is the NPC, which is only written just
+   before resumption, to avoid pipeline confusion. It is fetched from the SD.
 
    @param[in]  sd     Simulation descriptor from sim_open (). We don't use
                       this.
@@ -340,18 +395,53 @@ sim_write (SIM_DESC       sd  ATTRIBUTE_UNUSED,
             applicable. Legacy implementations return -1.
 /* ------------------------------------------------------------------------- */
 int
-sim_fetch_register (SIM_DESC       sd  ATTRIBUTE_UNUSED,
+sim_fetch_register (SIM_DESC       sd,
 		    int            regno,
 		    unsigned char *buf,
 		    int            len)
 {
-  return  or1ksim_read_reg (buf, regno, len);
+  unsigned int  regval;
+  int           res;
+
+  if (4 != len)
+    {
+      fprintf (stderr, "Invalid register length %d\n");
+      return  0;
+    }
+
+  if (OR32_NPC_REGNUM == regno)
+    {
+      regval = sd->resume_npc;
+      res    = 4;
+    }
+  else
+    {
+      int res = or1ksim_read_reg (regno, &regval) ? 4 : 0;
+    }
+
+  /* Convert to target (big) endian */
+  if (res)
+    {
+      buf[0] = (regval >> 24) & 0xff;
+      buf[1] = (regval >> 16) & 0xff;
+      buf[2] = (regval >>  8) & 0xff;
+      buf[3] =  regval        & 0xff;
+    }
+
+  /* printf ("Read register 0x%02x, value 0x%08x\n", regno, regval); */
+  return  res;
 
 }	/* sim_fetch_register () */
 
 
 /* ------------------------------------------------------------------------- */
 /*!Store a register to the simulation
+
+   We write the register back as a 32-bit value. However we must convert it from
+   a character array <em>in target endian order</em>.
+
+   The exception is if the register is the NPC, which is only written just
+   before resumption, to avoid pipeline confusion. It is saved in the SD.
 
    @param[in] sd     Simulation descriptor from sim_open (). We don't use
                      this.
@@ -366,13 +456,36 @@ sim_fetch_register (SIM_DESC       sd  ATTRIBUTE_UNUSED,
             applicable. Legacy implementations return -1.
 /* ------------------------------------------------------------------------- */
 int
-sim_store_register (SIM_DESC       sd  ATTRIBUTE_UNUSED,
+sim_store_register (SIM_DESC       sd,
 		    int            regno,
 		    unsigned char *buf,
 		    int            len)
 {
-  return  or1ksim_write_reg (buf, regno, len);
+  unsigned int  regval;
 
+  if (4 != len)
+    {
+      fprintf (stderr, "Invalid register length %d\n");
+      return  0;
+    }
+
+  /* Convert from target (big) endian */
+  regval = (((unsigned int) buf[0]) << 24) |
+           (((unsigned int) buf[1]) << 16) |
+           (((unsigned int) buf[2]) <<  8) |
+           (((unsigned int) buf[3])      );
+
+  /* printf ("Writing register 0x%02x, value 0x%08x\n", regno, regval); */
+
+  if (OR32_NPC_REGNUM == regno)
+    {
+      sd->resume_npc = regval;
+      return  4;			/* Reg length in bytes */
+    }
+  else
+    {
+      return  or1ksim_write_reg (regno, regval) ? 4 : 0;
+    }
 }	/* sim_store_register () */
 
 
@@ -406,6 +519,19 @@ sim_info (SIM_DESC  sd       ATTRIBUTE_UNUSED,
    continued.  A zero SIGRC value indicates that the program should
    continue as normal.
 
+   We carry out the following
+   - Clear the debug reason register
+   - Clear watchpoing break generation in debug mode register 2
+   - Set the debug unit to handle TRAP exceptions
+   - If stepping, set the single step trigger in debug mode register 1
+   - Write the resume_npc if it differs from the actual NPC.
+   - Unstall the processor
+   - Run the processor.
+
+   On execution completion, we determine the reason for the halt. If it is a
+   breakpoint, we mark the resumption NPC to be the PPC (so we redo the NPC
+   location).
+
    @param[in] sd       Simulation descriptor from sim_open ().
    @param[in] step     When non-zero indicates that only a single simulator
                        cycle should be emulated.
@@ -418,21 +544,71 @@ sim_resume (SIM_DESC  sd,
 	    int       step,
 	    int       siggnal)
 {
-  int  res;
+  unsigned int  npc;			/* Next Program Counter */
+  unsigned int  drr;			/* Debug Reason Register */
+  unsigned int  dsr;			/* Debug Stop Register */
+  unsigned int  dmr1;			/* Debug Mode Register 1*/
+  unsigned int  dmr2;			/* Debug Mode Register 2*/
 
-  res = step ? or1ksim_step () : or1ksim_run (-1.0);
+  int                res;		/* Result of a run. */
 
+  /* Clear Debug Reason Register and watchpoint break generation in Debug Mode
+     Register 2 */
+  (void) or1ksim_write_spr (OR32_SPR_DRR, 0);
+
+  (void) or1ksim_read_spr (OR32_SPR_DMR2, &dmr2);
+  dmr2 &= ~OR32_SPR_DMR2_WGB;
+  (void) or1ksim_write_spr (OR32_SPR_DMR2, dmr2);
+
+  /* Set debug unit to handle TRAP exceptions */
+  (void) or1ksim_read_spr (OR32_SPR_DSR, &dsr);
+  dsr |= OR32_SPR_DSR_TE;
+  (void) or1ksim_write_spr (OR32_SPR_DSR, dsr);
+
+  /* Set the single step trigger in Debug Mode Register 1 if we are stepping. */
+  if (step)
+    {
+      (void) or1ksim_read_spr (OR32_SPR_DMR1, &dmr1);
+      dmr1 |= OR32_SPR_DMR1_ST;
+      (void) or1ksim_write_spr (OR32_SPR_DMR1, dmr1);
+    }
+
+  /* Set the NPC if it has changed */
+  (void) or1ksim_read_reg (OR32_NPC_REGNUM, &npc);
+
+  if (npc != sd->resume_npc)
+    {
+      (void) or1ksim_write_reg (OR32_NPC_REGNUM, sd->resume_npc);
+    }
+
+  /* Unstall and run */
+  or1ksim_set_stall_state (0);
+  res = or1ksim_run (-1.0);
+
+  /* Determine the reason for stopping. If we hit a breakpoint, then the
+     resumption NPC must be set to the PPC to allow re-execution of the
+     trapped instruction. */
   switch (res)
     {
     case OR1KSIM_RC_HALTED:
-      last_reason = sim_exited;
-      (void) sim_fetch_register (sd, OR32_FIRST_ARG_REGNUM,
-				 (unsigned char *) &last_rc, 4);
+      sd->last_reason = sim_exited;
+      (void) or1ksim_read_reg (OR32_FIRST_ARG_REGNUM, &(sd->last_rc));
+      sd->resume_npc  = OR32_RESET_EXCEPTION;
       break;
 
     case OR1KSIM_RC_BRKPT:
-      last_reason = sim_stopped;
-      last_rc     = TARGET_SIGNAL_TRAP;
+      sd->last_reason = sim_stopped;
+      sd->last_rc     = TARGET_SIGNAL_TRAP;
+      (void) or1ksim_read_reg (OR32_PPC_REGNUM, &(sd->resume_npc));
+      break;
+
+    case OR1KSIM_RC_OK:
+      /* Should not happen */
+      fprintf (stderr, "Ooops. Didn't expect OK return from Or1ksim.\n");
+
+      sd->last_reason = sim_running;		/* Should trigger an error! */
+      sd->last_rc     = TARGET_SIGNAL_NONE;
+      (void) or1ksim_read_reg (OR32_NPC_REGNUM, &(sd->resume_npc));
       break;
     }
 }	/* sim_resume () */
@@ -483,18 +659,17 @@ int sim_stop (SIM_DESC  sd  ATTRIBUTE_UNUSED)
    - sim_polling:   The return of one of these values indicates a problem
                     internal to the simulator.
 
-   @param[in]  sd      Simulation descriptor from sim_open (). We don't use
-                       this.
+   @param[in]  sd      Simulation descriptor from sim_open ().
    @param[out] reason  The reason for stopping
    @param[out] sigrc   Supplementary information for some values of reason.  */
 /* ------------------------------------------------------------------------- */
 void
-sim_stop_reason (SIM_DESC       sd      ATTRIBUTE_UNUSED,
+sim_stop_reason (SIM_DESC       sd,
 		 enum sim_stop *reason,
 		 int           *sigrc)
  {
-   *reason = last_reason;
-   *sigrc  = last_rc;
+   *reason = sd->last_reason;
+   *sigrc  = sd->last_rc;
 
 }	/* sim_stop_reason () */
 

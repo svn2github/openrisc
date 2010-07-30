@@ -1,6 +1,6 @@
 /* Defs for interface to demanglers.
    Copyright 1992, 1993, 1994, 1995, 1996, 1997, 1998, 2000, 2001, 2002,
-   2003, 2004, 2005, 2007 Free Software Foundation, Inc.
+   2003, 2004, 2005, 2007, 2008, 2009 Free Software Foundation, Inc.
    
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU Library General Public License
@@ -221,6 +221,8 @@ enum demangle_component_type
   /* A template parameter.  This holds a number, which is the template
      parameter index.  */
   DEMANGLE_COMPONENT_TEMPLATE_PARAM,
+  /* A function parameter.  This holds a number, which is the index.  */
+  DEMANGLE_COMPONENT_FUNCTION_PARAM,
   /* A constructor.  This holds a name and the kind of
      constructor.  */
   DEMANGLE_COMPONENT_CTOR,
@@ -319,6 +321,8 @@ enum demangle_component_type
      and the right subtree is the member type.  CV-qualifiers appear
      on the latter.  */
   DEMANGLE_COMPONENT_PTRMEM_TYPE,
+  /* A fixed-point type.  */
+  DEMANGLE_COMPONENT_FIXED_TYPE,
   /* An argument list.  The left subtree is the current argument, and
      the right subtree is either NULL or another ARGLIST node.  */
   DEMANGLE_COMPONENT_ARGLIST,
@@ -370,7 +374,15 @@ enum demangle_component_type
      subtree is the first part and the right subtree the second.  */
   DEMANGLE_COMPONENT_COMPOUND_NAME,
   /* A name formed by a single character.  */
-  DEMANGLE_COMPONENT_CHARACTER
+  DEMANGLE_COMPONENT_CHARACTER,
+  /* A decltype type.  */
+  DEMANGLE_COMPONENT_DECLTYPE,
+  /* Global constructors keyed to name.  */
+  DEMANGLE_COMPONENT_GLOBAL_CONSTRUCTORS,
+  /* Global destructors keyed to name.  */
+  DEMANGLE_COMPONENT_GLOBAL_DESTRUCTORS,
+  /* A pack expansion.  */
+  DEMANGLE_COMPONENT_PACK_EXPANSION
 };
 
 /* Types which are only used internally.  */
@@ -415,6 +427,17 @@ struct demangle_component
       struct demangle_component *name;
     } s_extended_operator;
 
+    /* For DEMANGLE_COMPONENT_FIXED_TYPE.  */
+    struct
+    {
+      /* The length, indicated by a C integer type name.  */
+      struct demangle_component *length;
+      /* _Accum or _Fract?  */
+      short accum;
+      /* Saturating or not?  */
+      short sat;
+    } s_fixed;
+
     /* For DEMANGLE_COMPONENT_CTOR.  */
     struct
     {
@@ -449,10 +472,10 @@ struct demangle_component
       int len;
     } s_string;
 
-    /* For DEMANGLE_COMPONENT_TEMPLATE_PARAM.  */
+    /* For DEMANGLE_COMPONENT_*_PARAM.  */
     struct
     {
-      /* Template parameter index.  */
+      /* Parameter index.  */
       long number;
     } s_number;
 

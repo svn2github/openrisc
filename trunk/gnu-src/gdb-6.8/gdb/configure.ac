@@ -451,6 +451,11 @@ AC_SUBST(READLINE)
 AC_SUBST(READLINE_DEPS)
 AC_SUBST(READLINE_CFLAGS)
 
+# Added from binutils 2.20.1/bfd
+#Link in zlib if we can.  This allows us to read compressed debug sections.
+# This is used only by compress.c.
+AC_SEARCH_LIBS(zlibVersion, z, [AC_CHECK_HEADERS(zlib.h)])
+
 AC_ARG_WITH(expat,
   AS_HELP_STRING([--with-expat], [include expat support (auto/yes/no)]),
   [], [with_expat=auto])
@@ -476,11 +481,6 @@ else
     LIBS=$save_LIBS
   fi
 fi
-
-# Added from binutils 2.20.1/bfd
-#Link in zlib if we can.  This allows us to read compressed debug sections.
-# This is used only by compress.c.
-AC_SEARCH_LIBS(zlibVersion, z, [AC_CHECK_HEADERS(zlib.h)])
 
 # ------------------------- #
 # Checks for header files.  #
@@ -1105,7 +1105,6 @@ aix*)
   ;;
 esac
 
-
 dnl For certain native configurations, we need to check whether thread
 dnl support can be built in or not.
 dnl
@@ -1613,6 +1612,18 @@ if test "${ignore_sim}" = "false"; then
 fi
 AC_SUBST(SIM)
 AC_SUBST(SIM_OBS)
+
+# Option to explicitly specify the location of the Or1ksim installation
+AC_ARG_WITH([or1ksim],
+	    [AS_HELP_STRING([--with-or1ksim=ARG],
+            [specify the Or1ksim installation directory explicitly (otherwise use default search paths)])],
+            [],
+           [])
+if test x"$with_or1ksim" != x
+then
+    CONFIG_LDFLAGS="${CONFIG_LDFLAGS} -Wl,-rpath -Wl,$with_or1ksim/lib -L$with_or1ksim/lib -lsim"
+    AC_SUBST(CONFIG_LDFLAGS)
+fi
 
 AC_SUBST(ENABLE_CFLAGS)
 AC_SUBST(PROFILE_CFLAGS)

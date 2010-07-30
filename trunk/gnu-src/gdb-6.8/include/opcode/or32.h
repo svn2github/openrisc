@@ -28,7 +28,7 @@
 #define NUM_SIGNED (1)
 
 #define MAX_GPRS 32
-#define PAGE_SIZE 4096
+#define PAGE_SIZE 8192
 #undef __HALF_WORD_INSN__
 
 #define OPERAND_DELIM (',')
@@ -37,12 +37,41 @@
 #define OR32_W_FLAG   (2)
 #define OR32_R_FLAG   (4)
 
+#if defined(HAS_EXECUTION)
+# if SIMPLE_EXECUTION
+#  include "simpl32_defs.h"
+# elif DYNAMIC_EXECUTION
+#  include "dyn32_defs.h"
+# else
+extern void l_none (void);
+# endif
+#else
+extern void l_none (void);
+#endif
+
 struct or32_letter
 {
   char letter;
   int  sign;
   /* int  reloc; relocation per letter ??  */
 };
+
+enum insn_type {
+  it_unknown,
+  it_exception,
+  it_arith,
+  it_shift,
+  it_compare,
+  it_branch,
+  it_jump,
+  it_load,
+  it_store,
+  it_movimm,
+  it_move,
+  it_extend,
+  it_nop,
+  it_mac,
+  it_float };
 
 /* Main instruction specification array.  */
 struct or32_opcode
@@ -67,8 +96,21 @@ struct or32_opcode
   
   /* Opcode and operand encoding.  */
   char *encoding;
-  void (*exec) (void);
+
+#ifdef HAS_EXECUTION
+# if COMPLEX_EXECUTION
+  char *function_name;
+# elif SIMPLE_EXECUTION
+  void (*exec)(struct iqueue_entry *);
+# else /* DYNAMIC_EXECUTION */
+  void (*exec)(struct op_queue *opq, int param_t[3], orreg_t param[3], int);
+# endif
+#else  /* HAS_EXECUTION */
+  void (*exec)(void);
+#endif
+
   unsigned int flags;
+  enum insn_type func_unit;
 };
 
 #define OPTYPE_LAST (0x80000000)
@@ -88,60 +130,18 @@ extern struct insn_op_struct
   unsigned long data;
 } **op_start;
 
-#ifdef HAS_EXECUTION
-extern void l_invalid (void);
-extern void l_sfne    (void);
-extern void l_bf      (void);
-extern void l_add     (void);
-extern void l_sw      (void);
-extern void l_sb      (void);
-extern void l_sh      (void);
-extern void l_lwz     (void);
-extern void l_lbs     (void);
-extern void l_lbz     (void);
-extern void l_lhs     (void);
-extern void l_lhz     (void);
-extern void l_movhi   (void);
-extern void l_and     (void);
-extern void l_or      (void);
-extern void l_xor     (void);
-extern void l_sub     (void);
-extern void l_mul     (void);
-extern void l_div     (void);
-extern void l_divu    (void);
-extern void l_sll     (void);
-extern void l_sra     (void);
-extern void l_srl     (void);
-extern void l_j       (void);
-extern void l_jal     (void);
-extern void l_jalr    (void);
-extern void l_jr      (void);
-extern void l_rfe     (void);
-extern void l_nop     (void);
-extern void l_bnf     (void);
-extern void l_sfeq    (void);
-extern void l_sfgts   (void);
-extern void l_sfges   (void);
-extern void l_sflts   (void);
-extern void l_sfles   (void);
-extern void l_sfgtu   (void);
-extern void l_sfgeu   (void);
-extern void l_sfltu   (void);
-extern void l_sfleu   (void);
-extern void l_mtspr   (void);
-extern void l_mfspr   (void);
-extern void l_sys     (void);
-extern void l_trap    (void); /* CZ 21/06/01.  */
-extern void l_macrc   (void);
-extern void l_mac     (void);
-extern void l_msb     (void);
-extern void l_invalid (void);
-extern void l_cust1   (void);
-extern void l_cust2   (void);
-extern void l_cust3   (void);
-extern void l_cust4   (void);
-#endif
-extern void l_none    (void);
+/* Leaf flag used in automata building */
+#define LEAF_FLAG         (0x80000000)
+
+struct temp_insn_struct
+{
+  unsigned long insn;
+  unsigned long insn_mask;
+  int in_pass;
+};
+
+extern unsigned long *automata;
+extern struct temp_insn_struct *ti;
 
 extern const struct or32_letter or32_letters[];
 
@@ -176,5 +176,18 @@ extern int insn_decode (unsigned int);
 /* Disassemble one instruction from insn to disassemble.
    Return the size of the instruction.  */
 int disassemble_insn (unsigned long);
+
+/* Extract instruction */
+extern unsigned long insn_extract(char,char*);
+     
+/* Disassemble one instruction from insn index.
+   Return the size of the instruction.  */
+int disassemble_index (unsigned long,int);
+
+/* FOR INTERNAL USE ONLY */
+/* Automatically does zero- or sign- extension and also finds correct
+   sign bit position if sign extension is correct extension. Which extension
+   is proper is figured out from letter description. */
+unsigned long extend_imm(unsigned long,char);
 
 #endif

@@ -1,6 +1,6 @@
 /* xSYM symbol-file support for BFD.
-   Copyright 1999, 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007
-   Free Software Foundation, Inc.
+   Copyright 1999, 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008,
+   2009 Free Software Foundation, Inc.
 
    This file is part of BFD, the Binary File Descriptor library.
 
@@ -19,6 +19,7 @@
    Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston,
    MA 02110-1301, USA.  */
 
+#include "alloca-conf.h"
 #include "sysdep.h"
 #include "xsym.h"
 #include "bfd.h"
@@ -45,6 +46,7 @@
 #define bfd_sym_bfd_is_group_section                bfd_generic_is_group_section
 #define bfd_sym_bfd_discard_group                   bfd_generic_discard_group
 #define bfd_sym_section_already_linked              _bfd_generic_section_already_linked
+#define bfd_sym_bfd_define_common_symbol            bfd_generic_define_common_symbol
 #define bfd_sym_bfd_link_hash_table_create          _bfd_generic_link_hash_table_create
 #define bfd_sym_bfd_link_hash_table_free            _bfd_generic_link_hash_table_free
 #define bfd_sym_bfd_link_add_symbols                _bfd_generic_link_add_symbols
@@ -1640,7 +1642,7 @@ bfd_sym_print_type_information (bfd *abfd,
 		       bfd_sym_symbol_name (abfd, tinfo.nte_index)[0],
 		       &bfd_sym_symbol_name (abfd, tinfo.nte_index)[1]);
 	  }
-	fprintf (f, " (TTE %lu)", value);
+	fprintf (f, " (TTE %lu)", (unsigned long) value);
 	break;
       }
 
@@ -1701,13 +1703,13 @@ bfd_sym_print_type_information (bfd *abfd,
 	  fprintf (f, "union (0x%x) of ", type);
 
 	bfd_sym_fetch_long (buf, len, offset, &offset, &nrec);
-	fprintf (f, "%lu elements: ", nrec);
+	fprintf (f, "%lu elements: ", (unsigned long) nrec);
 
 	for (i = 0; i < nrec; i++)
 	  {
 	    bfd_sym_fetch_long (buf, len, offset, &offset, &eloff);
 	    fprintf (f, "\n                ");
-	    fprintf (f, "offset %lu: ", eloff);
+	    fprintf (f, "offset %lu: ", (unsigned long) eloff);
 	    bfd_sym_print_type_information (abfd, f, buf, len, offset, &offset);
 	  }
 	break;
@@ -1735,7 +1737,7 @@ bfd_sym_print_type_information (bfd *abfd,
 		 bfd_sym_symbol_name (abfd, value)[0],
 		 &bfd_sym_symbol_name (abfd, value)[1]);
 
-      fprintf (f, " (NTE %lu) with type ", value);
+      fprintf (f, " (NTE %lu) with type ", (unsigned long) value);
       bfd_sym_print_type_information (abfd, f, buf, len, offset, &offset);
       break;
     }

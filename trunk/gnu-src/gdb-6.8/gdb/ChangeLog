@@ -1,3 +1,8 @@
+2010-07-27  Jeremy Bennett  <jeremy.bennett@embecosm.com>
+
+	* or1k-tdep.c (or1k_single_step_through_delay): Correct check for
+	first instruction of exception handler.
+
 2010-07-20  Jeremy Bennett  <jeremy.bennett@embecosm.com>
 
 	* configure.ac: Added test for zlib from binutils/bfd

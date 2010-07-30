@@ -497,7 +497,8 @@ or1k_breakpoint_from_pc (struct gdbarch *gdbarch,
 /*!Determine if we are executing a delay slot
 
    Looks at the instruction at the previous instruction to see if it was one
-   with a delay slot.
+   with a delay slot. But it also has to be the address prior to NPC, because
+   we may have just taken an exception.
 
    @param[in] gdbarch     The GDB architecture being used
    @param[in] this_frame  Information about THIS frame
@@ -513,16 +514,25 @@ or1k_single_step_through_delay( struct gdbarch    *gdbarch,
   struct regcache   *regcache = get_current_regcache ();
   ULONGEST           val;
   CORE_ADDR          ppc;
+  CORE_ADDR          npc;
   int                index;
 
-  /* Get and decode the previous instruction. */
+  /* Get and the previous and current instruction addresses. If they are not
+     adjacent, we cannot be in a delay slot. */
   regcache_cooked_read_unsigned (regcache, OR1K_PPC_REGNUM, &val);
-  ppc        = (CORE_ADDR)val;
-  index      = insn_decode (or1k_fetch_instruction (this_frame, ppc));
+  ppc        = (CORE_ADDR) val;
+  regcache_cooked_read_unsigned (regcache, OR1K_NPC_REGNUM, &val);
+  npc        = (CORE_ADDR) val;
 
-  /* We are only executing a delay slot if the previous instruction was a
-     branch or jump. */
-  return or32_opcodes[index].flags & OR32_IF_DELAY;
+  if (0x4 != (npc - ppc))
+    {
+      return  0;
+    }
+
+  /* Decode the previous instruction to see if it was a branch or a jump, and
+     hence we are in a delay slot. */
+  index = insn_decode (or1k_fetch_instruction (this_frame, ppc));
+  return  or32_opcodes[index].flags & OR32_IF_DELAY;
 
 }	/* or1k_single_step_through_delay() */
 

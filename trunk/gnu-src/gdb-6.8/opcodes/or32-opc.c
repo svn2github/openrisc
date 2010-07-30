@@ -1,5 +1,5 @@
 /* Table of opcodes for the OpenRISC 1000 ISA.
-   Copyright 2002, 2004, 2005, 2007 Free Software Foundation, Inc.
+   Copyright 2002, 2004, 2005, 2007, 2008, 2009 Free Software Foundation, Inc.
    Contributed by Damjan Lampret (lampret@opencores.org).
    
    This file is part of the GNU opcodes library.
@@ -29,6 +29,15 @@
 #ifdef HAVE_CONFIG_H
 # include "config.h"
 #endif
+#ifdef HAS_EXECUTION
+# ifdef HAVE_INTTYPES_H
+#  include <inttypes.h> /* ...but to get arch.h we need uint{8,16,32}_t... */
+# endif
+# include "port.h"
+# include "arch.h" /* ...but to get abstract.h, we need oraddr_t... */
+# include "abstract.h" /* To get struct iqueue_entry... */
+# include "debug.h" /* To get debug() */
+#endif
 #include "opcode/or32.h"
 
 const struct or32_letter or32_letters[] =
@@ -57,274 +66,281 @@ const struct or32_letter or32_letters[] =
   bits in same positions of instruction preceding current instruction in the
   code (when assembling).  */
 
-#define EFN &l_none
-
 #ifdef HAS_EXECUTION
-#define EF(func) &(func)
-#define EFI &l_invalid
-#else  /* HAS_EXECUTION */
-#define EF(func) EFN
-#define EFI EFN
+# if SIMPLE_EXECUTION
+#  define EFN &l_none
+#  define EF(func) &(func)
+#  define EFI &l_invalid
+# elif COMPLEX_EXECUTION
+#  define EFN "l_none"
+#  define EFI "l_invalid"
+#  ifdef __GNUC__
+#   define EF(func) #func
+#  else
+#   define EF(func) "func"
+#  endif
+# else /* DYNAMIC_EXECUTION */
+#  define EFN &l_none
+#  define EF(func) &(gen_ ##func)
+#  define EFI &gen_l_invalid
+# endif
+#else /* HAS_EXECUTION */
+# define EFN &l_none
+# define EF(func) EFN
+# define EFI EFN
 #endif /* HAS_EXECUTION */
 
-const struct or32_opcode or32_opcodes[] =
-{
-  { "l.j",       "N",            "00 0x0  NNNNN NNNNN NNNN NNNN NNNN NNNN", EF(l_j), OR32_IF_DELAY },
-  { "l.jal",     "N",            "00 0x1  NNNNN NNNNN NNNN NNNN NNNN NNNN", EF(l_jal), OR32_IF_DELAY },
-  { "l.bnf",     "N",            "00 0x3  NNNNN NNNNN NNNN NNNN NNNN NNNN", EF(l_bnf), OR32_IF_DELAY | OR32_R_FLAG},
-  { "l.bf",      "N",            "00 0x4  NNNNN NNNNN NNNN NNNN NNNN NNNN", EF(l_bf), OR32_IF_DELAY | OR32_R_FLAG },
-  { "l.nop",     "I",            "00 0x5  01--- ----- IIII IIII IIII IIII", EF(l_nop), 0 },
-  { "l.movhi",   "rD,K",         "00 0x6  DDDDD ----0 KKKK KKKK KKKK KKKK", EF(l_movhi), 0 }, /*MM*/
-  { "l.macrc",   "rD",           "00 0x6  DDDDD ----1 0000 0000 0000 0000", EF(l_macrc), 0 }, /*MM*/
+const struct or32_opcode or32_opcodes[] = {
+  { "l.j",        "N",           "00 0x0  NNNNN NNNNN NNNN NNNN NNNN NNNN", EF(l_j), OR32_IF_DELAY, it_jump },
+  { "l.jal",      "N",           "00 0x1  NNNNN NNNNN NNNN NNNN NNNN NNNN", EF(l_jal), OR32_IF_DELAY, it_jump },
+  { "l.bnf",      "N",           "00 0x3  NNNNN NNNNN NNNN NNNN NNNN NNNN", EF(l_bnf), OR32_IF_DELAY | OR32_R_FLAG, it_branch },
+  { "l.bf",       "N",           "00 0x4  NNNNN NNNNN NNNN NNNN NNNN NNNN", EF(l_bf), OR32_IF_DELAY | OR32_R_FLAG, it_branch },
+  { "l.nop",      "K",           "00 0x5  01--- ----- KKKK KKKK KKKK KKKK", EF(l_nop), 0, it_nop },
+  { "l.movhi",    "rD,K",        "00 0x6  DDDDD ----0 KKKK KKKK KKKK KKKK", EF(l_movhi), 0, it_movimm },
+  { "l.macrc",    "rD",          "00 0x6  DDDDD ----1 0000 0000 0000 0000", EF(l_macrc), 0, it_mac },
+  { "l.sys",      "K",           "00 0x8  00000 00000 KKKK KKKK KKKK KKKK", EF(l_sys), 0, it_exception },
+  { "l.trap",     "K",           "00 0x8  01000 00000 KKKK KKKK KKKK KKKK", EF(l_trap), 0, it_exception },
+  { "l.msync",    "",            "00 0x8  10000 00000 0000 0000 0000 0000", EFN, 0, it_unknown },
+  { "l.psync",    "",            "00 0x8  10100 00000 0000 0000 0000 0000", EFN, 0, it_unknown },
+  { "l.csync",    "",            "00 0x8  11000 00000 0000 0000 0000 0000", EFN, 0, it_unknown },
+  { "l.rfe",      "",            "00 0x9  ----- ----- ---- ---- ---- ----", EF(l_rfe), 0, it_exception },
+  { "lv.all_eq.b","rD,rA,rB",    "00 0xA  DDDDD AAAAA BBBB B--- 0x1 0x0",   EFI, 0, it_unknown },
+  { "lv.all_eq.h","rD,rA,rB",    "00 0xA  DDDDD AAAAA BBBB B--- 0x1 0x1",   EFI, 0, it_unknown },
+  { "lv.all_ge.b","rD,rA,rB",    "00 0xA  DDDDD AAAAA BBBB B--- 0x1 0x2",   EFI, 0, it_unknown },
+  { "lv.all_ge.h","rD,rA,rB",    "00 0xA  DDDDD AAAAA BBBB B--- 0x1 0x3",   EFI, 0, it_unknown },
+  { "lv.all_gt.b","rD,rA,rB",    "00 0xA  DDDDD AAAAA BBBB B--- 0x1 0x4",   EFI, 0, it_unknown },
+  { "lv.all_gt.h","rD,rA,rB",    "00 0xA  DDDDD AAAAA BBBB B--- 0x1 0x5",   EFI, 0, it_unknown },
+  { "lv.all_le.b","rD,rA,rB",    "00 0xA  DDDDD AAAAA BBBB B--- 0x1 0x6",   EFI, 0, it_unknown },
+  { "lv.all_le.h","rD,rA,rB",    "00 0xA  DDDDD AAAAA BBBB B--- 0x1 0x7",   EFI, 0, it_unknown },
+  { "lv.all_lt.b","rD,rA,rB",    "00 0xA  DDDDD AAAAA BBBB B--- 0x1 0x8",   EFI, 0, it_unknown },
+  { "lv.all_lt.h","rD,rA,rB",    "00 0xA  DDDDD AAAAA BBBB B--- 0x1 0x9",   EFI, 0, it_unknown },
+  { "lv.all_ne.b","rD,rA,rB",    "00 0xA  DDDDD AAAAA BBBB B--- 0x1 0xA",   EFI, 0, it_unknown },
+  { "lv.all_ne.h","rD,rA,rB",    "00 0xA  DDDDD AAAAA BBBB B--- 0x1 0xB",   EFI, 0, it_unknown },
+  { "lv.any_eq.b","rD,rA,rB",    "00 0xA  DDDDD AAAAA BBBB B--- 0x2 0x0",   EFI, 0, it_unknown },
+  { "lv.any_eq.h","rD,rA,rB",    "00 0xA  DDDDD AAAAA BBBB B--- 0x2 0x1",   EFI, 0, it_unknown },
+  { "lv.any_ge.b","rD,rA,rB",    "00 0xA  DDDDD AAAAA BBBB B--- 0x2 0x2",   EFI, 0, it_unknown },
+  { "lv.any_ge.h","rD,rA,rB",    "00 0xA  DDDDD AAAAA BBBB B--- 0x2 0x3",   EFI, 0, it_unknown },
+  { "lv.any_gt.b","rD,rA,rB",    "00 0xA  DDDDD AAAAA BBBB B--- 0x2 0x4",   EFI, 0, it_unknown },
+  { "lv.any_gt.h","rD,rA,rB",    "00 0xA  DDDDD AAAAA BBBB B--- 0x2 0x5",   EFI, 0, it_unknown },
+  { "lv.any_le.b","rD,rA,rB",    "00 0xA  DDDDD AAAAA BBBB B--- 0x2 0x6",   EFI, 0, it_unknown },
+  { "lv.any_le.h","rD,rA,rB",    "00 0xA  DDDDD AAAAA BBBB B--- 0x2 0x7",   EFI, 0, it_unknown },
+  { "lv.any_lt.b","rD,rA,rB",    "00 0xA  DDDDD AAAAA BBBB B--- 0x2 0x8",   EFI, 0, it_unknown },
+  { "lv.any_lt.h","rD,rA,rB",    "00 0xA  DDDDD AAAAA BBBB B--- 0x2 0x9",   EFI, 0, it_unknown },
+  { "lv.any_ne.b","rD,rA,rB",    "00 0xA  DDDDD AAAAA BBBB B--- 0x2 0xA",   EFI, 0, it_unknown },
+  { "lv.any_ne.h","rD,rA,rB",    "00 0xA  DDDDD AAAAA BBBB B--- 0x2 0xB",   EFI, 0, it_unknown },
+  { "lv.add.b",   "rD,rA,rB",    "00 0xA  DDDDD AAAAA BBBB B--- 0x3 0x0",   EFI, 0, it_unknown },
+  { "lv.add.h",   "rD,rA,rB",    "00 0xA  DDDDD AAAAA BBBB B--- 0x3 0x1",   EFI, 0, it_unknown },
+  { "lv.adds.b",  "rD,rA,rB",    "00 0xA  DDDDD AAAAA BBBB B--- 0x3 0x2",   EFI, 0, it_unknown },
+  { "lv.adds.h",  "rD,rA,rB",    "00 0xA  DDDDD AAAAA BBBB B--- 0x3 0x3",   EFI, 0, it_unknown },
+  { "lv.addu.b",  "rD,rA,rB",    "00 0xA  DDDDD AAAAA BBBB B--- 0x3 0x4",   EFI, 0, it_unknown },
+  { "lv.addu.h",  "rD,rA,rB",    "00 0xA  DDDDD AAAAA BBBB B--- 0x3 0x5",   EFI, 0, it_unknown },
+  { "lv.addus.b", "rD,rA,rB",    "00 0xA  DDDDD AAAAA BBBB B--- 0x3 0x6",   EFI, 0, it_unknown },
+  { "lv.addus.h", "rD,rA,rB",    "00 0xA  DDDDD AAAAA BBBB B--- 0x3 0x7",   EFI, 0, it_unknown },
+  { "lv.and",     "rD,rA,rB",    "00 0xA  DDDDD AAAAA BBBB B--- 0x3 0x8",   EFI, 0, it_unknown },
+  { "lv.avg.b",   "rD,rA,rB",    "00 0xA  DDDDD AAAAA BBBB B--- 0x3 0x9",   EFI, 0, it_unknown },
+  { "lv.avg.h",   "rD,rA,rB",    "00 0xA  DDDDD AAAAA BBBB B--- 0x3 0xA",   EFI, 0, it_unknown },
+  { "lv.cmp_eq.b","rD,rA,rB",    "00 0xA  DDDDD AAAAA BBBB B--- 0x4 0x0",   EFI, 0, it_unknown },
+  { "lv.cmp_eq.h","rD,rA,rB",    "00 0xA  DDDDD AAAAA BBBB B--- 0x4 0x1",   EFI, 0, it_unknown },
+  { "lv.cmp_ge.b","rD,rA,rB",    "00 0xA  DDDDD AAAAA BBBB B--- 0x4 0x2",   EFI, 0, it_unknown },
+  { "lv.cmp_ge.h","rD,rA,rB",    "00 0xA  DDDDD AAAAA BBBB B--- 0x4 0x3",   EFI, 0, it_unknown },
+  { "lv.cmp_gt.b","rD,rA,rB",    "00 0xA  DDDDD AAAAA BBBB B--- 0x4 0x4",   EFI, 0, it_unknown },
+  { "lv.cmp_gt.h","rD,rA,rB",    "00 0xA  DDDDD AAAAA BBBB B--- 0x4 0x5",   EFI, 0, it_unknown },
+  { "lv.cmp_le.b","rD,rA,rB",    "00 0xA  DDDDD AAAAA BBBB B--- 0x4 0x6",   EFI, 0, it_unknown },
+  { "lv.cmp_le.h","rD,rA,rB",    "00 0xA  DDDDD AAAAA BBBB B--- 0x4 0x7",   EFI, 0, it_unknown },
+  { "lv.cmp_lt.b","rD,rA,rB",    "00 0xA  DDDDD AAAAA BBBB B--- 0x4 0x8",   EFI, 0, it_unknown },
+  { "lv.cmp_lt.h","rD,rA,rB",    "00 0xA  DDDDD AAAAA BBBB B--- 0x4 0x9",   EFI, 0, it_unknown },
+  { "lv.cmp_ne.b","rD,rA,rB",    "00 0xA  DDDDD AAAAA BBBB B--- 0x4 0xA",   EFI, 0, it_unknown },
+  { "lv.cmp_ne.h","rD,rA,rB",    "00 0xA  DDDDD AAAAA BBBB B--- 0x4 0xB",   EFI, 0, it_unknown },
+  { "lv.madds.h", "rD,rA,rB",    "00 0xA  DDDDD AAAAA BBBB B--- 0x5 0x4",   EFI, 0, it_unknown },
+  { "lv.max.b",   "rD,rA,rB",    "00 0xA  DDDDD AAAAA BBBB B--- 0x5 0x5",   EFI, 0, it_unknown },
+  { "lv.max.h",   "rD,rA,rB",    "00 0xA  DDDDD AAAAA BBBB B--- 0x5 0x6",   EFI, 0, it_unknown },
+  { "lv.merge.b", "rD,rA,rB",    "00 0xA  DDDDD AAAAA BBBB B--- 0x5 0x7",   EFI, 0, it_unknown },
+  { "lv.merge.h", "rD,rA,rB",    "00 0xA  DDDDD AAAAA BBBB B--- 0x5 0x8",   EFI, 0, it_unknown },
+  { "lv.min.b",   "rD,rA,rB",    "00 0xA  DDDDD AAAAA BBBB B--- 0x5 0x9",   EFI, 0, it_unknown },
+  { "lv.min.h",   "rD,rA,rB",    "00 0xA  DDDDD AAAAA BBBB B--- 0x5 0xA",   EFI, 0, it_unknown },
+  { "lv.msubs.h", "rD,rA,rB",    "00 0xA  DDDDD AAAAA BBBB B--- 0x5 0xB",   EFI, 0, it_unknown },
+  { "lv.muls.h",  "rD,rA,rB",    "00 0xA  DDDDD AAAAA BBBB B--- 0x5 0xC",   EFI, 0, it_unknown },
+  { "lv.nand",    "rD,rA,rB",    "00 0xA  DDDDD AAAAA BBBB B--- 0x5 0xD",   EFI, 0, it_unknown },
+  { "lv.nor",     "rD,rA,rB",    "00 0xA  DDDDD AAAAA BBBB B--- 0x5 0xE",   EFI, 0, it_unknown },
+  { "lv.or",      "rD,rA,rB",    "00 0xA  DDDDD AAAAA BBBB B--- 0x5 0xF",   EFI, 0, it_unknown },
+  { "lv.pack.b",  "rD,rA,rB",    "00 0xA  DDDDD AAAAA BBBB B--- 0x6 0x0",   EFI, 0, it_unknown },
+  { "lv.pack.h",  "rD,rA,rB",    "00 0xA  DDDDD AAAAA BBBB B--- 0x6 0x1",   EFI, 0, it_unknown },
+  { "lv.packs.b", "rD,rA,rB",    "00 0xA  DDDDD AAAAA BBBB B--- 0x6 0x2",   EFI, 0, it_unknown },
+  { "lv.packs.h", "rD,rA,rB",    "00 0xA  DDDDD AAAAA BBBB B--- 0x6 0x3",   EFI, 0, it_unknown },
+  { "lv.packus.b","rD,rA,rB",    "00 0xA  DDDDD AAAAA BBBB B--- 0x6 0x4",   EFI, 0, it_unknown },
+  { "lv.packus.h","rD,rA,rB",    "00 0xA  DDDDD AAAAA BBBB B--- 0x6 0x5",   EFI, 0, it_unknown },
+  { "lv.perm.n",  "rD,rA,rB",    "00 0xA  DDDDD AAAAA BBBB B--- 0x6 0x6",   EFI, 0, it_unknown },
+  { "lv.rl.b",    "rD,rA,rB",    "00 0xA  DDDDD AAAAA BBBB B--- 0x6 0x7",   EFI, 0, it_unknown },
+  { "lv.rl.h",    "rD,rA,rB",    "00 0xA  DDDDD AAAAA BBBB B--- 0x6 0x8",   EFI, 0, it_unknown },
+  { "lv.sll.b",   "rD,rA,rB",    "00 0xA  DDDDD AAAAA BBBB B--- 0x6 0x9",   EFI, 0, it_unknown },
+  { "lv.sll.h",   "rD,rA,rB",    "00 0xA  DDDDD AAAAA BBBB B--- 0x6 0xA",   EFI, 0, it_unknown },
+  { "lv.sll",     "rD,rA,rB",    "00 0xA  DDDDD AAAAA BBBB B--- 0x6 0xB",   EFI, 0, it_unknown },
+  { "lv.srl.b",   "rD,rA,rB",    "00 0xA  DDDDD AAAAA BBBB B--- 0x6 0xC",   EFI, 0, it_unknown },
+  { "lv.srl.h",   "rD,rA,rB",    "00 0xA  DDDDD AAAAA BBBB B--- 0x6 0xD",   EFI, 0, it_unknown },
+  { "lv.sra.b",   "rD,rA,rB",    "00 0xA  DDDDD AAAAA BBBB B--- 0x6 0xE",   EFI, 0, it_unknown },
+  { "lv.sra.h",   "rD,rA,rB",    "00 0xA  DDDDD AAAAA BBBB B--- 0x6 0xF",   EFI, 0, it_unknown },
+  { "lv.srl",     "rD,rA,rB",    "00 0xA  DDDDD AAAAA BBBB B--- 0x7 0x0",   EFI, 0, it_unknown },
+  { "lv.sub.b",   "rD,rA,rB",    "00 0xA  DDDDD AAAAA BBBB B--- 0x7 0x1",   EFI, 0, it_unknown },
+  { "lv.sub.h",   "rD,rA,rB",    "00 0xA  DDDDD AAAAA BBBB B--- 0x7 0x2",   EFI, 0, it_unknown },
+  { "lv.subs.b",  "rD,rA,rB",    "00 0xA  DDDDD AAAAA BBBB B--- 0x7 0x3",   EFI, 0, it_unknown },
+  { "lv.subs.h",  "rD,rA,rB",    "00 0xA  DDDDD AAAAA BBBB B--- 0x7 0x4",   EFI, 0, it_unknown },
+  { "lv.subu.b",  "rD,rA,rB",    "00 0xA  DDDDD AAAAA BBBB B--- 0x7 0x5",   EFI, 0, it_unknown },
+  { "lv.subu.h",  "rD,rA,rB",    "00 0xA  DDDDD AAAAA BBBB B--- 0x7 0x6",   EFI, 0, it_unknown },
+  { "lv.subus.b", "rD,rA,rB",    "00 0xA  DDDDD AAAAA BBBB B--- 0x7 0x7",   EFI, 0, it_unknown },
+  { "lv.subus.h", "rD,rA,rB",    "00 0xA  DDDDD AAAAA BBBB B--- 0x7 0x8",   EFI, 0, it_unknown },
+  { "lv.unpack.b","rD,rA,rB",    "00 0xA  DDDDD AAAAA BBBB B--- 0x7 0x9",   EFI, 0, it_unknown },
+  { "lv.unpack.h","rD,rA,rB",    "00 0xA  DDDDD AAAAA BBBB B--- 0x7 0xA",   EFI, 0, it_unknown },
+  { "lv.xor",     "rD,rA,rB",    "00 0xA  DDDDD AAAAA BBBB B--- 0x7 0xB",   EFI, 0, it_unknown },
+  { "lv.cust1",   "",            "00 0xA  ----- ----- ---- ---- 0xC ----",  EFI, 0, it_unknown },
+  { "lv.cust2",   "",            "00 0xA  ----- ----- ---- ---- 0xD ----",  EFI, 0, it_unknown },
+  { "lv.cust3",   "",            "00 0xA  ----- ----- ---- ---- 0xE ----",  EFI, 0, it_unknown },
+  { "lv.cust4",   "",            "00 0xA  ----- ----- ---- ---- 0xF ----",  EFI, 0, it_unknown },
 
-  { "l.sys",     "K",            "00 0x8  00000 00000 KKKK KKKK KKKK KKKK", EF(l_sys), 0 },
-  { "l.trap",    "K",            "00 0x8  01000 00000 KKKK KKKK KKKK KKKK", EF(l_trap), 0 }, /* CZ 21/06/01 */
-  { "l.msync",   "",             "00 0x8  10000 00000 0000 0000 0000 0000", EFN, 0 },
-  { "l.psync",   "",             "00 0x8  10100 00000 0000 0000 0000 0000", EFN, 0 },
-  { "l.csync",   "",             "00 0x8  11000 00000 0000 0000 0000 0000", EFN, 0 },
-  { "l.rfe",     "",             "00 0x9  ----- ----- ---- ---- ---- ----", EF(l_rfe), OR32_IF_DELAY },
+  { "l.jr",       "rB",          "01 0x1  ----- ----- BBBB B--- ---- ----", EF(l_jr), OR32_IF_DELAY, it_jump },
+  { "l.jalr",     "rB",          "01 0x2  ----- ----- BBBB B--- ---- ----", EF(l_jalr), OR32_IF_DELAY, it_jump },
+  { "l.maci",     "rA,I",        "01 0x3  ----- AAAAA IIII IIII IIII IIII", EF(l_mac), 0, it_mac },
+  { "l.cust1",    "",            "01 0xC  ----- ----- ---- ---- ---- ----", EF(l_cust1), 0, it_unknown },
+  { "l.cust2",    "",            "01 0xD  ----- ----- ---- ---- ---- ----", EF(l_cust2), 0, it_unknown },
+  { "l.cust3",    "",            "01 0xE  ----- ----- ---- ---- ---- ----", EF(l_cust3), 0, it_unknown },
+  { "l.cust4",    "",            "01 0xF  ----- ----- ---- ---- ---- ----", EF(l_cust4), 0, it_unknown },
 
-  { "lv.all_eq.b","rD,rA,rB",    "00 0xA  DDDDD AAAAA BBBB B--- 0x1 0x0", EFI, 0 },
-  { "lv.all_eq.h","rD,rA,rB",    "00 0xA  DDDDD AAAAA BBBB B--- 0x1 0x1", EFI, 0 },
-  { "lv.all_ge.b","rD,rA,rB",    "00 0xA  DDDDD AAAAA BBBB B--- 0x1 0x2", EFI, 0 },
-  { "lv.all_ge.h","rD,rA,rB",    "00 0xA  DDDDD AAAAA BBBB B--- 0x1 0x3", EFI, 0 },
-  { "lv.all_gt.b","rD,rA,rB",    "00 0xA  DDDDD AAAAA BBBB B--- 0x1 0x4", EFI, 0 },
-  { "lv.all_gt.h","rD,rA,rB",    "00 0xA  DDDDD AAAAA BBBB B--- 0x1 0x5", EFI, 0 },
-  { "lv.all_le.b","rD,rA,rB",    "00 0xA  DDDDD AAAAA BBBB B--- 0x1 0x6", EFI, 0 },
-  { "lv.all_le.h","rD,rA,rB",    "00 0xA  DDDDD AAAAA BBBB B--- 0x1 0x7", EFI, 0 },
-  { "lv.all_lt.b","rD,rA,rB",    "00 0xA  DDDDD AAAAA BBBB B--- 0x1 0x8", EFI, 0 },
-  { "lv.all_lt.h","rD,rA,rB",    "00 0xA  DDDDD AAAAA BBBB B--- 0x1 0x9", EFI, 0 },
-  { "lv.all_ne.b","rD,rA,rB",    "00 0xA  DDDDD AAAAA BBBB B--- 0x1 0xA", EFI, 0 },
-  { "lv.all_ne.h","rD,rA,rB",    "00 0xA  DDDDD AAAAA BBBB B--- 0x1 0xB", EFI, 0 },
-  { "lv.any_eq.b","rD,rA,rB",    "00 0xA  DDDDD AAAAA BBBB B--- 0x2 0x0", EFI, 0 },
-  { "lv.any_eq.h","rD,rA,rB",    "00 0xA  DDDDD AAAAA BBBB B--- 0x2 0x1", EFI, 0 },
-  { "lv.any_ge.b","rD,rA,rB",    "00 0xA  DDDDD AAAAA BBBB B--- 0x2 0x2", EFI, 0 },
-  { "lv.any_ge.h","rD,rA,rB",    "00 0xA  DDDDD AAAAA BBBB B--- 0x2 0x3", EFI, 0 },
-  { "lv.any_gt.b","rD,rA,rB",    "00 0xA  DDDDD AAAAA BBBB B--- 0x2 0x4", EFI, 0 },
-  { "lv.any_gt.h","rD,rA,rB",    "00 0xA  DDDDD AAAAA BBBB B--- 0x2 0x5", EFI, 0 },
-  { "lv.any_le.b","rD,rA,rB",    "00 0xA  DDDDD AAAAA BBBB B--- 0x2 0x6", EFI, 0 },
-  { "lv.any_le.h","rD,rA,rB",    "00 0xA  DDDDD AAAAA BBBB B--- 0x2 0x7", EFI, 0 },
-  { "lv.any_lt.b","rD,rA,rB",    "00 0xA  DDDDD AAAAA BBBB B--- 0x2 0x8", EFI, 0 },
-  { "lv.any_lt.h","rD,rA,rB",    "00 0xA  DDDDD AAAAA BBBB B--- 0x2 0x9", EFI, 0 },
-  { "lv.any_ne.b","rD,rA,rB",    "00 0xA  DDDDD AAAAA BBBB B--- 0x2 0xA", EFI, 0 },
-  { "lv.any_ne.h","rD,rA,rB",    "00 0xA  DDDDD AAAAA BBBB B--- 0x2 0xB", EFI, 0 },
-  { "lv.add.b",  "rD,rA,rB",     "00 0xA  DDDDD AAAAA BBBB B--- 0x3 0x0", EFI, 0 },
-  { "lv.add.h",  "rD,rA,rB",     "00 0xA  DDDDD AAAAA BBBB B--- 0x3 0x1", EFI, 0 },
-  { "lv.adds.b", "rD,rA,rB",     "00 0xA  DDDDD AAAAA BBBB B--- 0x3 0x2", EFI, 0 },
-  { "lv.adds.h", "rD,rA,rB",     "00 0xA  DDDDD AAAAA BBBB B--- 0x3 0x3", EFI, 0 },
-  { "lv.addu.b", "rD,rA,rB",     "00 0xA  DDDDD AAAAA BBBB B--- 0x3 0x4", EFI, 0 },
-  { "lv.addu.h", "rD,rA,rB",     "00 0xA  DDDDD AAAAA BBBB B--- 0x3 0x5", EFI, 0 },
-  { "lv.addus.b","rD,rA,rB",     "00 0xA  DDDDD AAAAA BBBB B--- 0x3 0x6", EFI, 0 },
-  { "lv.addus.h","rD,rA,rB",     "00 0xA  DDDDD AAAAA BBBB B--- 0x3 0x7", EFI, 0 },
-  { "lv.and",    "rD,rA,rB",     "00 0xA  DDDDD AAAAA BBBB B--- 0x3 0x8", EFI, 0 },
-  { "lv.avg.b",  "rD,rA,rB",     "00 0xA  DDDDD AAAAA BBBB B--- 0x3 0x9", EFI, 0 },
-  { "lv.avg.h",  "rD,rA,rB",     "00 0xA  DDDDD AAAAA BBBB B--- 0x3 0xA", EFI, 0 },
-  { "lv.cmp_eq.b","rD,rA,rB",    "00 0xA  DDDDD AAAAA BBBB B--- 0x4 0x0", EFI, 0 },
-  { "lv.cmp_eq.h","rD,rA,rB",    "00 0xA  DDDDD AAAAA BBBB B--- 0x4 0x1", EFI, 0 },
-  { "lv.cmp_ge.b","rD,rA,rB",    "00 0xA  DDDDD AAAAA BBBB B--- 0x4 0x2", EFI, 0 },
-  { "lv.cmp_ge.h","rD,rA,rB",    "00 0xA  DDDDD AAAAA BBBB B--- 0x4 0x3", EFI, 0 },
-  { "lv.cmp_gt.b","rD,rA,rB",    "00 0xA  DDDDD AAAAA BBBB B--- 0x4 0x4", EFI, 0 },
-  { "lv.cmp_gt.h","rD,rA,rB",    "00 0xA  DDDDD AAAAA BBBB B--- 0x4 0x5", EFI, 0 },
-  { "lv.cmp_le.b","rD,rA,rB",    "00 0xA  DDDDD AAAAA BBBB B--- 0x4 0x6", EFI, 0 },
-  { "lv.cmp_le.h","rD,rA,rB",    "00 0xA  DDDDD AAAAA BBBB B--- 0x4 0x7", EFI, 0 },
-  { "lv.cmp_lt.b","rD,rA,rB",    "00 0xA  DDDDD AAAAA BBBB B--- 0x4 0x8", EFI, 0 },
-  { "lv.cmp_lt.h","rD,rA,rB",    "00 0xA  DDDDD AAAAA BBBB B--- 0x4 0x9", EFI, 0 },
-  { "lv.cmp_ne.b","rD,rA,rB",    "00 0xA  DDDDD AAAAA BBBB B--- 0x4 0xA", EFI, 0 },
-  { "lv.cmp_ne.h","rD,rA,rB",    "00 0xA  DDDDD AAAAA BBBB B--- 0x4 0xB", EFI, 0 },
-  { "lv.madds.h","rD,rA,rB",     "00 0xA  DDDDD AAAAA BBBB B--- 0x5 0x4", EFI, 0 },
-  { "lv.max.b",  "rD,rA,rB",     "00 0xA  DDDDD AAAAA BBBB B--- 0x5 0x5", EFI, 0 },
-  { "lv.max.h",  "rD,rA,rB",     "00 0xA  DDDDD AAAAA BBBB B--- 0x5 0x6", EFI, 0 },
-  { "lv.merge.b","rD,rA,rB",     "00 0xA  DDDDD AAAAA BBBB B--- 0x5 0x7", EFI, 0 },
-  { "lv.merge.h","rD,rA,rB",     "00 0xA  DDDDD AAAAA BBBB B--- 0x5 0x8", EFI, 0 },
-  { "lv.min.b",  "rD,rA,rB",     "00 0xA  DDDDD AAAAA BBBB B--- 0x5 0x9", EFI, 0 },
-  { "lv.min.h",  "rD,rA,rB",     "00 0xA  DDDDD AAAAA BBBB B--- 0x5 0xA", EFI, 0 },
-  { "lv.msubs.h","rD,rA,rB",     "00 0xA  DDDDD AAAAA BBBB B--- 0x5 0xB", EFI, 0 },
-  { "lv.muls.h", "rD,rA,rB",     "00 0xA  DDDDD AAAAA BBBB B--- 0x5 0xC", EFI, 0 },
-  { "lv.nand",   "rD,rA,rB",     "00 0xA  DDDDD AAAAA BBBB B--- 0x5 0xD", EFI, 0 },
-  { "lv.nor",    "rD,rA,rB",     "00 0xA  DDDDD AAAAA BBBB B--- 0x5 0xE", EFI, 0 },
-  { "lv.or",     "rD,rA,rB",     "00 0xA  DDDDD AAAAA BBBB B--- 0x5 0xF", EFI, 0 },
-  { "lv.pack.b", "rD,rA,rB",     "00 0xA  DDDDD AAAAA BBBB B--- 0x6 0x0", EFI, 0 },
-  { "lv.pack.h", "rD,rA,rB",     "00 0xA  DDDDD AAAAA BBBB B--- 0x6 0x1", EFI, 0 },
-  { "lv.packs.b","rD,rA,rB",     "00 0xA  DDDDD AAAAA BBBB B--- 0x6 0x2", EFI, 0 },
-  { "lv.packs.h","rD,rA,rB",     "00 0xA  DDDDD AAAAA BBBB B--- 0x6 0x3", EFI, 0 },
-  { "lv.packus.b","rD,rA,rB",    "00 0xA  DDDDD AAAAA BBBB B--- 0x6 0x4", EFI, 0 },
-  { "lv.packus.h","rD,rA,rB",    "00 0xA  DDDDD AAAAA BBBB B--- 0x6 0x5", EFI, 0 },
-  { "lv.perm.n", "rD,rA,rB",     "00 0xA  DDDDD AAAAA BBBB B--- 0x6 0x6", EFI, 0 },
-  { "lv.rl.b",   "rD,rA,rB",     "00 0xA  DDDDD AAAAA BBBB B--- 0x6 0x7", EFI, 0 },
-  { "lv.rl.h",   "rD,rA,rB",     "00 0xA  DDDDD AAAAA BBBB B--- 0x6 0x8", EFI, 0 },
-  { "lv.sll.b",  "rD,rA,rB",     "00 0xA  DDDDD AAAAA BBBB B--- 0x6 0x9", EFI, 0 },
-  { "lv.sll.h",  "rD,rA,rB",     "00 0xA  DDDDD AAAAA BBBB B--- 0x6 0xA", EFI, 0 },
-  { "lv.sll",    "rD,rA,rB",     "00 0xA  DDDDD AAAAA BBBB B--- 0x6 0xB", EFI, 0 },
-  { "lv.srl.b",  "rD,rA,rB",     "00 0xA  DDDDD AAAAA BBBB B--- 0x6 0xC", EFI, 0 },
-  { "lv.srl.h",  "rD,rA,rB",     "00 0xA  DDDDD AAAAA BBBB B--- 0x6 0xD", EFI, 0 },
-  { "lv.sra.b",  "rD,rA,rB",     "00 0xA  DDDDD AAAAA BBBB B--- 0x6 0xE", EFI, 0 },
-  { "lv.sra.h",  "rD,rA,rB",     "00 0xA  DDDDD AAAAA BBBB B--- 0x6 0xF", EFI, 0 },
-  { "lv.srl",    "rD,rA,rB",     "00 0xA  DDDDD AAAAA BBBB B--- 0x7 0x0", EFI, 0 },
-  { "lv.sub.b",  "rD,rA,rB",     "00 0xA  DDDDD AAAAA BBBB B--- 0x7 0x1", EFI, 0 },
-  { "lv.sub.h",  "rD,rA,rB",     "00 0xA  DDDDD AAAAA BBBB B--- 0x7 0x2", EFI, 0 },
-  { "lv.subs.b", "rD,rA,rB",     "00 0xA  DDDDD AAAAA BBBB B--- 0x7 0x3", EFI, 0 },
-  { "lv.subs.h", "rD,rA,rB",     "00 0xA  DDDDD AAAAA BBBB B--- 0x7 0x4", EFI, 0 },
-  { "lv.subu.b", "rD,rA,rB",     "00 0xA  DDDDD AAAAA BBBB B--- 0x7 0x5", EFI, 0 },
-  { "lv.subu.h", "rD,rA,rB",     "00 0xA  DDDDD AAAAA BBBB B--- 0x7 0x6", EFI, 0 },
-  { "lv.subus.b","rD,rA,rB",     "00 0xA  DDDDD AAAAA BBBB B--- 0x7 0x7", EFI, 0 },
-  { "lv.subus.h","rD,rA,rB",     "00 0xA  DDDDD AAAAA BBBB B--- 0x7 0x8", EFI, 0 },
-  { "lv.unpack.b","rD,rA,rB",    "00 0xA  DDDDD AAAAA BBBB B--- 0x7 0x9", EFI, 0 },
-  { "lv.unpack.h","rD,rA,rB",    "00 0xA  DDDDD AAAAA BBBB B--- 0x7 0xA", EFI, 0 },
-  { "lv.xor",    "rD,rA,rB",     "00 0xA  DDDDD AAAAA BBBB B--- 0x7 0xB", EFI, 0 },
-  { "lv.cust1",  "",	       "00 0xA  ----- ----- ---- ---- 0xC ----", EFI, 0 },
-  { "lv.cust2",  "",	       "00 0xA  ----- ----- ---- ---- 0xD ----", EFI, 0 },
-  { "lv.cust3",  "",	       "00 0xA  ----- ----- ---- ---- 0xE ----", EFI, 0 },
-  { "lv.cust4",  "",	       "00 0xA  ----- ----- ---- ---- 0xF ----", EFI, 0 },
-  
-  { "lf.add.s",   "rD,rA,rB",    "00 0xB  DDDDD AAAAA BBBB B--- 0x1 0x0", EFI, 0 },
-  { "lf.sub.s",   "rD,rA,rB",    "00 0xB  DDDDD AAAAA BBBB B--- 0x1 0x1", EFI, 0 },
-  { "lf.mul.s",   "rD,rA,rB",    "00 0xB  DDDDD AAAAA BBBB B--- 0x1 0x2", EFI, 0 },
-  { "lf.div.s",   "rD,rA,rB",    "00 0xB  DDDDD AAAAA BBBB B--- 0x1 0x3", EFI, 0 },
-  { "lf.itof.s",  "rD,rA",       "00 0xB  DDDDD AAAAA BBBB B--- 0x1 0x4", EFI, 0 },
-  { "lf.ftoi.s",  "rD,rA",       "00 0xB  DDDDD AAAAA BBBB B--- 0x1 0x5", EFI, 0 },
-  { "lf.rem.s",   "rD,rA,rB",    "00 0xB  DDDDD AAAAA BBBB B--- 0x1 0x6", EFI, 0 },
-  { "lf.madd.s",  "rD,rA,rB",    "00 0xB  DDDDD AAAAA BBBB B--- 0x1 0x7", EFI, 0 },
-  { "lf.sfeq.s",  "rA,rB",       "00 0xB  ----- AAAAA BBBB B--- 0x1 0x8", EFI, 0 },
-  { "lf.sfne.s",  "rA,rB",       "00 0xB  ----- AAAAA BBBB B--- 0x1 0x9", EFI, 0 },
-  { "lf.sfgt.s",  "rA,rB",       "00 0xB  ----- AAAAA BBBB B--- 0x1 0xA", EFI, 0 },
-  { "lf.sfge.s",  "rA,rB",       "00 0xB  ----- AAAAA BBBB B--- 0x1 0xB", EFI, 0 },
-  { "lf.sflt.s",  "rA,rB",       "00 0xB  ----- AAAAA BBBB B--- 0x1 0xC", EFI, 0 },
-  { "lf.sfle.s",  "rA,rB",       "00 0xB  ----- AAAAA BBBB B--- 0x1 0xD", EFI, 0 },
-  { "lf.cust1.s", "",	       "00 0xB  ----- ----- ---- ---- 0xE ----", EFI, 0 },
+  { "l.ld",       "rD,I(rA)",    "10 0x0  DDDDD AAAAA IIII IIII IIII IIII", EFI, 0, it_load },
+  { "l.lwz",      "rD,I(rA)",    "10 0x1  DDDDD AAAAA IIII IIII IIII IIII", EF(l_lwz), 0, it_load },
+  { "l.lws",      "rD,I(rA)",    "10 0x2  DDDDD AAAAA IIII IIII IIII IIII", EFI, 0, it_load },
+  { "l.lbz",      "rD,I(rA)",    "10 0x3  DDDDD AAAAA IIII IIII IIII IIII", EF(l_lbz), 0, it_load },
+  { "l.lbs",      "rD,I(rA)",    "10 0x4  DDDDD AAAAA IIII IIII IIII IIII", EF(l_lbs), 0, it_load },
+  { "l.lhz",      "rD,I(rA)",    "10 0x5  DDDDD AAAAA IIII IIII IIII IIII", EF(l_lhz), 0, it_load },
+  { "l.lhs",      "rD,I(rA)",    "10 0x6  DDDDD AAAAA IIII IIII IIII IIII", EF(l_lhs), 0, it_load },
 
-  { "lf.add.d",   "rD,rA,rB",    "00 0xC  DDDDD AAAAA BBBB B--- 0x1 0x0", EFI, 0 },
-  { "lf.sub.d",   "rD,rA,rB",    "00 0xC  DDDDD AAAAA BBBB B--- 0x1 0x1", EFI, 0 },
-  { "lf.mul.d",   "rD,rA,rB",    "00 0xC  DDDDD AAAAA BBBB B--- 0x1 0x2", EFI, 0 },
-  { "lf.div.d",   "rD,rA,rB",    "00 0xC  DDDDD AAAAA BBBB B--- 0x1 0x3", EFI, 0 },
-  { "lf.itof.d",  "rD,rA",       "00 0xC  DDDDD AAAAA BBBB B--- 0x1 0x4", EFI, 0 },
-  { "lf.ftoi.d",  "rD,rA",       "00 0xC  DDDDD AAAAA BBBB B--- 0x1 0x5", EFI, 0 },
-  { "lf.rem.d",   "rD,rA,rB",    "00 0xC  DDDDD AAAAA BBBB B--- 0x1 0x6", EFI, 0 },
-  { "lf.madd.d",  "rD,rA,rB",    "00 0xC  DDDDD AAAAA BBBB B--- 0x1 0x7", EFI, 0 },
-  { "lf.sfeq.d",  "rA,rB",       "00 0xC  ----- AAAAA BBBB B--- 0x1 0x8", EFI, 0 },
-  { "lf.sfne.d",  "rA,rB",       "00 0xC  ----- AAAAA BBBB B--- 0x1 0x9", EFI, 0 },
-  { "lf.sfgt.d",  "rA,rB",       "00 0xC  ----- AAAAA BBBB B--- 0x1 0xA", EFI, 0 },
-  { "lf.sfge.d",  "rA,rB",       "00 0xC  ----- AAAAA BBBB B--- 0x1 0xB", EFI, 0 },
-  { "lf.sflt.d",  "rA,rB",       "00 0xC  ----- AAAAA BBBB B--- 0x1 0xC", EFI, 0 },
-  { "lf.sfle.d",  "rA,rB",       "00 0xC  ----- AAAAA BBBB B--- 0x1 0xD", EFI, 0 },
-  { "lf.cust1.d", "",	       "00 0xC  ----- ----- ---- ---- 0xE ----", EFI, 0 },
+  { "l.addi",     "rD,rA,I",     "10 0x7  DDDDD AAAAA IIII IIII IIII IIII", EF(l_add), OR32_W_FLAG, it_arith },
+  { "l.addic",    "rD,rA,I",     "10 0x8  DDDDD AAAAA IIII IIII IIII IIII", EFI, 0, it_arith },
+  { "l.andi",     "rD,rA,K",     "10 0x9  DDDDD AAAAA KKKK KKKK KKKK KKKK", EF(l_and), OR32_W_FLAG, it_arith },
+  { "l.ori",      "rD,rA,K",     "10 0xA  DDDDD AAAAA KKKK KKKK KKKK KKKK", EF(l_or), 0, it_arith },
+  { "l.xori",     "rD,rA,I",     "10 0xB  DDDDD AAAAA IIII IIII IIII IIII", EF(l_xor), 0, it_arith },
+  { "l.muli",     "rD,rA,I",     "10 0xC  DDDDD AAAAA IIII IIII IIII IIII", EF(l_mul), 0, it_arith },
+  { "l.mfspr",    "rD,rA,K",     "10 0xD  DDDDD AAAAA KKKK KKKK KKKK KKKK", EF(l_mfspr), 0, it_move },
+  { "l.slli",     "rD,rA,L",     "10 0xE  DDDDD AAAAA ---- ---- 00LL LLLL", EF(l_sll), 0, it_shift },
+  { "l.srli",     "rD,rA,L",     "10 0xE  DDDDD AAAAA ---- ---- 01LL LLLL", EF(l_srl), 0, it_shift },
+  { "l.srai",     "rD,rA,L",     "10 0xE  DDDDD AAAAA ---- ---- 10LL LLLL", EF(l_sra), 0, it_shift },
+  { "l.rori",     "rD,rA,L",     "10 0xE  DDDDD AAAAA ---- ---- 11LL LLLL", EFI, 0, it_shift },
 
-  { "lvf.ld",     "rD,0(rA)",    "00 0xD  DDDDD AAAAA ---- ---- 0x0 0x0", EFI, 0 },
-  { "lvf.lw",     "rD,0(rA)",    "00 0xD  DDDDD AAAAA ---- ---- 0x0 0x1", EFI, 0 },
-  { "lvf.sd",     "0(rA),rB",    "00 0xD  ----- AAAAA BBBB B--- 0x1 0x0", EFI, 0 },
-  { "lvf.sw",     "0(rA),rB",    "00 0xD  ----- AAAAA BBBB B--- 0x1 0x1", EFI, 0 },
+  { "l.sfeqi",    "rA,I",        "10 0xF  00000 AAAAA IIII IIII IIII IIII", EF(l_sfeq), OR32_W_FLAG, it_compare },
+  { "l.sfnei",    "rA,I",        "10 0xF  00001 AAAAA IIII IIII IIII IIII", EF(l_sfne), OR32_W_FLAG, it_compare },
+  { "l.sfgtui",   "rA,I",        "10 0xF  00010 AAAAA IIII IIII IIII IIII", EF(l_sfgtu), OR32_W_FLAG, it_compare },
+  { "l.sfgeui",   "rA,I",        "10 0xF  00011 AAAAA IIII IIII IIII IIII", EF(l_sfgeu), OR32_W_FLAG, it_compare },
+  { "l.sfltui",   "rA,I",        "10 0xF  00100 AAAAA IIII IIII IIII IIII", EF(l_sfltu), OR32_W_FLAG, it_compare },
+  { "l.sfleui",   "rA,I",        "10 0xF  00101 AAAAA IIII IIII IIII IIII", EF(l_sfleu), OR32_W_FLAG, it_compare },
+  { "l.sfgtsi",   "rA,I",        "10 0xF  01010 AAAAA IIII IIII IIII IIII", EF(l_sfgts), OR32_W_FLAG, it_compare },
+  { "l.sfgesi",   "rA,I",        "10 0xF  01011 AAAAA IIII IIII IIII IIII", EF(l_sfges), OR32_W_FLAG, it_compare },
+  { "l.sfltsi",   "rA,I",        "10 0xF  01100 AAAAA IIII IIII IIII IIII", EF(l_sflts), OR32_W_FLAG, it_compare },
+  { "l.sflesi",   "rA,I",        "10 0xF  01101 AAAAA IIII IIII IIII IIII", EF(l_sfles), OR32_W_FLAG, it_compare },
 
-  { "l.jr",      "rB",           "01 0x1  ----- ----- BBBB B--- ---- ----", EF(l_jr), OR32_IF_DELAY },
-  { "l.jalr",    "rB",           "01 0x2  ----- ----- BBBB B--- ---- ----", EF(l_jalr), OR32_IF_DELAY },
-  { "l.maci",    "rB,I",         "01 0x3  IIIII ----- BBBB BIII IIII IIII", EF(l_mac), 0 },
-  { "l.cust1",   "",	       "01 0xC  ----- ----- ---- ---- ---- ----", EF(l_cust1), 0 },
-  { "l.cust2",   "",	       "01 0xD  ----- ----- ---- ---- ---- ----", EF(l_cust2), 0 },
-  { "l.cust3",   "",	       "01 0xE  ----- ----- ---- ---- ---- ----", EF(l_cust3), 0 },
-  { "l.cust4",   "",	       "01 0xF  ----- ----- ---- ---- ---- ----", EF(l_cust4), 0 },
+  { "l.mtspr",    "rA,rB,K",     "11 0x0  KKKKK AAAAA BBBB BKKK KKKK KKKK", EF(l_mtspr), 0, it_move },
+  { "l.mac",      "rA,rB",       "11 0x1  ----- AAAAA BBBB B--- ---- 0x1",  EF(l_mac), 0, it_mac },
+  { "l.msb",      "rA,rB",       "11 0x1  ----- AAAAA BBBB B--- ---- 0x2",  EF(l_msb), 0, it_mac },
 
-  { "l.ld",      "rD,I(rA)",     "10 0x0  DDDDD AAAAA IIII IIII IIII IIII", EFI, 0 },
-  { "l.lwz",     "rD,I(rA)",     "10 0x1  DDDDD AAAAA IIII IIII IIII IIII", EF(l_lwz), 0 },
-  { "l.lws",     "rD,I(rA)",     "10 0x2  DDDDD AAAAA IIII IIII IIII IIII", EFI, 0 },
-  { "l.lbz",     "rD,I(rA)",     "10 0x3  DDDDD AAAAA IIII IIII IIII IIII", EF(l_lbz), 0 },
-  { "l.lbs",     "rD,I(rA)",     "10 0x4  DDDDD AAAAA IIII IIII IIII IIII", EF(l_lbs), 0 },
-  { "l.lhz",     "rD,I(rA)",     "10 0x5  DDDDD AAAAA IIII IIII IIII IIII", EF(l_lhz), 0 },
-  { "l.lhs",     "rD,I(rA)",     "10 0x6  DDDDD AAAAA IIII IIII IIII IIII", EF(l_lhs), 0 },
+  { "lf.add.s",   "rD,rA,rB",    "11 0x2  DDDDD AAAAA BBBB B--- 0x0 0x0",   EF(lf_add_s), 0, it_float },
+  { "lf.sub.s",   "rD,rA,rB",    "11 0x2  DDDDD AAAAA BBBB B--- 0x0 0x1",   EF(lf_sub_s), 0, it_float },
+  { "lf.mul.s",   "rD,rA,rB",    "11 0x2  DDDDD AAAAA BBBB B--- 0x0 0x2",   EF(lf_mul_s), 0, it_float },
+  { "lf.div.s",   "rD,rA,rB",    "11 0x2  DDDDD AAAAA BBBB B--- 0x0 0x3",   EF(lf_div_s), 0, it_float },
+  { "lf.itof.s",  "rD,rA",       "11 0x2  DDDDD AAAAA 0000 0--- 0x0 0x4",   EF(lf_itof_s), 0, it_float },
+  { "lf.ftoi.s",  "rD,rA",       "11 0x2  DDDDD AAAAA 0000 0--- 0x0 0x5",   EF(lf_ftoi_s), 0, it_float },
+  { "lf.rem.s",   "rD,rA,rB",    "11 0x2  DDDDD AAAAA BBBB B--- 0x0 0x6",   EF(lf_rem_s), 0, it_float },
+  { "lf.madd.s",  "rD,rA,rB",    "11 0x2  DDDDD AAAAA BBBB B--- 0x0 0x7",   EF(lf_madd_s), 0, it_float },
+  { "lf.sfeq.s",  "rA,rB",       "11 0x2  ----- AAAAA BBBB B--- 0x0 0x8",   EF(lf_sfeq_s), 0, it_float },
+  { "lf.sfne.s",  "rA,rB",       "11 0x2  ----- AAAAA BBBB B--- 0x0 0x9",   EF(lf_sfne_s), 0, it_float },
+  { "lf.sfgt.s",  "rA,rB",       "11 0x2  ----- AAAAA BBBB B--- 0x0 0xA",   EF(lf_sfgt_s), 0, it_float },
+  { "lf.sfge.s",  "rA,rB",       "11 0x2  ----- AAAAA BBBB B--- 0x0 0xB",   EF(lf_sfge_s), 0, it_float },
+  { "lf.sflt.s",  "rA,rB",       "11 0x2  ----- AAAAA BBBB B--- 0x0 0xC",   EF(lf_sflt_s), 0, it_float },
+  { "lf.sfle.s",  "rA,rB",       "11 0x2  ----- AAAAA BBBB B--- 0x0 0xD",   EF(lf_sfle_s), 0, it_float },
+  { "lf.cust1.s", "rA,rB",       "11 0x2  ----- AAAAA BBBB B--- 0xD ----",  EFI, 0, it_float },
 
-  { "l.addi",    "rD,rA,I",      "10 0x7  DDDDD AAAAA IIII IIII IIII IIII", EF(l_add), 0 },
-  { "l.addic",   "rD,rA,I",      "10 0x8  DDDDD AAAAA IIII IIII IIII IIII", EFI, 0 },
-  { "l.andi",    "rD,rA,K",      "10 0x9  DDDDD AAAAA KKKK KKKK KKKK KKKK", EF(l_and), 0 },
-  { "l.ori",     "rD,rA,K",      "10 0xA  DDDDD AAAAA KKKK KKKK KKKK KKKK", EF(l_or), 0  },
-  { "l.xori",    "rD,rA,I",      "10 0xB  DDDDD AAAAA IIII IIII IIII IIII", EF(l_xor), 0 },
-  { "l.muli",    "rD,rA,I",      "10 0xC  DDDDD AAAAA IIII IIII IIII IIII", EFI, 0 },
-  { "l.mfspr",   "rD,rA,K",      "10 0xD  DDDDD AAAAA KKKK KKKK KKKK KKKK", EF(l_mfspr), 0 },
-  { "l.slli",    "rD,rA,L",      "10 0xE  DDDDD AAAAA ---- ---- 00LL LLLL", EF(l_sll), 0 },
-  { "l.srli",    "rD,rA,L",      "10 0xE  DDDDD AAAAA ---- ---- 01LL LLLL", EF(l_srl), 0 },
-  { "l.srai",    "rD,rA,L",      "10 0xE  DDDDD AAAAA ---- ---- 10LL LLLL", EF(l_sra), 0 },
-  { "l.rori",    "rD,rA,L",      "10 0xE  DDDDD AAAAA ---- ---- 11LL LLLL", EFI, 0 },
+  { "lf.add.d",   "rD,rA,rB",    "11 0x2  DDDDD AAAAA BBBB B--- 0x1 0x0",   EFI, 0, it_float },
+  { "lf.sub.d",   "rD,rA,rB",    "11 0x2  DDDDD AAAAA BBBB B--- 0x1 0x1",   EFI, 0, it_float },
+  { "lf.mul.d",   "rD,rA,rB",    "11 0x2  DDDDD AAAAA BBBB B--- 0x1 0x2",   EFI, 0, it_float },
+  { "lf.div.d",   "rD,rA,rB",    "11 0x2  DDDDD AAAAA BBBB B--- 0x1 0x3",   EFI, 0, it_float },
+  { "lf.itof.d",  "rD,rA",       "11 0x2  DDDDD AAAAA 0000 0--- 0x1 0x4",   EFI, 0, it_float },
+  { "lf.ftoi.d",  "rD,rA",       "11 0x2  DDDDD AAAAA 0000 0--- 0x1 0x5",   EFI, 0, it_float },
+  { "lf.rem.d",   "rD,rA,rB",    "11 0x2  DDDDD AAAAA BBBB B--- 0x1 0x6",   EFI, 0, it_float },
+  { "lf.madd.d",  "rD,rA,rB",    "11 0x2  DDDDD AAAAA BBBB B--- 0x1 0x7",   EFI, 0, it_float },
+  { "lf.sfeq.d",  "rA,rB",       "11 0x2  ----- AAAAA BBBB B--- 0x1 0x8",   EFI, 0, it_float },
+  { "lf.sfne.d",  "rA,rB",       "11 0x2  ----- AAAAA BBBB B--- 0x1 0x9",   EFI, 0, it_float },
+  { "lf.sfgt.d",  "rA,rB",       "11 0x2  ----- AAAAA BBBB B--- 0x1 0xA",   EFI, 0, it_float },
+  { "lf.sfge.d",  "rA,rB",       "11 0x2  ----- AAAAA BBBB B--- 0x1 0xB",   EFI, 0, it_float },
+  { "lf.sflt.d",  "rA,rB",       "11 0x2  ----- AAAAA BBBB B--- 0x1 0xC",   EFI, 0, it_float },
+  { "lf.sfle.d",  "rA,rB",       "11 0x2  ----- AAAAA BBBB B--- 0x1 0xD",   EFI, 0, it_float },
+  { "lf.cust1.d", "rA,rB",       "11 0x2  ----- AAAAA BBBB B--- 0xE ----",  EFI, 0, it_float },
 
-  { "l.sfeqi",   "rA,I",         "10 0xF  00000 AAAAA IIII IIII IIII IIII", EF(l_sfeq), OR32_W_FLAG },
-  { "l.sfnei",   "rA,I",         "10 0xF  00001 AAAAA IIII IIII IIII IIII", EF(l_sfne), OR32_W_FLAG },
-  { "l.sfgtui",  "rA,I",         "10 0xF  00010 AAAAA IIII IIII IIII IIII", EF(l_sfgtu), OR32_W_FLAG },
-  { "l.sfgeui",  "rA,I",         "10 0xF  00011 AAAAA IIII IIII IIII IIII", EF(l_sfgeu), OR32_W_FLAG },
-  { "l.sfltui",  "rA,I",         "10 0xF  00100 AAAAA IIII IIII IIII IIII", EF(l_sfltu), OR32_W_FLAG },
-  { "l.sfleui",  "rA,I",         "10 0xF  00101 AAAAA IIII IIII IIII IIII", EF(l_sfleu), OR32_W_FLAG },
-  { "l.sfgtsi",  "rA,I",         "10 0xF  01010 AAAAA IIII IIII IIII IIII", EF(l_sfgts), OR32_W_FLAG },
-  { "l.sfgesi",  "rA,I",         "10 0xF  01011 AAAAA IIII IIII IIII IIII", EF(l_sfges), OR32_W_FLAG },
-  { "l.sfltsi",  "rA,I",         "10 0xF  01100 AAAAA IIII IIII IIII IIII", EF(l_sflts), OR32_W_FLAG },
-  { "l.sflesi",  "rA,I",         "10 0xF  01101 AAAAA IIII IIII IIII IIII", EF(l_sfles), OR32_W_FLAG },
+  { "l.sd",       "I(rD),rB",    "11 0x4  IIIII DDDDD BBBB BIII IIII IIII", EFI, 0, it_store },
+  { "l.sw",       "I(rD),rB",    "11 0x5  IIIII DDDDD BBBB BIII IIII IIII", EF(l_sw), 0, it_store },
+  { "l.sb",       "I(rD),rB",    "11 0x6  IIIII DDDDD BBBB BIII IIII IIII", EF(l_sb), 0, it_store },
+  { "l.sh",       "I(rD),rB",    "11 0x7  IIIII DDDDD BBBB BIII IIII IIII", EF(l_sh), 0, it_store },
 
-  { "l.mtspr",   "rA,rB,K",      "11 0x0  KKKKK AAAAA BBBB BKKK KKKK KKKK", EF(l_mtspr), 0 },
-  { "l.mac",     "rA,rB",        "11 0x1  ----- AAAAA BBBB B--- ---- 0x1", EF(l_mac), 0 }, /*MM*/
-  { "l.msb",     "rA,rB",        "11 0x1  ----- AAAAA BBBB B--- ---- 0x2", EF(l_msb), 0 }, /*MM*/
+  { "l.add",      "rD,rA,rB",    "11 0x8  DDDDD AAAAA BBBB B-00 ---- 0x0",  EF(l_add), OR32_W_FLAG, it_arith },
+  { "l.addc",     "rD,rA,rB",    "11 0x8  DDDDD AAAAA BBBB B-00 ---- 0x1",  EF(l_addc), OR32_W_FLAG, it_arith },
+  { "l.sub",      "rD,rA,rB",    "11 0x8  DDDDD AAAAA BBBB B-00 ---- 0x2",  EF(l_sub), 0, it_arith },
+  { "l.and",      "rD,rA,rB",    "11 0x8  DDDDD AAAAA BBBB B-00 ---- 0x3",  EF(l_and), OR32_W_FLAG, it_arith },
+  { "l.or",       "rD,rA,rB",    "11 0x8  DDDDD AAAAA BBBB B-00 ---- 0x4",  EF(l_or), 0, it_arith },
+  { "l.xor",      "rD,rA,rB",    "11 0x8  DDDDD AAAAA BBBB B-00 ---- 0x5",  EF(l_xor), 0, it_arith },
+  { "l.mul",      "rD,rA,rB",    "11 0x8  DDDDD AAAAA BBBB B-11 ---- 0x6",  EF(l_mul), 0, it_arith },
 
-  { "l.sd",      "I(rA),rB",     "11 0x4  IIIII AAAAA BBBB BIII IIII IIII", EFI, 0 },
-  { "l.sw",      "I(rA),rB",     "11 0x5  IIIII AAAAA BBBB BIII IIII IIII", EF(l_sw), 0 },
-  { "l.sb",      "I(rA),rB",     "11 0x6  IIIII AAAAA BBBB BIII IIII IIII", EF(l_sb), 0 },
-  { "l.sh",      "I(rA),rB",     "11 0x7  IIIII AAAAA BBBB BIII IIII IIII", EF(l_sh), 0 },
-    
-  { "l.add",     "rD,rA,rB",     "11 0x8  DDDDD AAAAA BBBB B-00 ---- 0x0", EF(l_add), 0 },
-  { "l.addc",    "rD,rA,rB",     "11 0x8  DDDDD AAAAA BBBB B-00 ---- 0x1", EFI, 0 },
-  { "l.sub",     "rD,rA,rB",     "11 0x8  DDDDD AAAAA BBBB B-00 ---- 0x2", EF(l_sub), 0 },
-  { "l.and",     "rD,rA,rB",     "11 0x8  DDDDD AAAAA BBBB B-00 ---- 0x3", EF(l_and), 0 },
-  { "l.or",      "rD,rA,rB",     "11 0x8  DDDDD AAAAA BBBB B-00 ---- 0x4", EF(l_or), 0 },
-  { "l.xor",     "rD,rA,rB",     "11 0x8  DDDDD AAAAA BBBB B-00 ---- 0x5", EF(l_xor), 0 },
-  { "l.mul",     "rD,rA,rB",     "11 0x8  DDDDD AAAAA BBBB B-11 ---- 0x6", EF(l_mul), 0 },
+  { "l.sll",      "rD,rA,rB",    "11 0x8  DDDDD AAAAA BBBB B-00 00-- 0x8",  EF(l_sll), 0, it_shift },
+  { "l.srl",      "rD,rA,rB",    "11 0x8  DDDDD AAAAA BBBB B-00 01-- 0x8",  EF(l_srl), 0, it_shift },
+  { "l.sra",      "rD,rA,rB",    "11 0x8  DDDDD AAAAA BBBB B-00 10-- 0x8",  EF(l_sra), 0, it_shift },
+  { "l.ror",      "rD,rA,rB",    "11 0x8  DDDDD AAAAA BBBB B-00 11-- 0x8",  EFI, 0, it_shift },
+  { "l.div",      "rD,rA,rB",    "11 0x8  DDDDD AAAAA BBBB B-11 ---- 0x9",  EF(l_div), 0, it_arith },
+  { "l.divu",     "rD,rA,rB",    "11 0x8  DDDDD AAAAA BBBB B-11 ---- 0xA",  EF(l_divu), 0, it_arith },
+  { "l.mulu",     "rD,rA,rB",    "11 0x8  DDDDD AAAAA BBBB B-11 ---- 0xB",  EFI, 0, it_arith },
+  { "l.extbs",    "rD,rA",       "11 0x8  DDDDD AAAAA ---- --00 01-- 0xC",  EF(l_extbs), 0, it_move },
+  { "l.exths",    "rD,rA",       "11 0x8  DDDDD AAAAA ---- --00 00-- 0xC",  EF(l_exths), 0, it_move },
+  { "l.extws",    "rD,rA",       "11 0x8  DDDDD AAAAA ---- --00 00-- 0xD",  EF(l_extws), 0, it_move },
+  { "l.extbz",    "rD,rA",       "11 0x8  DDDDD AAAAA ---- --00 11-- 0xC",  EF(l_extbz), 0, it_move },
+  { "l.exthz",    "rD,rA",       "11 0x8  DDDDD AAAAA ---- --00 10-- 0xC",  EF(l_exthz), 0, it_move },
+  { "l.extwz",    "rD,rA",       "11 0x8  DDDDD AAAAA ---- --00 01-- 0xD",  EF(l_extwz), 0, it_move },
+  { "l.cmov",     "rD,rA,rB",    "11 0x8  DDDDD AAAAA BBBB B-00 ---- 0xE",  EF(l_cmov), OR32_R_FLAG, it_move },
+  { "l.ff1",      "rD,rA",       "11 0x8  DDDDD AAAAA ---- --00 ---- 0xF",  EF(l_ff1), 0, it_arith },
+  { "l.fl1",      "rD,rA",       "11 0x8  DDDDD AAAAA ---- --01 ---- 0xF",  EFI, 0, it_arith },
 
-  { "l.sll",     "rD,rA,rB",     "11 0x8  DDDDD AAAAA BBBB B-00 00-- 0x8", EF(l_sll), 0 },
-  { "l.srl",     "rD,rA,rB",     "11 0x8  DDDDD AAAAA BBBB B-00 01-- 0x8", EF(l_srl), 0 },
-  { "l.sra",     "rD,rA,rB",     "11 0x8  DDDDD AAAAA BBBB B-00 10-- 0x8", EF(l_sra), 0 },
-  { "l.ror",     "rD,rA,rB",     "11 0x8  DDDDD AAAAA BBBB B-00 11-- 0x8", EFI, 0 },
-  { "l.div",     "rD,rA,rB",     "11 0x8  DDDDD AAAAA BBBB B-00 ---- 0x9", EF(l_div), 0 },
-  { "l.divu",    "rD,rA,rB",     "11 0x8  DDDDD AAAAA BBBB B-00 ---- 0xA", EF(l_divu), 0 },
-  { "l.mulu",    "rD,rA,rB",     "11 0x8  DDDDD AAAAA BBBB B-11 ---- 0xB", EFI, 0 },
-  { "l.exths",   "rD,rA,rB",     "11 0x8  DDDDD AAAAA BBBB B-00 00-- 0xC", EFI, 0 },
-  { "l.extbs",   "rD,rA,rB",     "11 0x8  DDDDD AAAAA BBBB B-00 01-- 0xC", EFI, 0 },
-  { "l.exthz",   "rD,rA,rB",     "11 0x8  DDDDD AAAAA BBBB B-00 10-- 0xC", EFI, 0 },
-  { "l.extbz",   "rD,rA,rB",     "11 0x8  DDDDD AAAAA BBBB B-00 11-- 0xC", EFI, 0 },
-  { "l.extws",   "rD,rA,rB",     "11 0x8  DDDDD AAAAA BBBB B-00 00-- 0xD", EFI, 0 },
-  { "l.extwz",   "rD,rA,rB",     "11 0x8  DDDDD AAAAA BBBB B-00 01-- 0xD", EFI, 0 },
-  { "l.cmov",    "rD,rA,rB",     "11 0x8  DDDDD AAAAA BBBB B-00 ---- 0xE", EFI, 0 },
-  { "l.ff1",     "rD,rA,rB",     "11 0x8  DDDDD AAAAA BBBB B-00 ---- 0xF", EFI, 0 },
+  { "l.sfeq",     "rA,rB",       "11 0x9  00000 AAAAA BBBB B--- ---- ----", EF(l_sfeq), OR32_W_FLAG, it_compare },
+  { "l.sfne",     "rA,rB",       "11 0x9  00001 AAAAA BBBB B--- ---- ----", EF(l_sfne), OR32_W_FLAG, it_compare },
+  { "l.sfgtu",    "rA,rB",       "11 0x9  00010 AAAAA BBBB B--- ---- ----", EF(l_sfgtu), OR32_W_FLAG, it_compare },
+  { "l.sfgeu",    "rA,rB",       "11 0x9  00011 AAAAA BBBB B--- ---- ----", EF(l_sfgeu), OR32_W_FLAG, it_compare },
+  { "l.sfltu",    "rA,rB",       "11 0x9  00100 AAAAA BBBB B--- ---- ----", EF(l_sfltu), OR32_W_FLAG, it_compare },
+  { "l.sfleu",    "rA,rB",       "11 0x9  00101 AAAAA BBBB B--- ---- ----", EF(l_sfleu), OR32_W_FLAG, it_compare },
+  { "l.sfgts",    "rA,rB",       "11 0x9  01010 AAAAA BBBB B--- ---- ----", EF(l_sfgts), OR32_W_FLAG, it_compare },
+  { "l.sfges",    "rA,rB",       "11 0x9  01011 AAAAA BBBB B--- ---- ----", EF(l_sfges), OR32_W_FLAG, it_compare },
+  { "l.sflts",    "rA,rB",       "11 0x9  01100 AAAAA BBBB B--- ---- ----", EF(l_sflts), OR32_W_FLAG, it_compare },
+  { "l.sfles",    "rA,rB",       "11 0x9  01101 AAAAA BBBB B--- ---- ----", EF(l_sfles), OR32_W_FLAG, it_compare },
 
-  { "l.sfeq",    "rA,rB",        "11 0x9  00000 AAAAA BBBB B--- ---- ----", EF(l_sfeq), OR32_W_FLAG },
-  { "l.sfne",    "rA,rB",        "11 0x9  00001 AAAAA BBBB B--- ---- ----", EF(l_sfne), OR32_W_FLAG },
-  { "l.sfgtu",   "rA,rB",        "11 0x9  00010 AAAAA BBBB B--- ---- ----", EF(l_sfgtu), OR32_W_FLAG },
-  { "l.sfgeu",   "rA,rB",        "11 0x9  00011 AAAAA BBBB B--- ---- ----", EF(l_sfgeu), OR32_W_FLAG },
-  { "l.sfltu",   "rA,rB",        "11 0x9  00100 AAAAA BBBB B--- ---- ----", EF(l_sfltu), OR32_W_FLAG },
-  { "l.sfleu",   "rA,rB",        "11 0x9  00101 AAAAA BBBB B--- ---- ----", EF(l_sfleu), OR32_W_FLAG },
-  { "l.sfgts",   "rA,rB",        "11 0x9  01010 AAAAA BBBB B--- ---- ----", EF(l_sfgts), OR32_W_FLAG },
-  { "l.sfges",   "rA,rB",        "11 0x9  01011 AAAAA BBBB B--- ---- ----", EF(l_sfges), OR32_W_FLAG },
-  { "l.sflts",   "rA,rB",        "11 0x9  01100 AAAAA BBBB B--- ---- ----", EF(l_sflts), OR32_W_FLAG },
-  { "l.sfles",   "rA,rB",        "11 0x9  01101 AAAAA BBBB B--- ---- ----", EF(l_sfles), OR32_W_FLAG },
-
-  { "l.cust5",   "",	       "11 0xC  ----- ----- ---- ---- ---- ----", EFI, 0 },
-  { "l.cust6",   "",	       "11 0xD  ----- ----- ---- ---- ---- ----", EFI, 0 },
-  { "l.cust7",   "",	       "11 0xE  ----- ----- ---- ---- ---- ----", EFI, 0 },
-  { "l.cust8",   "",	       "11 0xF  ----- ----- ---- ---- ---- ----", EFI, 0 },
+  { "l.cust5",    "rD,rA,rB,L,K","11 0xC  DDDDD AAAAA BBBB BLLL LLLK KKKK", EFI, 0, it_unknown },
+  { "l.cust6",    "",            "11 0xD  ----- ----- ---- ---- ---- ----", EFI, 0, it_unknown },
+  { "l.cust7",    "",            "11 0xE  ----- ----- ---- ---- ---- ----", EFI, 0, it_unknown },
+  { "l.cust8",    "",            "11 0xF  ----- ----- ---- ---- ---- ----", EFI, 0, it_unknown },
 
   /* This section should not be defined in or1ksim, since it contains duplicates,
      which would cause machine builder to complain.  */
 #ifdef HAS_CUST
-  { "l.cust5_1",   "rD",	       "11 0xC  DDDDD ----- ---- ---- ---- ----", EFI, 0 },
-  { "l.cust5_2",   "rD,rA"   ,   "11 0xC  DDDDD AAAAA ---- ---- ---- ----", EFI, 0 },
-  { "l.cust5_3",   "rD,rA,rB",   "11 0xC  DDDDD AAAAA BBBB B--- ---- ----", EFI, 0 },
-
-  { "l.cust6_1",   "rD",	       "11 0xD  DDDDD ----- ---- ---- ---- ----", EFI, 0 },
-  { "l.cust6_2",   "rD,rA"   ,   "11 0xD  DDDDD AAAAA ---- ---- ---- ----", EFI, 0 },
-  { "l.cust6_3",   "rD,rA,rB",   "11 0xD  DDDDD AAAAA BBBB B--- ---- ----", EFI, 0 },
-
-  { "l.cust7_1",   "rD",	       "11 0xE  DDDDD ----- ---- ---- ---- ----", EFI, 0 },
-  { "l.cust7_2",   "rD,rA"   ,   "11 0xE  DDDDD AAAAA ---- ---- ---- ----", EFI, 0 },
-  { "l.cust7_3",   "rD,rA,rB",   "11 0xE  DDDDD AAAAA BBBB B--- ---- ----", EFI, 0 },
-
-  { "l.cust8_1",   "rD",	       "11 0xF  DDDDD ----- ---- ---- ---- ----", EFI, 0 },
-  { "l.cust8_2",   "rD,rA"   ,   "11 0xF  DDDDD AAAAA ---- ---- ---- ----", EFI, 0 },
-  { "l.cust8_3",   "rD,rA,rB",   "11 0xF  DDDDD AAAAA BBBB B--- ---- ----", EFI, 0 },
+  { "l.cust5_1",  "rD",	         "11 0xC  DDDDD ----- ---- ---- ---- ----", EFI, 0, it_unknown },
+  { "l.cust5_2",  "rD,rA"   ,    "11 0xC  DDDDD AAAAA ---- ---- ---- ----", EFI, 0, it_unknown },
+  { "l.cust5_3",  "rD,rA,rB",    "11 0xC  DDDDD AAAAA BBBB B--- ---- ----", EFI, 0, it_unknown },
+  
+  { "l.cust6_1",  "rD",	         "11 0xD  DDDDD ----- ---- ---- ---- ----", EFI, 0, it_unknown },
+  { "l.cust6_2",  "rD,rA"   ,    "11 0xD  DDDDD AAAAA ---- ---- ---- ----", EFI, 0, it_unknown },
+  { "l.cust6_3",  "rD,rA,rB",    "11 0xD  DDDDD AAAAA BBBB B--- ---- ----", EFI, 0, it_unknown },
+  
+  { "l.cust7_1",  "rD",	         "11 0xE  DDDDD ----- ---- ---- ---- ----", EFI, 0, it_unknown },
+  { "l.cust7_2",  "rD,rA"   ,    "11 0xE  DDDDD AAAAA ---- ---- ---- ----", EFI, 0, it_unknown },
+  { "l.cust7_3",  "rD,rA,rB",    "11 0xE  DDDDD AAAAA BBBB B--- ---- ----", EFI, 0, it_unknown },
+  
+  { "l.cust8_1",  "rD",	         "11 0xF  DDDDD ----- ---- ---- ---- ----", EFI, 0, it_unknown },
+  { "l.cust8_2",  "rD,rA"   ,    "11 0xF  DDDDD AAAAA ---- ---- ---- ----", EFI, 0, it_unknown },
+  { "l.cust8_3",  "rD,rA,rB",    "11 0xF  DDDDD AAAAA BBBB B--- ---- ----", EFI, 0, it_unknown },
 #endif
 
   /* Dummy entry, not included in num_opcodes.  This
      lets code examine entry i+1 without checking
      if we've run off the end of the table.  */
-  { "", "", "", EFI, 0 }
+  { "", "", "", EFI, 0, 0 }
 };
 
 #undef EFI
@@ -332,12 +348,8 @@ const struct or32_opcode or32_opcodes[] =
 #undef EF 
 
 /* Define dummy, if debug is not defined.  */
-
-#if !defined HAS_DEBUG
-static void ATTRIBUTE_PRINTF_2
-debug (int level ATTRIBUTE_UNUSED, const char *format ATTRIBUTE_UNUSED, ...)
-{
-}
+#ifndef HAS_DEBUG
+#define debug(l, fmt...) ;
 #endif
 
 const unsigned int or32_num_opcodes = ((sizeof(or32_opcodes)) / (sizeof(struct or32_opcode))) - 1;
@@ -347,6 +359,7 @@ const unsigned int or32_num_opcodes = ((sizeof(or32_opcodes)) / (sizeof(struct o
 int
 insn_len (int insn_index ATTRIBUTE_UNUSED)
 {
+  insn_index = 0; /* Just to get rid that warning.  */
   return 4;
 }
 
@@ -365,14 +378,19 @@ letter_signed (char l)
   return 0;
 }
 
-/* Number of letters in the individual lettered operand.  */
+/* Simple cache for letter ranges */
+static int range_cache[256] = {0};
 
+/* Number of letters in the individual lettered operand.  */
 int
 letter_range (char l)
 {
   const struct or32_opcode *pinsn;
   char *enc;
   int range = 0;
+
+  /* Is value cached? */  
+  if ((range = range_cache[(unsigned char)l])) return range;
   
   for (pinsn = or32_opcodes; strlen (pinsn->name); pinsn ++)
     {
@@ -383,7 +401,7 @@ letter_range (char l)
 	      enc += 2;
 	    else if (*enc == l)
 	      range++;
-	  return range;
+	  return range_cache[(unsigned char)l] = range;
 	}
     }
 
@@ -417,16 +435,28 @@ insn_name (int index)
     return "???";
 }
 
+#if defined(HAS_EXECUTION) && SIMPLE_EXECUTION
+void
+l_none(struct iqueue_entry *current)
+{
+}
+#elif defined(HAS_EXECUTION) && DYNAMIC_EXECUTION
+void
+l_none(struct op_queue *opq, int *param_t, orreg_t *param, int delay_slot)
+{
+}
+#else
 void
 l_none (void)
 {
 }
+#endif
 
 /* Finite automata for instruction decoding building code.  */
 
 /* Find simbols in encoding.  */
 
-static unsigned long
+unsigned long
 insn_extract (char param_ch, char *enc_initial)
 {
   char *enc;
@@ -462,7 +492,6 @@ insn_extract (char param_ch, char *enc_initial)
 
 #define MAX_AUTOMATA_SIZE  1200
 #define MAX_OP_TABLE_SIZE  1200
-#define LEAF_FLAG          0x80000000
 #define MAX_LEN            8
 
 #ifndef MIN
@@ -474,12 +503,7 @@ int nuncovered;
 int curpass = 0;
 
 /* MM: Struct that hold runtime build information about instructions.  */
-struct temp_insn_struct
-{
-  unsigned long insn;
-  unsigned long insn_mask;
-  int in_pass;
-} *ti;
+struct temp_insn_struct *ti;
 
 struct insn_op_struct *op_data, **op_start;
 
@@ -586,7 +610,8 @@ cover_insn (unsigned long * cur, int pass, unsigned int mask)
 	  c = cover_insn (cur, curpass, mask & (~(cur_mask << best_first)));
 	  if (c)
 	    {
-	      debug (8, "%li> #%X -> %lu\n", (long)(next - automata), i, (long)(cur - automata));
+	      debug (8, "%li> #%X -> %lu\n", (long)(next - automata), i,
+		     (unsigned long)(cur - automata));
 	      *next = cur - automata;
 	      cur = c;	 
 	    }
@@ -626,6 +651,7 @@ parse_params (const struct or32_opcode * opcode,
 {
   char *args = opcode->args;
   int i, type;
+  int num_cur_op = 0;
   
   i = 0;
   type = 0;
@@ -646,6 +672,8 @@ parse_params (const struct or32_opcode * opcode,
 	{
 	  args++;
 	  type |= OPTYPE_REG;
+    if (*args == 'D')
+      type |= OPTYPE_DST;
 	}
       else if (ISALPHA (*args))
 	{
@@ -659,6 +687,7 @@ parse_params (const struct or32_opcode * opcode,
 	      type |= ((num_ones (arg) - 1) << OPTYPE_SBIT_SHR) & OPTYPE_SBIT;
 	    }
 
+    num_cur_op = 0;
 	  /* Split argument to sequences of consecutive ones.  */
 	  while (arg)
 	    {
@@ -680,6 +709,7 @@ parse_params (const struct or32_opcode * opcode,
 	      arg &= ~(((1 << mask) - 1) << shr);
 	      debug (6, "|%08lX %08lX\n", cur->type, cur->data);
 	      cur++;
+        num_cur_op++;
 	    }
 	  args++;
 	}
@@ -687,10 +717,14 @@ parse_params (const struct or32_opcode * opcode,
 	{
 	  /* Next param is displacement.
 	     Later we will treat them as one operand.  */
-	  cur--;
-	  cur->type = type | cur->type | OPTYPE_DIS | OPTYPE_OP;
-	  debug (9, ">%08lX %08lX\n", cur->type, cur->data);
-	  cur++;
+    /* Set the OPTYPE_DIS flag on all insn_op_structs that belong to this
+     * operand */
+    while(num_cur_op > 0) {
+	    cur[-num_cur_op].type |= type | OPTYPE_DIS;
+      num_cur_op--;
+    }
+    cur[-1].type |= OPTYPE_OP;
+	  debug(9, ">%08X %08X\n", cur->type, cur->data);
 	  type = 0;
 	  i++;
 	  args++;
@@ -848,7 +882,7 @@ char *disassembled = &disassembled_str[0];
    sign bit position if sign extension is correct extension. Which extension
    is proper is figured out from letter description.  */
    
-static unsigned long
+unsigned long
 extend_imm (unsigned long imm, char l)
 {
   unsigned long mask;
@@ -946,32 +980,87 @@ or32_extract (char param_ch, char *enc_initial, unsigned long insn)
 
 /* Print register. Used only by print_insn.  */
 
-static void
-or32_print_register (char param_ch, char *encoding, unsigned long insn)
+static char *
+or32_print_register (char *dest, char param_ch, char *encoding, unsigned long insn)
 {
   int regnum = or32_extract(param_ch, encoding, insn);
   
-  sprintf (disassembled, "%sr%d", disassembled, regnum);
+  sprintf (dest, "r%d", regnum);
+  while (*dest) dest++;
+  return dest;
 }
 
 /* Print immediate. Used only by print_insn.  */
 
-static void
-or32_print_immediate (char param_ch, char *encoding, unsigned long insn)
+static char *
+or32_print_immediate (char *dest, char param_ch, char *encoding, unsigned long insn)
 {
   int imm = or32_extract (param_ch, encoding, insn);
 
   imm = extend_imm (imm, param_ch);
-  
+
   if (letter_signed (param_ch))
     {
       if (imm < 0)
-        sprintf (disassembled, "%s%d", disassembled, imm);
+        sprintf (dest, "%d", imm);
       else
-        sprintf (disassembled, "%s0x%x", disassembled, imm);
+        sprintf (dest, "0x%x", imm);
     }
   else
-    sprintf (disassembled, "%s%#x", disassembled, imm);
+    sprintf (dest, "%#x", imm);
+  while (*dest) dest++;
+  return dest;
+}
+
+/* Disassemble one instruction from insn index.
+   Return the size of the instruction.  */
+ 
+int
+disassemble_index (insn, index)
+     unsigned long insn;
+     int index;
+{
+  char *dest = disassembled;
+
+  if (index >= 0)
+    {
+      struct or32_opcode const *opcode = &or32_opcodes[index];
+      char *s;
+
+      strcpy (dest, opcode->name);
+      while (*dest) dest++;
+      *dest++ = ' ';
+      *dest = 0;
+      
+      for (s = opcode->args; *s != '\0'; ++s)
+        {
+          switch (*s)
+            {
+            case '\0':
+              return insn_len (insn);
+  
+            case 'r':
+              dest = or32_print_register(dest, *++s, opcode->encoding, insn);
+              break;
+  
+            default:
+              if (strchr (opcode->encoding, *s))
+                dest = or32_print_immediate (dest, *s, opcode->encoding, insn);
+              else {
+                *dest++ = *s;
+                *dest = 0;
+              }
+            }
+        }
+    }
+  else
+    {
+      /* This used to be %8x for binutils.  */
+      sprintf(dest, ".word 0x%08lx", insn);
+      while (*dest) dest++;
+    }
+
+  return insn_len (insn);
 }
 
 /* Disassemble one instruction from insn to disassemble.
@@ -980,39 +1069,6 @@ or32_print_immediate (char param_ch, char *encoding, unsigned long insn)
 int
 disassemble_insn (unsigned long insn)
 {
-  int index;
-  index = insn_decode (insn);
-
-  if (index >= 0)
-    {
-      struct or32_opcode const *opcode = &or32_opcodes[index];
-      char *s;
-
-      sprintf (disassembled, "%s ", opcode->name);
-      for (s = opcode->args; *s != '\0'; ++s)
-        {
-          switch (*s)
-            {
-            case '\0':
-              return 4;
-  
-            case 'r':
-              or32_print_register (*++s, opcode->encoding, insn);
-              break;
-  
-            default:
-              if (strchr (opcode->encoding, *s))
-                or32_print_immediate (*s, opcode->encoding, insn);
-              else
-                sprintf (disassembled, "%s%c", disassembled, *s);
-            }
-        }
-    }
-  else
-    {
-      /* This used to be %8x for binutils.  */
-      sprintf (disassembled, "%s.word 0x%08lx", disassembled, insn);
-    }
-
-  return insn_len (insn);
+  return disassemble_index (insn, insn_decode (insn));
 }
+

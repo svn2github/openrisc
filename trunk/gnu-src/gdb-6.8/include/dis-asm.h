@@ -1,6 +1,6 @@
 /* Interface between the opcode library and its callers.
 
-   Copyright 1999, 2000, 2001, 2002, 2003, 2004, 2005, 2006
+   Copyright 1999, 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2009
    Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or modify
@@ -39,14 +39,14 @@ extern "C" {
 
 enum dis_insn_type
 {
-  dis_noninsn,			/* Not a valid instruction */
-  dis_nonbranch,		/* Not a branch instruction */
-  dis_branch,			/* Unconditional branch */
-  dis_condbranch,		/* Conditional branch */
-  dis_jsr,			/* Jump to subroutine */
-  dis_condjsr,			/* Conditional jump to subroutine */
-  dis_dref,			/* Data reference instruction */
-  dis_dref2			/* Two data references in instruction */
+  dis_noninsn,			/* Not a valid instruction.  */
+  dis_nonbranch,		/* Not a branch instruction.  */
+  dis_branch,			/* Unconditional branch.  */
+  dis_condbranch,		/* Conditional branch.  */
+  dis_jsr,			/* Jump to subroutine.  */
+  dis_condjsr,			/* Conditional jump to subroutine.  */
+  dis_dref,			/* Data reference instruction.  */
+  dis_dref2			/* Two data references in instruction.  */
 };
 
 /* This struct is passed into the instruction decoding routine,
@@ -76,6 +76,8 @@ typedef struct disassemble_info
   unsigned long mach;
   /* Endianness (for bi-endian cpus).  Mono-endian cpus can ignore this.  */
   enum bfd_endian endian;
+  /* Endianness of code, for mixed-endian situations such as ARM BE8.  */
+  enum bfd_endian endian_code;
   /* An arch/mach-specific bitmask of selected instruction subsets, mainly
      for processors with run-time-switchable instruction sets.  The default,
      zero, means that there is no constraint.  CGEN-based opcodes ports
@@ -106,7 +108,16 @@ typedef struct disassemble_info
      The top 16 bits are reserved for public use (and are documented here).
      The bottom 16 bits are for the internal use of the disassembler.  */
   unsigned long flags;
-#define INSN_HAS_RELOC	0x80000000
+  /* Set if the disassembler has determined that there are one or more
+     relocations associated with the instruction being disassembled.  */
+#define INSN_HAS_RELOC	 (1 << 31)
+  /* Set if the user has requested the disassembly of data as well as code.  */
+#define DISASSEMBLE_DATA (1 << 30)
+  /* Set if the user has specifically set the machine type encoded in the
+     mach field of this structure.  */
+#define USER_SPECIFIED_MACHINE_TYPE (1 << 29)
+
+  /* Use internally by the target specific disassembly code.  */
   void *private_data;
 
   /* Function used to get bytes to disassemble.  MEMADDR is the
@@ -243,6 +254,7 @@ extern int print_insn_little_mips	(bfd_vma, disassemble_info *);
 extern int print_insn_little_or32	(bfd_vma, disassemble_info *);
 extern int print_insn_little_powerpc	(bfd_vma, disassemble_info *);
 extern int print_insn_little_score      (bfd_vma, disassemble_info *); 
+extern int print_insn_lm32		(bfd_vma, disassemble_info *);
 extern int print_insn_m32c	        (bfd_vma, disassemble_info *);
 extern int print_insn_m32r		(bfd_vma, disassemble_info *);
 extern int print_insn_m68hc11		(bfd_vma, disassemble_info *);
@@ -253,9 +265,11 @@ extern int print_insn_maxq_big		(bfd_vma, disassemble_info *);
 extern int print_insn_maxq_little	(bfd_vma, disassemble_info *);
 extern int print_insn_mcore		(bfd_vma, disassemble_info *);
 extern int print_insn_mep		(bfd_vma, disassemble_info *);
+extern int print_insn_microblaze	(bfd_vma, disassemble_info *);
 extern int print_insn_mmix		(bfd_vma, disassemble_info *);
 extern int print_insn_mn10200		(bfd_vma, disassemble_info *);
 extern int print_insn_mn10300		(bfd_vma, disassemble_info *);
+extern int print_insn_moxie		(bfd_vma, disassemble_info *);
 extern int print_insn_msp430		(bfd_vma, disassemble_info *);
 extern int print_insn_mt                (bfd_vma, disassemble_info *);
 extern int print_insn_ns32k		(bfd_vma, disassemble_info *);
@@ -291,6 +305,7 @@ extern void print_mips_disassembler_options (FILE *);
 extern void print_ppc_disassembler_options (FILE *);
 extern void print_arm_disassembler_options (FILE *);
 extern void parse_arm_disassembler_option (char *);
+extern void print_s390_disassembler_options (FILE *);
 extern int  get_arm_regname_num_options (void);
 extern int  set_arm_regname_option (int);
 extern int  get_arm_regnames (int, const char **, const char **, const char *const **);

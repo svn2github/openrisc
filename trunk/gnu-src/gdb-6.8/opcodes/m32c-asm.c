@@ -4,7 +4,7 @@
    THIS FILE IS MACHINE GENERATED WITH CGEN.
    - the resultant file is machine generated, cgen-asm.in isn't
 
-   Copyright 1996, 1997, 1998, 1999, 2000, 2001, 2005, 2007
+   Copyright 1996, 1997, 1998, 1999, 2000, 2001, 2005, 2007, 2008
    Free Software Foundation, Inc.
 
    This file is part of libopcodes.
@@ -540,7 +540,7 @@ parse_lab_5_3 (CGEN_CPU_DESC cd,
   if (type_addr)
     *type_addr = op_res;
 
-  if (op_res == CGEN_PARSE_OPERAND_ADDRESS)
+  if (op_res == CGEN_PARSE_OPERAND_RESULT_QUEUED)
     {
       /* This is a hack; the field cannot handle near-zero signed
 	 offsets that CGEN wants to put in to indicate an "empty"

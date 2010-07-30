@@ -1,6 +1,7 @@
 /* Generic ECOFF (Extended-COFF) routines.
    Copyright 1990, 1991, 1993, 1994, 1995, 1996, 1998, 1999, 2000, 2001,
-   2002, 2003, 2004, 2005, 2006, 2007, 2008 Free Software Foundation, Inc.
+   2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009
+   Free Software Foundation, Inc.
    Original version by Per Bothner.
    Full support added by Ian Lance Taylor, ian@cygnus.com.
 
@@ -59,10 +60,10 @@ static asection bfd_debug_section =
      0,           0,                1,
   /* segment_mark, sec_info_type, use_rela_p, has_tls_reloc,       */
      0,            0,             0,          0,
-  /* has_gp_reloc, need_finalize_relax, reloc_done,                */
-     0,            0,                   0,
-  /* vma, lma, size, rawsize,                                      */
-     0,   0,   0,    0,
+  /* has_tls_get_addr_call, has_gp_reloc, need_finalize_relax,     */
+     0,                     0,            0,
+  /* reloc_done, vma, lma, size, rawsize, relax, relax_count,      */
+     0,          0,   0,   0,    0,       0,     0,
   /* output_offset, output_section, alignment_power,               */
      0,             NULL,           0,
   /* relocation, orelocation, reloc_count, filepos, rel_filepos,   */
@@ -231,6 +232,16 @@ _bfd_ecoff_set_arch_mach_hook (bfd *abfd, void * filehdr)
     }
 
   return bfd_default_set_arch_mach (abfd, arch, mach);
+}
+
+bfd_boolean
+_bfd_ecoff_no_long_sections (abfd, enable)
+     bfd *abfd;
+     int enable;
+{
+  (void) abfd;
+  (void) enable;
+  return FALSE;
 }
 
 /* Get the magic number to use based on the architecture and machine.
@@ -633,18 +644,18 @@ static asymbol *ecoff_scom_symbol_ptr;
 asymbol *
 _bfd_ecoff_make_empty_symbol (bfd *abfd)
 {
-  ecoff_symbol_type *new;
+  ecoff_symbol_type *new_symbol;
   bfd_size_type amt = sizeof (ecoff_symbol_type);
 
-  new = bfd_zalloc (abfd, amt);
-  if (new == NULL)
+  new_symbol = (ecoff_symbol_type *) bfd_zalloc (abfd, amt);
+  if (new_symbol == NULL)
     return NULL;
-  new->symbol.section = NULL;
-  new->fdr = NULL;
-  new->local = FALSE;
-  new->native = NULL;
-  new->symbol.the_bfd = abfd;
-  return &new->symbol;
+  new_symbol->symbol.section = NULL;
+  new_symbol->fdr = NULL;
+  new_symbol->local = FALSE;
+  new_symbol->native = NULL;
+  new_symbol->symbol.the_bfd = abfd;
+  return &new_symbol->symbol;
 }
 
 /* Set the BFD flags and section for an ECOFF symbol.  */
@@ -1038,7 +1049,7 @@ ecoff_emit_aggregate (bfd *abfd,
   sprintf (string,
 	   "%s %s { ifd = %u, index = %lu }",
 	   which, name, ifd,
-	   ((long) indx
+	   ((unsigned long) indx
 	    + debug_info->symbolic_header.iextMax));
 }
 

@@ -1,5 +1,5 @@
 /* SPARC-specific support for ELF
-   Copyright 2005, 2006, 2007, 2008 Free Software Foundation, Inc.
+   Copyright 2005, 2006, 2007, 2008, 2009 Free Software Foundation, Inc.
 
    This file is part of BFD, the Binary File Descriptor library.
 
@@ -258,7 +258,12 @@ static reloc_howto_type _bfd_sparc_elf_howto_table[] =
   HOWTO(R_SPARC_TLS_DTPOFF32,0,2,32,FALSE,0,complain_overflow_bitfield,bfd_elf_generic_reloc,"R_SPARC_TLS_DTPOFF32",FALSE,0,0xffffffff,TRUE),
   HOWTO(R_SPARC_TLS_DTPOFF64,0,4,64,FALSE,0,complain_overflow_bitfield,bfd_elf_generic_reloc,"R_SPARC_TLS_DTPOFF64",FALSE,0,MINUS_ONE,TRUE),
   HOWTO(R_SPARC_TLS_TPOFF32,0,0, 0,FALSE,0,complain_overflow_dont,   bfd_elf_generic_reloc,  "R_SPARC_TLS_TPOFF32",FALSE,0,0x00000000,TRUE),
-  HOWTO(R_SPARC_TLS_TPOFF64,0,0, 0,FALSE,0,complain_overflow_dont,   bfd_elf_generic_reloc,  "R_SPARC_TLS_TPOFF64",FALSE,0,0x00000000,TRUE)
+  HOWTO(R_SPARC_TLS_TPOFF64,0,0, 0,FALSE,0,complain_overflow_dont,   bfd_elf_generic_reloc,  "R_SPARC_TLS_TPOFF64",FALSE,0,0x00000000,TRUE),
+  HOWTO(R_SPARC_GOTDATA_HIX22,0,2,0,FALSE,0,complain_overflow_bitfield,sparc_elf_hix22_reloc,"R_SPARC_GOTDATA_HIX22",FALSE,0,0x003fffff, FALSE),
+  HOWTO(R_SPARC_GOTDATA_LOX10,0,2,0,FALSE,0,complain_overflow_dont,  sparc_elf_lox10_reloc,  "R_SPARC_GOTDATA_LOX10",FALSE,0,0x000003ff, FALSE),
+  HOWTO(R_SPARC_GOTDATA_OP_HIX22,0,2,0,FALSE,0,complain_overflow_bitfield,sparc_elf_hix22_reloc,"R_SPARC_GOTDATA_OP_HIX22",FALSE,0,0x003fffff, FALSE),
+  HOWTO(R_SPARC_GOTDATA_OP_LOX10,0,2,0,FALSE,0,complain_overflow_dont,  sparc_elf_lox10_reloc,  "R_SPARC_GOTDATA_OP_LOX10",FALSE,0,0x000003ff, FALSE),
+  HOWTO(R_SPARC_GOTDATA_OP,0,0, 0,FALSE,0,complain_overflow_dont,   bfd_elf_generic_reloc,  "R_SPARC_GOTDATA_OP",FALSE,0,0x00000000,TRUE),
 };
 static reloc_howto_type sparc_vtinherit_howto =
   HOWTO (R_SPARC_GNU_VTINHERIT, 0,2,0,FALSE,0,complain_overflow_dont, NULL, "R_SPARC_GNU_VTINHERIT", FALSE,0, 0, FALSE);
@@ -349,6 +354,11 @@ static const struct elf_reloc_map sparc_reloc_map[] =
   { BFD_RELOC_SPARC_H44, R_SPARC_H44 },
   { BFD_RELOC_SPARC_M44, R_SPARC_M44 },
   { BFD_RELOC_SPARC_L44, R_SPARC_L44 },
+  { BFD_RELOC_SPARC_GOTDATA_HIX22, R_SPARC_GOTDATA_HIX22 },
+  { BFD_RELOC_SPARC_GOTDATA_LOX10, R_SPARC_GOTDATA_LOX10 },
+  { BFD_RELOC_SPARC_GOTDATA_OP_HIX22, R_SPARC_GOTDATA_OP_HIX22 },
+  { BFD_RELOC_SPARC_GOTDATA_OP_LOX10, R_SPARC_GOTDATA_OP_LOX10 },
+  { BFD_RELOC_SPARC_GOTDATA_OP, R_SPARC_GOTDATA_OP },
   { BFD_RELOC_SPARC_REGISTER, R_SPARC_REGISTER },
   { BFD_RELOC_VTABLE_INHERIT, R_SPARC_GNU_VTINHERIT },
   { BFD_RELOC_VTABLE_ENTRY, R_SPARC_GNU_VTENTRY },
@@ -889,13 +899,7 @@ create_got_section (bfd *dynobj, struct bfd_link_info *info)
   htab->sgot = bfd_get_section_by_name (dynobj, ".got");
   BFD_ASSERT (htab->sgot != NULL);
 
-  htab->srelgot = bfd_make_section_with_flags (dynobj, ".rela.got",
-					       SEC_ALLOC
-					       | SEC_LOAD
-					       | SEC_HAS_CONTENTS
-					       | SEC_IN_MEMORY
-					       | SEC_LINKER_CREATED
-					       | SEC_READONLY);
+  htab->srelgot = bfd_get_section_by_name (dynobj, ".rela.got");
   if (htab->srelgot == NULL
       || ! bfd_set_section_alignment (dynobj, htab->srelgot,
 				      htab->word_align_power))
@@ -1178,6 +1182,10 @@ _bfd_sparc_elf_check_relocs (bfd *abfd, struct bfd_link_info *info,
 	case R_SPARC_GOT10:
 	case R_SPARC_GOT13:
 	case R_SPARC_GOT22:
+	case R_SPARC_GOTDATA_HIX22:
+	case R_SPARC_GOTDATA_LOX10:
+	case R_SPARC_GOTDATA_OP_HIX22:
+	case R_SPARC_GOTDATA_OP_LOX10:
 	case R_SPARC_TLS_GD_HI22:
 	case R_SPARC_TLS_GD_LO10:
 	  /* This symbol requires a global offset table entry.  */
@@ -1190,6 +1198,10 @@ _bfd_sparc_elf_check_relocs (bfd *abfd, struct bfd_link_info *info,
 	      case R_SPARC_GOT10:
 	      case R_SPARC_GOT13:
 	      case R_SPARC_GOT22:
+	      case R_SPARC_GOTDATA_HIX22:
+	      case R_SPARC_GOTDATA_LOX10:
+	      case R_SPARC_GOTDATA_OP_HIX22:
+	      case R_SPARC_GOTDATA_OP_LOX10:
 		tls_type = GOT_NORMAL;
 		break;
 	      case R_SPARC_TLS_GD_HI22:
@@ -1311,6 +1323,9 @@ _bfd_sparc_elf_check_relocs (bfd *abfd, struct bfd_link_info *info,
 		    goto r_sparc_plt32;
 		  break;
 		}
+	      /* PR 7027: We need similar behaviour for 64-bit binaries.  */
+	      else if (r_type == R_SPARC_WPLT30)
+		break;
 
 	      /* It does not make sense to have a procedure linkage
                  table entry for a local symbol.  */
@@ -1430,42 +1445,15 @@ _bfd_sparc_elf_check_relocs (bfd *abfd, struct bfd_link_info *info,
 		 section in dynobj and make room for the reloc.  */
 	      if (sreloc == NULL)
 		{
-		  const char *name;
-		  bfd *dynobj;
-
-		  name = (bfd_elf_string_from_elf_section
-			  (abfd,
-			   elf_elfheader (abfd)->e_shstrndx,
-			   elf_section_data (sec)->rel_hdr.sh_name));
-		  if (name == NULL)
-		    return FALSE;
-
-		  BFD_ASSERT (CONST_STRNEQ (name, ".rela")
-			      && strcmp (bfd_get_section_name (abfd, sec),
-					 name + 5) == 0);
-
 		  if (htab->elf.dynobj == NULL)
 		    htab->elf.dynobj = abfd;
-		  dynobj = htab->elf.dynobj;
 
-		  sreloc = bfd_get_section_by_name (dynobj, name);
+		  sreloc = _bfd_elf_make_dynamic_reloc_section
+		    (sec, htab->elf.dynobj, htab->word_align_power,
+		     abfd, /*rela?*/ TRUE);
+
 		  if (sreloc == NULL)
-		    {
-		      flagword flags;
-
-		      flags = (SEC_HAS_CONTENTS | SEC_READONLY
-			       | SEC_IN_MEMORY | SEC_LINKER_CREATED);
-		      if ((sec->flags & SEC_ALLOC) != 0)
-			flags |= SEC_ALLOC | SEC_LOAD;
-		      sreloc = bfd_make_section_with_flags (dynobj,
-							    name,
-							    flags);
-		      if (sreloc == NULL
-			  || ! bfd_set_section_alignment (dynobj, sreloc,
-							  htab->word_align_power))
-			return FALSE;
-		    }
-		  elf_section_data (sec)->sreloc = sreloc;
+		    return FALSE;
 		}
 
 	      /* If this is a global symbol, we count the number of
@@ -1477,14 +1465,18 @@ _bfd_sparc_elf_check_relocs (bfd *abfd, struct bfd_link_info *info,
 		  /* Track dynamic relocs needed for local syms too.
 		     We really need local syms available to do this
 		     easily.  Oh well.  */
-
 		  asection *s;
 		  void *vpp;
+		  Elf_Internal_Sym *isym;
 
-		  s = bfd_section_from_r_symndx (abfd, &htab->sym_sec,
-						 sec, r_symndx);
-		  if (s == NULL)
+		  isym = bfd_sym_from_r_symndx (&htab->sym_cache,
+						abfd, r_symndx);
+		  if (isym == NULL)
 		    return FALSE;
+
+		  s = bfd_section_from_elf_index (abfd, isym->st_shndx);
+		  if (s == NULL)
+		    s = sec;
 
 		  vpp = &elf_section_data (s)->local_dynrel;
 		  head = (struct _bfd_sparc_elf_dyn_relocs **) vpp;
@@ -1622,6 +1614,10 @@ _bfd_sparc_elf_gc_sweep_hook (bfd *abfd, struct bfd_link_info *info,
 	case R_SPARC_GOT10:
 	case R_SPARC_GOT13:
 	case R_SPARC_GOT22:
+	case R_SPARC_GOTDATA_HIX22:
+	case R_SPARC_GOTDATA_LOX10:
+	case R_SPARC_GOTDATA_OP_HIX22:
+	case R_SPARC_GOTDATA_OP_LOX10:
 	  if (h != NULL)
 	    {
 	      if (h->got.refcount > 0)
@@ -2016,6 +2012,19 @@ allocate_dynrelocs (struct elf_link_hash_entry *h, PTR inf)
 	    }
 	}
 
+      if (htab->is_vxworks)
+	{
+	  struct _bfd_sparc_elf_dyn_relocs **pp;
+
+	  for (pp = &eh->dyn_relocs; (p = *pp) != NULL; )
+	    {
+	      if (strcmp (p->sec->output_section->name, ".tls_vars") == 0)
+		*pp = p->next;
+	      else
+		pp = &p->next;
+	    }
+	}
+
       /* Also discard relocs on undefined weak syms with non-default
 	 visibility.  */
       if (eh->dyn_relocs != NULL
@@ -2177,6 +2186,13 @@ _bfd_sparc_elf_size_dynamic_sections (bfd *output_bfd,
 		     it is a copy of a linkonce section or due to
 		     linker script /DISCARD/, so we'll be discarding
 		     the relocs too.  */
+		}
+	      else if (htab->is_vxworks
+		       && strcmp (p->sec->output_section->name,
+				  ".tls_vars") == 0)
+		{
+		  /* Relocations in vxworks .tls_vars sections are
+		     handled specially by the loader.  */
 		}
 	      else if (p->count != 0)
 		{
@@ -2435,6 +2451,10 @@ _bfd_sparc_elf_relax_section (bfd *abfd ATTRIBUTE_UNUSED,
 			      struct bfd_link_info *link_info ATTRIBUTE_UNUSED,
 			      bfd_boolean *again)
 {
+  if (link_info->relocatable)
+    (*link_info->callbacks->einfo)
+      (_("%P%F: --relax and -r may not be used together\n"));
+
   *again = FALSE;
   sec_do_relax (section) = 1;
   return TRUE;
@@ -2488,6 +2508,7 @@ _bfd_sparc_elf_relocate_section (bfd *output_bfd,
   Elf_Internal_Rela *rel;
   Elf_Internal_Rela *relend;
   int num_relocs;
+  bfd_boolean is_vxworks_tls;
 
   htab = _bfd_sparc_elf_hash_table (info);
   symtab_hdr = &elf_symtab_hdr (input_bfd);
@@ -2500,6 +2521,11 @@ _bfd_sparc_elf_relocate_section (bfd *output_bfd,
     got_base = elf_hash_table (info)->hgot->root.u.def.value;
 
   sreloc = elf_section_data (input_section)->sreloc;
+  /* We have to handle relocations in vxworks .tls_vars sections
+     specially, because the dynamic loader is 'weird'.  */
+  is_vxworks_tls = (htab->is_vxworks && info->shared
+		    && !strcmp (input_section->output_section->name,
+				".tls_vars"));
 
   rel = relocs;
   if (ABI_64_P (output_bfd))
@@ -2580,6 +2606,20 @@ _bfd_sparc_elf_relocate_section (bfd *output_bfd,
 
       switch (r_type)
 	{
+	case R_SPARC_GOTDATA_HIX22:
+	case R_SPARC_GOTDATA_LOX10:
+	case R_SPARC_GOTDATA_OP_HIX22:
+	case R_SPARC_GOTDATA_OP_LOX10:
+	  /* We don't support these code transformation optimizations
+	     yet, so just leave the sequence alone and treat as
+	     GOT22/GOT10.  */
+	  if (r_type == R_SPARC_GOTDATA_HIX22
+	      || r_type == R_SPARC_GOTDATA_OP_HIX22)
+	    r_type = R_SPARC_GOT22;
+	  else
+	    r_type = R_SPARC_GOT10;
+	  /* Fall through. */
+
 	case R_SPARC_GOT10:
 	case R_SPARC_GOT13:
 	case R_SPARC_GOT22:
@@ -2698,6 +2738,9 @@ _bfd_sparc_elf_relocate_section (bfd *output_bfd,
 	      if (h == NULL)
 		break;
 	    }
+	  /* PR 7027: We need similar behaviour for 64-bit binaries.  */ 
+	  else if (r_type == R_SPARC_WPLT30 && h == NULL)
+	    break;
 	  else
 	    {
 	      BFD_ASSERT (h != NULL);
@@ -2766,7 +2809,8 @@ _bfd_sparc_elf_relocate_section (bfd *output_bfd,
 	case R_SPARC_L44:
 	case R_SPARC_UA64:
 	r_sparc_plt32:
-	  if ((input_section->flags & SEC_ALLOC) == 0)
+	  if ((input_section->flags & SEC_ALLOC) == 0
+	      || is_vxworks_tls)
 	    break;
 
 	  if ((info->shared
@@ -3227,6 +3271,11 @@ _bfd_sparc_elf_relocate_section (bfd *output_bfd,
 	      insn = (insn & ~0x7c000) | 0x1c000;
 	      bfd_put_32 (output_bfd, insn, contents + rel->r_offset);
 	    }
+	  continue;
+
+	case R_SPARC_GOTDATA_OP:
+	  /* We don't support gotdata code transformation optimizations
+	     yet, so simply leave the sequence as-is.  */
 	  continue;
 
 	case R_SPARC_TLS_IE_LD:

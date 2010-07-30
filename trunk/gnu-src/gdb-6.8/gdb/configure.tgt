@@ -327,6 +327,7 @@ mt-*-*)
 or16* | or32* | or64*)
 	# Target: OpenCores OpenRISC 1000 architecture
 	gdb_target_obs="or1k-tdep.o remote-or1k.o or1k-jtag.o"
+	gdb_sim=../sim/or32/libsim.a
 	;;
 
 powerpc-*-netbsd* | powerpc-*-knetbsd*-gnu)

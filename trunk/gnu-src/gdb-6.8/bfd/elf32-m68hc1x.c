@@ -1,6 +1,6 @@
 /* Motorola 68HC11/HC12-specific support for 32-bit ELF
-   Copyright 1999, 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008
-   Free Software Foundation, Inc.
+   Copyright 1999, 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008,
+   2009 Free Software Foundation, Inc.
    Contributed by Stephane Carrez (stcarrez@nerim.fr)
 
    This file is part of BFD, the Binary File Descriptor library.
@@ -20,6 +20,7 @@
    Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston,
    MA 02110-1301, USA.  */
 
+#include "alloca-conf.h"
 #include "sysdep.h"
 #include "bfd.h"
 #include "bfdlink.h"
@@ -94,7 +95,7 @@ m68hc11_elf_hash_table_create (bfd *abfd)
   ret->stub_bfd = NULL;
   ret->stub_section = 0;
   ret->add_stub_section = NULL;
-  ret->sym_sec.abfd = NULL;
+  ret->sym_cache.abfd = NULL;
 
   return ret;
 }
@@ -450,8 +451,13 @@ elf32_m68hc11_size_stubs (bfd *output_bfd, bfd *stub_bfd,
                   if (!is_far)
                     continue;
 
-                  hdr = elf_elfsections (input_bfd)[sym->st_shndx];
-                  sym_sec = hdr->bfd_section;
+		  if (sym->st_shndx >= elf_numsections (input_bfd))
+		    sym_sec = NULL;
+		  else
+		    {
+		      hdr = elf_elfsections (input_bfd)[sym->st_shndx];
+		      sym_sec = hdr->bfd_section;
+		    }
                   stub_name = (bfd_elf_string_from_elf_section
                                (input_bfd, symtab_hdr->sh_link,
                                 sym->st_name));

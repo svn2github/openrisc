@@ -1,6 +1,6 @@
 /* PPC ELF support for BFD.
-   Copyright 1995, 1996, 1998, 2000, 2001, 2002, 2003, 2005
-   Free Software Foundation, Inc.
+   Copyright 1995, 1996, 1998, 2000, 2001, 2002, 2003, 2005, 2007, 2008,
+   2009 Free Software Foundation, Inc.
 
    By Michael Meissner, Cygnus Support, <meissner@cygnus.com>, from information
    in the System V Application Binary Interface, PowerPC Processor Supplement
@@ -71,6 +71,13 @@ START_RELOC_NUMBERS (elf_ppc_reloc_type)
   RELOC_NUMBER (R_PPC_SECTOFF_HA,	 36)
   RELOC_NUMBER (R_PPC_ADDR30,		 37)
 
+#ifndef RELOC_MACROS_GEN_FUNC
+/* Fake relocations for branch stubs, only used internally by ld.  */
+  RELOC_NUMBER (R_PPC_RELAX,		 48)
+  RELOC_NUMBER (R_PPC_RELAX_PLT,	 49)
+  RELOC_NUMBER (R_PPC_RELAX_PLTREL24,	 50)
+#endif
+
   /* Relocs added to support TLS.  */
   RELOC_NUMBER (R_PPC_TLS,		 67)
   RELOC_NUMBER (R_PPC_DTPMOD32,		 68)
@@ -100,6 +107,8 @@ START_RELOC_NUMBERS (elf_ppc_reloc_type)
   RELOC_NUMBER (R_PPC_GOT_DTPREL16_LO,	 92)
   RELOC_NUMBER (R_PPC_GOT_DTPREL16_HI,	 93)
   RELOC_NUMBER (R_PPC_GOT_DTPREL16_HA,	 94)
+  RELOC_NUMBER (R_PPC_TLSGD,		 95)
+  RELOC_NUMBER (R_PPC_TLSLD,		 96)
 
 /* The remaining relocs are from the Embedded ELF ABI, and are not
    in the SVR4 ELF ABI.  */
@@ -120,11 +129,8 @@ START_RELOC_NUMBERS (elf_ppc_reloc_type)
   RELOC_NUMBER (R_PPC_EMB_BIT_FLD,	115)
   RELOC_NUMBER (R_PPC_EMB_RELSDA,	116)
 
-/* Fake relocations for branch stubs, only used internally by ld.  */
-#define R_PPC_RELAX32 245
-#define R_PPC_RELAX32PC 246
-#define R_PPC_RELAX32_PLT 247
-#define R_PPC_RELAX32PC_PLT 248
+/* Support STT_GNU_IFUNC plt calls.  */
+  RELOC_NUMBER (R_PPC_IRELATIVE,	248)
 
 /* These are GNU extensions used in PIC code sequences.  */
   RELOC_NUMBER (R_PPC_REL16,		249)
@@ -146,7 +152,10 @@ END_RELOC_NUMBERS (R_PPC_max)
   ((R) >= R_PPC_TLS && (R) <= R_PPC_GOT_DTPREL16_HA)
 
 /* Specify the value of _GLOBAL_OFFSET_TABLE_.  */
-#define DT_PPC_GOT		DT_LOPROC
+#define DT_PPC_GOT		(DT_LOPROC)
+
+/* Specify that tls descriptors should be optimized.  */
+#define DT_PPC_TLSOPT		(DT_LOPROC + 1)
 
 /* Processor specific flags for the ELF header e_flags field.  */
 
@@ -177,7 +186,8 @@ enum
 {
   /* 0-3 are generic.  */
   Tag_GNU_Power_ABI_FP = 4, /* Value 1 for hard-float, 2 for
-			       soft-float; 0 for not tagged or not
+			       soft-float, 3 for single=precision 
+			       hard-float; 0 for not tagged or not
 			       using any ABIs affected by the
 			       differences.  */
 
@@ -185,6 +195,11 @@ enum
      registers, 3 for SPE registers; 0 for not tagged or not using any
      ABIs affected by the differences.  */
   Tag_GNU_Power_ABI_Vector = 8,
+
+  /* Value 1 for ABIs using r3/r4 for returning structures <= 8 bytes,
+     2 for ABIs using memory; 0 for not tagged or not using any ABIs
+     affected by the differences.  */
+  Tag_GNU_Power_ABI_Struct_Return = 12
 };
 
 #endif /* _ELF_PPC_H */

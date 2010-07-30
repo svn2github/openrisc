@@ -171,9 +171,10 @@ enum ia64_resource_specifier
   IA64_RS_BR,
   IA64_RS_CFM,
   IA64_RS_CPUID,
+  IA64_RS_CR_IIB,
   IA64_RS_CR_IRR,
   IA64_RS_CR_LRR,
-  IA64_RS_CR, /* 3-7,10-15,18,26-63,75-79,82-127 */
+  IA64_RS_CR, /* 3-7,10-15,18,28-63,75-79,82-127 */
   IA64_RS_DBR,
   IA64_RS_FR,
   IA64_RS_FRb,
@@ -326,7 +327,7 @@ enum ia64_operand_class
 
 struct ia64_operand
 {
-  enum ia64_operand_class class;
+  enum ia64_operand_class op_class;
 
   /* Set VALUE as the operand bits for the operand of type SELF in the
      instruction pointed to by CODE.  If an error occurs, *CODE is not

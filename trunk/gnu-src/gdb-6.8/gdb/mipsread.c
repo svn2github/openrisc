@@ -39,6 +39,7 @@
 #include "libcoff.h"		/* Private BFD COFF information.  */
 #include "libecoff.h"		/* Private BFD ECOFF information.  */
 #include "elf/common.h"
+#include "elf/internal.h"	/* JPB for compatibility with latest binutils */
 #include "elf/mips.h"
 
 static void

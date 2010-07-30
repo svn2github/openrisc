@@ -26,6 +26,9 @@ struct bfd_iovec
   int (*bclose) (struct bfd *abfd);
   int (*bflush) (struct bfd *abfd);
   int (*bstat) (struct bfd *abfd, struct stat *sb);
+  /* Just like mmap: (void*)-1 on failure, mmapped address on success.  */
+  void *(*bmmap) (struct bfd *abfd, void *addr, bfd_size_type len,
+                  int prot, int flags, file_ptr offset);
 @};
 @end example
 
@@ -69,4 +72,14 @@ exhausted" error when it tries to allocate 15 bazillon bytes
 of space for the 15 bazillon byte table it is about to read.
 This function at least allows us to answer the question, "is the
 size reasonable?".
+
+@findex bfd_mmap
+@subsubsection @code{bfd_mmap}
+@strong{Synopsis}
+@example
+void *bfd_mmap (bfd *abfd, void *addr, bfd_size_type len,
+    int prot, int flags, file_ptr offset);
+@end example
+@strong{Description}@*
+Return mmap()ed region of the file, if possible and implemented.
 

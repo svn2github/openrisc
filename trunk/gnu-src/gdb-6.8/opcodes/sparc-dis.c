@@ -1,6 +1,7 @@
 /* Print SPARC instructions.
    Copyright 1989, 1991, 1992, 1993, 1994, 1995, 1996, 1997, 1998, 1999,
-   2000, 2002, 2003, 2004, 2005, 2007 Free Software Foundation, Inc.
+   2000, 2002, 2003, 2004, 2005, 2006, 2007, 2008
+   Free Software Foundation, Inc.
 
    This file is part of the GNU opcodes library.
 
@@ -107,7 +108,7 @@ static char *v9_hpriv_reg_names[] =
 static char *v9a_asr_reg_names[] =
 {
   "pcr", "pic", "dcr", "gsr", "set_softint", "clear_softint",
-  "softint", "tick_cmpr", "sys_tick", "sys_tick_cmpr"
+  "softint", "tick_cmpr", "stick", "stick_cmpr"
 };
 
 /* Macros used to extract instruction fields.  Not all fields have

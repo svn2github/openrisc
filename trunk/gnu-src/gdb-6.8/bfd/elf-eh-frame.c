@@ -1,5 +1,5 @@
 /* .eh_frame section optimization.
-   Copyright 2001, 2002, 2003, 2004, 2005, 2006, 2007
+   Copyright 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009
    Free Software Foundation, Inc.
    Written by Jakub Jelinek <jakub@redhat.com>.
 
@@ -24,7 +24,7 @@
 #include "bfd.h"
 #include "libbfd.h"
 #include "elf-bfd.h"
-#include "elf/dwarf2.h"
+#include "dwarf2.h"
 
 #define EH_FRAME_HDR_SIZE 8
 
@@ -215,8 +215,8 @@ write_value (bfd *abfd, bfd_byte *buf, bfd_vma value, int width)
 static int
 cie_eq (const void *e1, const void *e2)
 {
-  const struct cie *c1 = e1;
-  const struct cie *c2 = e2;
+  const struct cie *c1 = (const struct cie *) e1;
+  const struct cie *c2 = (const struct cie *) e2;
 
   if (c1->hash == c2->hash
       && c1->length == c2->length
@@ -246,7 +246,7 @@ cie_eq (const void *e1, const void *e2)
 static hashval_t
 cie_hash (const void *e)
 {
-  const struct cie *c = e;
+  const struct cie *c = (const struct cie *) e;
   return c->hash;
 }
 
@@ -529,26 +529,30 @@ _bfd_elf_parse_eh_frame (bfd *abfd, struct bfd_link_info *info,
       REQUIRE (skip_bytes (&buf, end, hdr_length - 4));
     }
 
-  sec_info = bfd_zmalloc (sizeof (struct eh_frame_sec_info)
-			  + (num_entries - 1) * sizeof (struct eh_cie_fde));
+  sec_info = (struct eh_frame_sec_info *)
+      bfd_zmalloc (sizeof (struct eh_frame_sec_info)
+                   + (num_entries - 1) * sizeof (struct eh_cie_fde));
   REQUIRE (sec_info);
 
   /* We need to have a "struct cie" for each CIE in this section.  */
-  local_cies = bfd_zmalloc (num_cies * sizeof (*local_cies));
+  local_cies = (struct cie *) bfd_zmalloc (num_cies * sizeof (*local_cies));
   REQUIRE (local_cies);
 
+  /* FIXME: octets_per_byte.  */
 #define ENSURE_NO_RELOCS(buf)				\
   REQUIRE (!(cookie->rel < cookie->relend		\
 	     && (cookie->rel->r_offset			\
 		 < (bfd_size_type) ((buf) - ehbuf))	\
 	     && cookie->rel->r_info != 0))
 
+  /* FIXME: octets_per_byte.  */
 #define SKIP_RELOCS(buf)				\
   while (cookie->rel < cookie->relend			\
 	 && (cookie->rel->r_offset			\
 	     < (bfd_size_type) ((buf) - ehbuf)))	\
     cookie->rel++
 
+  /* FIXME: octets_per_byte.  */
 #define GET_RELOC(buf)					\
   ((cookie->rel < cookie->relend			\
     && (cookie->rel->r_offset				\
@@ -766,9 +770,14 @@ _bfd_elf_parse_eh_frame (bfd *abfd, struct bfd_link_info *info,
 
 	  /* Chain together the FDEs for each section.  */
 	  rsec = _bfd_elf_gc_mark_rsec (info, sec, gc_mark_hook, cookie);
-	  REQUIRE (rsec && rsec->owner == abfd);
-	  this_inf->u.fde.next_for_section = elf_fde_list (rsec);
-	  elf_fde_list (rsec) = this_inf;
+	  /* RSEC will be NULL if FDE was cleared out as it was belonging to
+	     a discarded SHT_GROUP.  */
+	  if (rsec)
+	    {
+	      REQUIRE (rsec->owner == abfd);
+	      this_inf->u.fde.next_for_section = elf_fde_list (rsec);
+	      elf_fde_list (rsec) = this_inf;
+	    }
 
 	  /* Skip the initial location and address range.  */
 	  start = buf;
@@ -801,6 +810,16 @@ _bfd_elf_parse_eh_frame (bfd *abfd, struct bfd_link_info *info,
 	  insns = buf;
 
 	  buf = last_fde + 4 + hdr_length;
+
+	  /* For NULL RSEC (cleared FDE belonging to a discarded section)
+	     the relocations are commonly cleared.  We do not sanity check if
+	     all these relocations are cleared as (1) relocations to
+	     .gcc_except_table will remain uncleared (they will get dropped
+	     with the drop of this unused FDE) and (2) BFD already safely drops
+	     relocations of any type to .eh_frame by
+	     elf_section_ignore_discarded_relocs.
+	     TODO: The .gcc_except_table entries should be also filtered as
+	     .eh_frame entries; or GCC could rather use COMDAT for them.  */
 	  SKIP_RELOCS (buf);
 	}
 
@@ -830,8 +849,8 @@ _bfd_elf_parse_eh_frame (bfd *abfd, struct bfd_link_info *info,
 	  unsigned int cnt;
 	  bfd_byte *p;
 
-	  this_inf->set_loc = bfd_malloc ((set_loc_count + 1)
-					  * sizeof (unsigned int));
+	  this_inf->set_loc = (unsigned int *)
+              bfd_malloc ((set_loc_count + 1) * sizeof (unsigned int));
 	  REQUIRE (this_inf->set_loc);
 	  this_inf->set_loc[0] = set_loc_count;
 	  p = insns;
@@ -896,6 +915,7 @@ mark_entry (struct bfd_link_info *info, asection *sec,
 	    struct eh_cie_fde *ent, elf_gc_mark_hook_fn gc_mark_hook,
 	    struct elf_reloc_cookie *cookie)
 {
+  /* FIXME: octets_per_byte.  */
   for (cookie->rel = cookie->rels + ent->reloc_index;
        cookie->rel < cookie->relend
 	 && cookie->rel->r_offset < ent->offset + ent->size;
@@ -1036,7 +1056,7 @@ find_merged_cie (bfd *abfd, asection *sec,
   if (new_cie == NULL)
     {
       /* Keep CIE_INF and record it in the hash table.  */
-      new_cie = malloc (sizeof (struct cie));
+      new_cie = (struct cie *) malloc (sizeof (struct cie));
       if (new_cie == NULL)
 	return cie_inf;
 
@@ -1077,9 +1097,14 @@ _bfd_elf_discard_section_eh_frame
 
   hdr_info = &elf_hash_table (info)->eh_info;
   for (ent = sec_info->entry; ent < sec_info->entry + sec_info->count; ++ent)
-    if (!ent->cie)
+    if (ent->size == 4)
+      /* There should only be one zero terminator, on the last input
+	 file supplying .eh_frame (crtend.o).  Remove any others.  */
+      ent->removed = sec->map_head.s != NULL;
+    else if (!ent->cie)
       {
 	cookie->rel = cookie->rels + ent->reloc_index;
+	/* FIXME: octets_per_byte.  */
 	BFD_ASSERT (cookie->rel < cookie->relend
 		    && cookie->rel->r_offset == ent->offset + 8);
 	if (!(*reloc_symbol_deleted_p) (ent->offset + 8, cookie))
@@ -1222,7 +1247,7 @@ _bfd_elf_eh_frame_section_offset (bfd *output_bfd ATTRIBUTE_UNUSED,
 
   if (sec->sec_info_type != ELF_INFO_TYPE_EH_FRAME)
     return offset;
-  sec_info = elf_section_data (sec)->sec_info;
+  sec_info = (struct eh_frame_sec_info *) elf_section_data (sec)->sec_info;
 
   if (offset >= sec->rawsize)
     return offset - sec->rawsize + sec->size;
@@ -1304,6 +1329,7 @@ _bfd_elf_write_section_eh_frame (bfd *abfd,
   struct eh_cie_fde *ent;
 
   if (sec->sec_info_type != ELF_INFO_TYPE_EH_FRAME)
+    /* FIXME: octets_per_byte.  */
     return bfd_set_section_contents (abfd, sec->output_section, contents,
 				     sec->output_offset, sec->size);
 
@@ -1311,13 +1337,13 @@ _bfd_elf_write_section_eh_frame (bfd *abfd,
 	      ->elf_backend_eh_frame_address_size (abfd, sec));
   BFD_ASSERT (ptr_size != 0);
 
-  sec_info = elf_section_data (sec)->sec_info;
+  sec_info = (struct eh_frame_sec_info *) elf_section_data (sec)->sec_info;
   htab = elf_hash_table (info);
   hdr_info = &htab->eh_info;
 
   if (hdr_info->table && hdr_info->array == NULL)
-    hdr_info->array
-      = bfd_malloc (hdr_info->fde_count * sizeof(*hdr_info->array));
+    hdr_info->array = (struct eh_frame_array_ent *)
+        bfd_malloc (hdr_info->fde_count * sizeof(*hdr_info->array));
   if (hdr_info->array == NULL)
     hdr_info = NULL;
 
@@ -1441,7 +1467,7 @@ _bfd_elf_write_section_eh_frame (bfd *abfd,
 
 			val = read_value (abfd, buf, per_width,
 					  get_DW_EH_PE_signed (per_encoding));
-			val += ent->offset - ent->new_offset;
+			val += (bfd_vma) ent->offset - ent->new_offset;
 			val -= extra_string + extra_data;
 			write_value (abfd, buf, val, per_width);
 			action &= ~4;
@@ -1500,7 +1526,7 @@ _bfd_elf_write_section_eh_frame (bfd *abfd,
 		  }
 		  break;
 		case DW_EH_PE_pcrel:
-		  value += ent->offset - ent->new_offset;
+		  value += (bfd_vma) ent->offset - ent->new_offset;
 		  address += (sec->output_section->vma
 			      + sec->output_offset
 			      + ent->offset + 8);
@@ -1534,7 +1560,7 @@ _bfd_elf_write_section_eh_frame (bfd *abfd,
 	      if (value)
 		{
 		  if ((ent->lsda_encoding & 0xf0) == DW_EH_PE_pcrel)
-		    value += ent->offset - ent->new_offset;
+		    value += (bfd_vma) ent->offset - ent->new_offset;
 		  else if (cie->u.cie.make_lsda_relative)
 		    value -= (sec->output_section->vma
 			      + sec->output_offset
@@ -1573,7 +1599,7 @@ _bfd_elf_write_section_eh_frame (bfd *abfd,
 		    continue;
 
 		  if ((ent->fde_encoding & 0xf0) == DW_EH_PE_pcrel)
-		    value += ent->offset + 8 - new_offset;
+		    value += (bfd_vma) ent->offset + 8 - new_offset;
 		  if (ent->make_relative)
 		    value -= (sec->output_section->vma
 			      + sec->output_offset
@@ -1592,6 +1618,7 @@ _bfd_elf_write_section_eh_frame (bfd *abfd,
   if ((sec->size % ptr_size) != 0)
     abort ();
 
+  /* FIXME: octets_per_byte.  */
   return bfd_set_section_contents (abfd, sec->output_section,
 				   contents, (file_ptr) sec->output_offset,
 				   sec->size);
@@ -1603,8 +1630,8 @@ _bfd_elf_write_section_eh_frame (bfd *abfd,
 static int
 vma_compare (const void *a, const void *b)
 {
-  const struct eh_frame_array_ent *p = a;
-  const struct eh_frame_array_ent *q = b;
+  const struct eh_frame_array_ent *p = (const struct eh_frame_array_ent *) a;
+  const struct eh_frame_array_ent *q = (const struct eh_frame_array_ent *) b;
   if (p->initial_loc > q->initial_loc)
     return 1;
   if (p->initial_loc < q->initial_loc)
@@ -1655,7 +1682,7 @@ _bfd_elf_write_section_eh_frame_hdr (bfd *abfd, struct bfd_link_info *info)
   size = EH_FRAME_HDR_SIZE;
   if (hdr_info->array && hdr_info->array_count == hdr_info->fde_count)
     size += 4 + hdr_info->fde_count * 8;
-  contents = bfd_malloc (size);
+  contents = (bfd_byte *) bfd_malloc (size);
   if (contents == NULL)
     return FALSE;
 
@@ -1703,6 +1730,7 @@ _bfd_elf_write_section_eh_frame_hdr (bfd *abfd, struct bfd_link_info *info)
 	}
     }
 
+  /* FIXME: octets_per_byte.  */
   retval = bfd_set_section_contents (abfd, sec->output_section,
 				     contents, (file_ptr) sec->output_offset,
 				     sec->size);

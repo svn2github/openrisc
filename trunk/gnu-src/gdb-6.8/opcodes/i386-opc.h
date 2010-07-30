@@ -1,5 +1,5 @@
 /* Declarations for Intel 80386 opcode table
-   Copyright 2007, 2008
+   Copyright 2007, 2008, 2009
    Free Software Foundation, Inc.
 
    This file is part of the GNU opcodes library.
@@ -42,14 +42,22 @@
 #define Cpu586		(Cpu486 + 1)
 /* i686 or better required */
 #define Cpu686		(Cpu586 + 1)
-/* Pentium4 or better required */
-#define CpuP4		(Cpu686 + 1)
-/* AMD K6 or better required*/
-#define CpuK6		(CpuP4 + 1)
-/* AMD K8 or better required */
-#define CpuK8		(CpuK6 + 1)
+/* CLFLUSH Instuction support required */
+#define CpuClflush	(Cpu686 + 1)
+/* SYSCALL Instuctions support required */
+#define CpuSYSCALL	(CpuClflush + 1)
+/* Floating point support required */
+#define Cpu8087		(CpuSYSCALL + 1)
+/* i287 support required */
+#define Cpu287		(Cpu8087 + 1)
+/* i387 support required */
+#define Cpu387		(Cpu287 + 1)
+/* i686 and floating point support required */
+#define Cpu687		(Cpu387 + 1)
+/* SSE3 and floating point support required */
+#define CpuFISTTP		(Cpu687 + 1)
 /* MMX support required */
-#define CpuMMX		(CpuK8 + 1)
+#define CpuMMX		(CpuFISTTP + 1)
 /* SSE support required */
 #define CpuSSE		(CpuMMX + 1)
 /* SSE2 support required */
@@ -78,12 +86,28 @@
 #define CpuSSE4_1	(CpuABM + 1)
 /* SSE4.2 support required */
 #define CpuSSE4_2	(CpuSSE4_1 + 1)
-/* SSE5 support required */
-#define CpuSSE5		(CpuSSE4_2 + 1)
+/* AVX support required */
+#define CpuAVX		(CpuSSE4_2 + 1)
+/* Intel L1OM support required */
+#define CpuL1OM		(CpuAVX + 1)
 /* Xsave/xrstor New Instuctions support required */
-#define CpuXsave	(CpuSSE5 + 1)
+#define CpuXsave	(CpuL1OM + 1)
+/* AES support required */
+#define CpuAES		(CpuXsave + 1)
+/* PCLMUL support required */
+#define CpuPCLMUL	(CpuAES + 1)
+/* FMA support required */
+#define CpuFMA		(CpuPCLMUL + 1)
+/* FMA4 support required */
+#define CpuFMA4 	(CpuFMA + 1)
+/* MOVBE Instuction support required */
+#define CpuMovbe	(CpuFMA4 + 1)
+/* EPT Instructions required */
+#define CpuEPT		(CpuMovbe + 1)
+/* RDTSCP Instuction support required */
+#define CpuRdtscp	(CpuEPT + 1)
 /* 64bit support available, used by -march= in assembler.  */
-#define CpuLM		(CpuXsave + 1)
+#define CpuLM		(CpuRdtscp + 1)
 /* 64bit support required  */
 #define Cpu64		(CpuLM + 1)
 /* Not supported in the 64bit mode  */
@@ -112,9 +136,13 @@ typedef union i386_cpu_flags
       unsigned int cpui486:1;
       unsigned int cpui586:1;
       unsigned int cpui686:1;
-      unsigned int cpup4:1;
-      unsigned int cpuk6:1;
-      unsigned int cpuk8:1;
+      unsigned int cpuclflush:1;
+      unsigned int cpusyscall:1;
+      unsigned int cpu8087:1;
+      unsigned int cpu287:1;
+      unsigned int cpu387:1;
+      unsigned int cpu687:1;
+      unsigned int cpufisttp:1;
       unsigned int cpummx:1;
       unsigned int cpusse:1;
       unsigned int cpusse2:1;
@@ -130,8 +158,16 @@ typedef union i386_cpu_flags
       unsigned int cpuabm:1;
       unsigned int cpusse4_1:1;
       unsigned int cpusse4_2:1;
-      unsigned int cpusse5:1;
+      unsigned int cpuavx:1;
+      unsigned int cpul1om:1;
       unsigned int cpuxsave:1;
+      unsigned int cpuaes:1;
+      unsigned int cpupclmul:1;
+      unsigned int cpufma:1;
+      unsigned int cpufma4:1;
+      unsigned int cpumovbe:1;
+      unsigned int cpuept:1;
+      unsigned int cpurdtscp:1;
       unsigned int cpulm:1;
       unsigned int cpu64:1;
       unsigned int cpuno64:1;
@@ -148,8 +184,11 @@ typedef union i386_cpu_flags
 #define D			0
 /* set if operands can be words or dwords encoded the canonical way */
 #define W			(D + 1)
+/* Skip the current insn and use the next insn in i386-opc.tbl to swap
+   operand in encoding.  */
+#define S			(W + 1)
 /* insn has a modrm byte. */
-#define Modrm			(W + 1)
+#define Modrm			(S + 1)
 /* register is in low 3 bits of opcode */
 #define ShortForm		(Modrm + 1)
 /* special case for jump insns.  */
@@ -198,8 +237,10 @@ typedef union i386_cpu_flags
 #define RegKludge		(IsString + 1)
 /* The first operand must be xmm0 */
 #define FirstXmm0		(RegKludge + 1)
+/* An implicit xmm0 as the first operand */
+#define Implicit1stXmm0		(FirstXmm0 + 1)
 /* BYTE is OK in Intel syntax. */
-#define ByteOkIntel		(FirstXmm0 + 1)
+#define ByteOkIntel		(Implicit1stXmm0 + 1)
 /* Convert to DWORD */
 #define ToDword			(ByteOkIntel + 1)
 /* Convert to QWORD */
@@ -216,13 +257,37 @@ typedef union i386_cpu_flags
 #define Rex64			(NoRex64 + 1)
 /* deprecated fp insn, gets a warning */
 #define Ugh			(Rex64 + 1)
-#define Drex			(Ugh + 1)
-/* instruction needs DREX with multiple encodings for memory ops */
-#define Drexv			(Drex + 1)
-/* special DREX for comparisons */
-#define Drexc			(Drexv + 1)
+/* insn has VEX prefix. */
+#define Vex			(Ugh + 1)
+/* insn has 256bit VEX prefix. */
+#define Vex256			(Vex + 1)
+/* insn has VEX NDS. Register-only source is encoded in Vex prefix.
+   We use VexNDS on insns with VEX DDS since the register-only source
+   is the second source register.  */
+#define VexNDS			(Vex256 + 1)
+/* insn has VEX NDD. Register destination is encoded in Vex
+   prefix. */
+#define VexNDD			(VexNDS + 1)
+/* insn has VEX W0. */
+#define VexW0			(VexNDD + 1)
+/* insn has VEX W1. */
+#define VexW1			(VexW0 + 1)
+/* insn has VEX 0x0F opcode prefix. */
+#define Vex0F			(VexW1 + 1)
+/* insn has VEX 0x0F38 opcode prefix. */
+#define Vex0F38			(Vex0F + 1)
+/* insn has VEX 0x0F3A opcode prefix. */
+#define Vex0F3A			(Vex0F38 + 1)
+/* insn has VEX prefix with 3 soures. */
+#define Vex3Sources		(Vex0F3A + 1)
+/* instruction has VEX 8 bit imm */
+#define VexImmExt		(Vex3Sources + 1)
+/* SSE to AVX support required */
+#define SSE2AVX			(VexImmExt + 1)
+/* No AVX equivalent */
+#define NoAVX			(SSE2AVX + 1)
 /* Compatible with old (<= 2.8.1) versions of gcc  */
-#define OldGcc			(Drexc + 1)
+#define OldGcc			(NoAVX + 1)
 /* AT&T mnemonic.  */
 #define ATTMnemonic		(OldGcc + 1)
 /* AT&T syntax.  */
@@ -236,6 +301,7 @@ typedef struct i386_opcode_modifier
 {
   unsigned int d:1;
   unsigned int w:1;
+  unsigned int s:1;
   unsigned int modrm:1;
   unsigned int shortform:1;
   unsigned int jump:1;
@@ -260,6 +326,7 @@ typedef struct i386_opcode_modifier
   unsigned int isstring:1;
   unsigned int regkludge:1;
   unsigned int firstxmm0:1;
+  unsigned int implicit1stxmm0:1;
   unsigned int byteokintel:1;
   unsigned int todword:1;
   unsigned int toqword:1;
@@ -269,9 +336,19 @@ typedef struct i386_opcode_modifier
   unsigned int norex64:1;
   unsigned int rex64:1;
   unsigned int ugh:1;
-  unsigned int drex:1;
-  unsigned int drexv:1;
-  unsigned int drexc:1;
+  unsigned int vex:1;
+  unsigned int vex256:1;
+  unsigned int vexnds:1;
+  unsigned int vexndd:1;
+  unsigned int vexw0:1;
+  unsigned int vexw1:1;
+  unsigned int vex0f:1;
+  unsigned int vex0f38:1;
+  unsigned int vex0f3a:1;
+  unsigned int vex3sources:1;
+  unsigned int veximmext:1;
+  unsigned int sse2avx:1;
+  unsigned int noavx:1;
   unsigned int oldgcc:1;
   unsigned int attmnemonic:1;
   unsigned int attsyntax:1;
@@ -294,8 +371,10 @@ typedef struct i386_opcode_modifier
 #define RegMMX			(FloatReg + 1)
 /* SSE register */
 #define RegXMM			(RegMMX + 1)
+/* AVX registers */
+#define RegYMM			(RegXMM + 1)
 /* Control register */
-#define Control			(RegXMM + 1)
+#define Control			(RegYMM + 1)
 /* Debug register */
 #define Debug			(Control + 1)
 /* Test register */
@@ -371,8 +450,10 @@ typedef struct i386_opcode_modifier
 #define Tbyte			(Qword + 1)
 /* XMMWORD memory. */
 #define Xmmword			(Tbyte + 1)
+/* YMMWORD memory. */
+#define Ymmword			(Xmmword + 1)
 /* Unspecified memory size.  */
-#define Unspecified		(Xmmword + 1)
+#define Unspecified		(Ymmword + 1)
 /* Any memory size.  */
 #define Anysize			(Unspecified  + 1)
 
@@ -399,6 +480,7 @@ typedef union i386_operand_type
       unsigned int floatreg:1;
       unsigned int regmmx:1;
       unsigned int regxmm:1;
+      unsigned int regymm:1;
       unsigned int control:1;
       unsigned int debug:1;
       unsigned int test:1;
@@ -432,6 +514,7 @@ typedef union i386_operand_type
       unsigned int qword:1;
       unsigned int tbyte:1;
       unsigned int xmmword:1;
+      unsigned int ymmword:1;
       unsigned int unspecified:1;
       unsigned int anysize:1;
 #ifdef OTUnused
@@ -441,7 +524,7 @@ typedef union i386_operand_type
   unsigned int array[OTNumOfUints];
 } i386_operand_type;
 
-typedef struct template
+typedef struct insn_template
 {
   /* instruction name sans width suffix ("mov" for movl insns) */
   char *name;
@@ -462,7 +545,7 @@ typedef struct template
      This field is also used to store the 8-bit opcode suffix for the
      AMD 3DNow! instructions.
      If this template has no extension opcode (the usual case) use None 
-     Instructions with Drex use this to specify 2 bits for OC */
+     Instructions */
   unsigned int extension_opcode;
 #define None 0xffff		/* If no extension_opcode is possible.  */
 
@@ -483,9 +566,9 @@ typedef struct template
      either a register or an immediate operand.  */
   i386_operand_type operand_types[MAX_OPERANDS];
 }
-template;
+insn_template;
 
-extern const template i386_optab[];
+extern const insn_template i386_optab[];
 
 /* these are for register name --> number & type hash lookup */
 typedef struct

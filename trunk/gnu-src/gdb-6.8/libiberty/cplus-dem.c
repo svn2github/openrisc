@@ -52,8 +52,8 @@ Boston, MA 02110-1301, USA.  */
 #ifdef HAVE_STDLIB_H
 #include <stdlib.h>
 #else
-char * malloc ();
-char * realloc ();
+void * malloc ();
+void * realloc ();
 #endif
 
 #include <demangle.h>
@@ -984,7 +984,10 @@ ada_demangle (const char *mangled, int option ATTRIBUTE_UNUSED)
       goto Suppress;
 
   if (! changed)
-    return NULL;
+    {
+      free (demangled);
+      return NULL;
+    }
   else
     return demangled;
   

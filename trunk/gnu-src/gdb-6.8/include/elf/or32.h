@@ -1,4 +1,4 @@
-/* OR1K ELF support for BFD. Derived from ppc.h.
+/* OR32 ELF support for BFD. Derived from ppc.h.
    Copyright (C) 2002 Free Software Foundation, Inc.
    Contributed by Ivan Guzvinec  <ivang@opencores.org>
 
@@ -18,8 +18,8 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston, MA 02110-1301, USA.  */
 
-#ifndef _ELF_OR1K_H
-#define _ELF_OR1K_H
+#ifndef _ELF_OR32_H
+#define _ELF_OR32_H
 
 #include "elf/reloc-macros.h"
 
@@ -59,4 +59,4 @@ END_RELOC_NUMBERS (R_OR32_max)
 						   builds when those objects \
 						   are not to be furhter \
 						   relocated.  */
-#endif /* _ELF_OR1K_H */
+#endif /* _ELF_OR32_H */
