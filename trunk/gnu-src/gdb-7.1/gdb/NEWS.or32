@@ -1,0 +1,14 @@
+		What has changed in GDB?
+	     (Organized release by release)
+
+*** Changes in GDB 6.8 for the 32-bit OpenRISC 1000
+
+* New target
+
+or32-elf. Use of this port is described in doc/or1k.texinfo. After
+configuring and building GDB, go to this directory and use "make info", "make
+html", "make pdf", "make ps" as required to build the document.
+
+This interface supports both the proprietary OpenRISC Remote JTAG Protocol and
+GDB Remote Serial Protocol.
+
