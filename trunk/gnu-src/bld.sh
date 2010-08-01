@@ -22,9 +22,13 @@
 # You should have received a copy of the GNU General Public License along
 # with this program.  If not, see <http://www.gnu.org/licenses/>.          
 
-component_dirs='binutils-2.20.1 newlib-1.18.0 gcc-4.2.2 gdb-6.8'
+# The current version of GDB (7.1) is incompatible with the current version of
+# binutils, so is built on its own.
+component_dirs='binutils-2.20.1 newlib-1.18.0 gcc-4.2.2'
+gdb_dir='gdb-7.1'
 unified_src=srcw
 build_dir=bld-or32
+gdb_build_dir=bld-gdb
 install_dir=/opt/or32-elf-new
 or1ksim_dir=/opt/or1ksim-new
 
@@ -60,18 +64,19 @@ make_load="-j -l `(echo processor;cat /proc/cpuinfo 2>/dev/null || \
 
 # Parse options
 
-# --force:       Ensure the unified source directory and build directory are
-#                recreated.
-# --prefix:      Specify the install directory
-# --scdir:       Specify the unified source directory
-# --builddir:    Specify the build directory
-# --or1ksim:     Specify the or1ksim installation directory
-# --no-newlib:   Don't build newlib
-# --nolink:      Don't build the unified source directory
-# --noconfig:    Don't run configure
-# --check:       Run DejaGnu tests
-# --noinstall:   Don't run install
-# --help:        List these options and exit
+# --force:        Ensure the unified source directory and build directory are
+#                 recreated.
+# --prefix:       Specify the install directory
+# --scdir:        Specify the unified source directory
+# --builddir:     Specify the build directory
+# --gdb-builddir: Specify the build directory
+# --or1ksim:      Specify the or1ksim installation directory
+# --no-newlib:    Don't build newlib
+# --nolink:       Don't build the unified source directory
+# --noconfig:     Don't run configure
+# --check:        Run DejaGnu tests
+# --noinstall:    Don't run install
+# --help:         List these options and exit
 doforce="false";
 nolink="false";
 noconfig="false";
@@ -102,6 +107,11 @@ case ${opt}
 
     --builddir)
 	build_dir=$2;
+	shift;
+	;;
+
+    --gdb-builddir)
+	gdb_build_dir=$2;
 	shift;
 	;;
 
@@ -137,18 +147,21 @@ case ${opt}
 	echo "Usage: sh bld.sh [options]"
 	echo ""
 	echo "Options:"
-	echo "    --force           Ensure the unified source directory and"
-	echo "                      build directory are recreated."
-	echo "    --prefix <dir>:   Specify the install directory"
-	echo "    --scdir <dir:     Specify the unified source directory"
-	echo "    --builddir <dir>: Specify the build directory"
-	echo "    --or1ksim <dir>:  Specify the Or1ksim installation directory"
-	echo "    --no-newlib       Don't build newlib"
-	echo "    --nolink          Don't build the unified source directory"
-	echo "    --noconfig        Don't run configure"
-        echo "    --check:          Run DejaGnu tests"
-	echo "    --noinstall       Don't run install"
-	echo "    --help            List these options and exit"
+	echo "    --force               Ensure the unified source directory and"
+	echo "                          build directory are recreated."
+	echo "    --prefix <dir>:       Specify the install directory"
+	echo "    --scdir <dir:         Specify the unified source directory"
+	echo "    --builddir <dir>:     Specify the build directory"
+	echo "    --gdb-builddir <dir>: Specify the build directory"
+	echo "    --or1ksim <dir>:      Specify the Or1ksim installation"
+	echo "                          directory"
+	echo "    --no-newlib           Don't build newlib"
+	echo "    --nolink              Don't build the unified source"
+        echo "                          directory"
+	echo "    --noconfig            Don't run configure"
+        echo "    --check:              Run DejaGnu tests"
+	echo "    --noinstall           Don't run install"
+	echo "    --help                List these options and exit"
 	exit 0
 	;;
 
@@ -169,10 +182,11 @@ done
 # If --force was specified, delete the unified source and build directories
 if [ "x$doforce" == "xtrue" ]
 then
-    rm -rf ${unified_src} ${build_dir}
+    rm -rf ${unified_src} ${build_dir} ${gdb_build_dir}
 fi
 
-# Create a unified source directory.
+# ------------------------------------------------------------------------------
+# Create a unified source directory. Currently we have to leave out GDB.
 if [ "x$nolink" == "xfalse" ]
 then
     if [ -n "${unified_src}" ]
@@ -239,6 +253,7 @@ then
 fi
 
 
+# ------------------------------------------------------------------------------
 # Configure everything
 if [ "x$noconfig" == "xfalse" ]
 then
@@ -258,8 +273,28 @@ then
     fi
 
     cd ..
+
+    # GDB has to be separately configured at present.
+    mkdir -p ${gdb_build_dir} && cd ${gdb_build_dir} && \
+	  ../${gdb_dir}/configure --target=or32-elf \
+	  --with-pkgversion="OpenRISC 32-bit toolchain (built `date +%Y%m%d`)" \
+	  --with-bugurl=http://www.opencores.org/ \
+	  --with-or1ksim=${or1ksim_dir} \
+	  ${newlibconfigure} \
+	  --enable-fast-install=N/A --disable-libssp \
+	  --enable-languages=c --prefix=${install_dir}
+
+    if [ $? != 0 ]
+    then
+	echo "GDB configure failed."
+	exit 1
+    fi
+
+    cd ..
+
 fi
 
+# ------------------------------------------------------------------------------
 # Make everything. GCC can handle parallel make, the others can't
 cd ${build_dir}
 
@@ -281,21 +316,41 @@ then
     exit 1
 fi
 
-make ${newlibmake} all-gdb
+# Only make newlib if required.
+if [ "x${newlibmake}" != "x" ]
+then
+    make ${newlibmake} all-gdb
+    if [ $? != 0 ]
+    then
+	echo "make (Newlib) failed."
+	exit 1
+    fi
+fi
+
+# GDB has to be built separately at present.
+cd ..
+cd ${gdb_build_dir}
+
+make all-build all-gdb
 if [ $? != 0 ]
 then
-    echo "make (Newlib and GDB) failed."
+    echo "make (GDB) failed."
     exit 1
 fi
 
+cd ..
+
+# ------------------------------------------------------------------------------
 # Optionally check everything. We do each target in turn and don't blow out
 # here if the RC is not zero. Most of the test suites fail somewhere.
 if [ "x${docheck}" == "xtrue" ]
 then
-    export DEJAGNU=`pwd`/../site.exp
+    export DEJAGNU=`pwd`/site.exp
+
+    cd {build_dir}
 
     for tool_check in check-binutils check-gas check-ld check-gcc \
-	              ${newlibcheck} check-gdb
+	              ${newlibcheck}
     do
 	make ${tool_check}
 
@@ -304,21 +359,52 @@ then
 	    echo "make ${tool_check} failed."
 	fi
     done
+
+    # GDB has to be checked separately at present.
+    cd ..
+    cd ${gdb_build_dir}
+
+    make check-gdb
+
+    if [ $? != 0 ];
+    then
+	echo "make check-gdb failed."
+    fi
+
+    cd ..
 fi
 
+# ------------------------------------------------------------------------------
 # Install everything
 if [ "x${noinstall}" == "xfalse" ]
 then
+    cd ${build_dir}
+
     make install-binutils install-gas install-ld install-gcc \
-	 ${newlibinstall} install-gdb
+	 ${newlibinstall}
 
     if [ $? != 0 ];
     then
 	echo "make install failed."
 	exit 1
     fi
+
+    # GDB has to be installed separately at present.
+    cd ..
+    cd ${gdb_build_dir}
+
+    make install-gdb
+
+    if [ $? != 0 ];
+    then
+	echo "make install (GDB) failed."
+	exit 1
+    fi
+
+    cd ..
 fi
 
+# ------------------------------------------------------------------------------
 # If we have built newlib, move it. This means the target specific include
 # directory and the crt0.o and libraries from the target specific lib
 # directory.
