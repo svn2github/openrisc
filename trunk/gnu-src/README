@@ -25,9 +25,12 @@ SVN (not Or1ksim 0.4.0 release) and that the --or1ksim parameter should be
 used to point to the directory where or1ksim is installed (default
 /opt/or1ksim-new).
 
+The current version builds GDB separately, because it is not compatible with
+the libraries in binutils used in the unified build.
+
 Any questions should be posted on the OpenRISC forum at
 opencores.org/forum,OpenRISC.
 
 
 Jeremy Bennett
-22 July 2010
+31 July 2010

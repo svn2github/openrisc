@@ -13,7 +13,7 @@ setup_sim or32
 
 # Options for the simulator
 set cfg_file [lookfor_file ${srcdir} libgloss/or32/sim.cfg]
-set_board_info sim,options "-a \"-f ${cfg_file}\""
+set_board_info sim,options "-a \"-q -f ${cfg_file}\""
 
 # No multilib options needed by default.
 process_multilib_options ""
@@ -40,3 +40,7 @@ set_board_info gdb,nosignals  1
 # Used by a few gcc.c-torture testcases to delimit how large the stack can
 # be.
 set_board_info gcc,stack_size 65536
+
+# GDB sets additional behavior using global variables, rather than board_info
+global GDB_TESTCASE_OPTIONS
+set GDB_TESTCASE_OPTIONS "-mor32-newlib"

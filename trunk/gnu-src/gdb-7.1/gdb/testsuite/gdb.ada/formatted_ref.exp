@@ -38,7 +38,11 @@ set binfile ${objdir}/${subdir}/${testfile}
 
 file mkdir ${objdir}/${subdir}/${testdir}
 if {[gdb_compile_ada "${srcfile}" "${binfile}" executable [list debug ]] != "" } {
-    untested formatted-ref.exp
+    # JPB. This should just be unsupported (like all the other tests) when
+    # compilation fails (that will happen with gdb_compile_ada
+    # automatically). No need for "untested" here.
+
+    # untested formatted-ref.exp
     return -1
 }
 

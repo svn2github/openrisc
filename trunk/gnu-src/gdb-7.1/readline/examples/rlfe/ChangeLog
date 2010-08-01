@@ -1,3 +1,7 @@
+2010-08-01  Jeremy Bennett  <jeremy.bennett@embecosm.com>
+
+	* extern.h, os.h: Removed $Id$.
+
 2009-08-22  Ralf Wildenhues  <Ralf.Wildenhues@gmx.de>
 
 	* configure: Regenerate.
