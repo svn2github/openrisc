@@ -110,24 +110,22 @@ sim_open (SIM_OPEN_KIND                kind,
   /*!A global record of the simulator description */
   static SIM_DESC  static_sd = NULL;
 
-  int    local_argc;			/* Our local argv with extra args */
-  char **local_argv;
-
   /* If static_sd is not yet allocated, we allocate it and mark the simulator
-     as not yet open. */
+     as not yet open. This is the only time we can process any custom
+     arguments and only time we initialize the simulator. */
   if (NULL == static_sd)
     {
-      static_sd = (SIM_DESC) malloc (sizeof (*static_sd));
-      static_sd->sim_open = 0;
-    }
+      int    local_argc;		/* Our local argv with extra args */
+      char **local_argv;
 
-  /* If this is a second call, we cannot take any new configuration
-     arguments. We silently ignore them. */
-  if (!static_sd->sim_open)
-    {
       int    argc;			/* How many args originally */
       int    i;				/* For local argv */
       int    mem_defined_p = 0;		/* Have we requested a memory size? */
+
+      int    res;			/* Result of initialization */
+
+      static_sd = (SIM_DESC) malloc (sizeof (*static_sd));
+      static_sd->sim_open = 0;
 
       /* Count the number of arguments and see if we have specified either a
 	 config file or a memory size. */
@@ -163,40 +161,42 @@ sim_open (SIM_OPEN_KIND                kind,
 	}
 
       local_argv[i] = NULL;
-    }
 
-  /* We just pass the arguments to the simulator initialization. No class
-     image nor upcalls. Having initialized, stall the processor, free the
-     argument vector and return the SD (or NULL on failure) */
-  if (0 == or1ksim_init (local_argc, local_argv, NULL, NULL, NULL))
-    {
-
-      static_sd->callback    = callback;
-      static_sd->is_debug    = (kind == SIM_OPEN_DEBUG);
-      static_sd->myname      = (char *)xstrdup (argv[0]);
-      static_sd->sim_open    = 1;
-      static_sd->last_reason = sim_running;
-      static_sd->last_rc     = TARGET_SIGNAL_NONE;
-      static_sd->entry_point = OR32_RESET_EXCEPTION;
-      static_sd->resume_npc  = OR32_RESET_EXCEPTION;
-
-      or1ksim_set_stall_state (0);
+      /* Try to initialize, then we can free the local argument vector. If we
+	 fail to initialize return NULL to indicate that failure. */ 
+      res == or1ksim_init (local_argc, local_argv, NULL, NULL, NULL);
       free (local_argv);
-      return  static_sd;
+
+      if (res)
+	{
+	  return  NULL;			/* Failure */
+	}
     }
-  else
-    {
-      /* On failure return a NULL sd */
-      free (local_argv);
-      return  NULL;
-    }
+
+  /* We have either initialized a new simulator, or already have an intialized
+     simulator. Populate the descriptor and stall the processor, the return
+     the descriptor. */
+  static_sd->callback    = callback;
+  static_sd->is_debug    = (kind == SIM_OPEN_DEBUG);
+  static_sd->myname      = (char *)xstrdup (argv[0]);
+  static_sd->sim_open    = 1;
+  static_sd->last_reason = sim_running;
+  static_sd->last_rc     = TARGET_SIGNAL_NONE;
+  static_sd->entry_point = OR32_RESET_EXCEPTION;
+  static_sd->resume_npc  = OR32_RESET_EXCEPTION;
+
+  or1ksim_set_stall_state (0);
+
+  return  static_sd;
+
 }	/* sim_open () */
 
 
 /* ------------------------------------------------------------------------- */
 /*!Destroy a simulator instance.
 
-   We only have one instance, but we mark it as closed, so it can be reused.
+   We never actually close the simulator, because we have no way to
+   reinitialize it. Instead we just stall the processor and mark it closed.
 
    @param[in] sd        Simulation descriptor from sim_open ().
    @param[in] quitting  Non-zero if we cannot hang on errors.                */
@@ -214,6 +214,7 @@ sim_close (SIM_DESC  sd,
     {
       free (sd->myname);
       sd->sim_open = 0;
+      or1ksim_set_stall_state (0);
     }
 }	/* sim_close () */
 
@@ -400,8 +401,8 @@ sim_fetch_register (SIM_DESC       sd,
 		    unsigned char *buf,
 		    int            len)
 {
-  unsigned int  regval;
-  int           res;
+  unsigned long int  regval;
+  int                res;
 
   if (4 != len)
     {
@@ -544,11 +545,13 @@ sim_resume (SIM_DESC  sd,
 	    int       step,
 	    int       siggnal)
 {
-  unsigned int  npc;			/* Next Program Counter */
-  unsigned int  drr;			/* Debug Reason Register */
-  unsigned int  dsr;			/* Debug Stop Register */
-  unsigned int  dmr1;			/* Debug Mode Register 1*/
-  unsigned int  dmr2;			/* Debug Mode Register 2*/
+  unsigned long int  npc;		/* Next Program Counter */
+  unsigned long int  drr;		/* Debug Reason Register */
+  unsigned long int  dsr;		/* Debug Stop Register */
+  unsigned long int  dmr1;		/* Debug Mode Register 1*/
+  unsigned long int  dmr2;		/* Debug Mode Register 2*/
+
+  unsigned long int  retval;		/* Return value on Or1ksim exit */
 
   int                res;		/* Result of a run. */
 
@@ -592,7 +595,8 @@ sim_resume (SIM_DESC  sd,
     {
     case OR1KSIM_RC_HALTED:
       sd->last_reason = sim_exited;
-      (void) or1ksim_read_reg (OR32_FIRST_ARG_REGNUM, &(sd->last_rc));
+      (void) or1ksim_read_reg (OR32_FIRST_ARG_REGNUM, &retval);
+      sd->last_rc     = (unsigned int) retval;
       sd->resume_npc  = OR32_RESET_EXCEPTION;
       break;
 

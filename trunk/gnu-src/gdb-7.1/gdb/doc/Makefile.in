@@ -155,16 +155,16 @@ ANNOTATE_DOC_FILES = \
 	$(ANNOTATE_DOC_BUILD_INCLUDES)
 
 # GDB for OpenRISC 1000 User Guide
-OR1K_DOC_SOURCE_INCLUDES = \
+OR32_DOC_SOURCE_INCLUDES = \
 	$(srcdir)/fdl.texi \
 	$(srcdir)/gpl.texi
-OR1K_DOC_BUILD_INCLUDES = \
+OR32_DOC_BUILD_INCLUDES = \
 	gdb-cfg.texi \
 	GDBvn.texi
-OR1K_DOC_FILES = \
-	$(srcdir)/or1k.texinfo \
-	$(OR1K_DOC_SOURCE_INCLUDES) \
-	$(OR1K_DOC_BUILD_INCLUDES)
+OR32_DOC_FILES = \
+	$(srcdir)/or32.texinfo \
+	$(OR32_DOC_SOURCE_INCLUDES) \
+	$(OR32_DOC_BUILD_INCLUDES)
 
 #### Host, target, and site specific Makefile fragments come in here.
 ###
@@ -534,26 +534,26 @@ Makefile: Makefile.in $(host_makefile_frag) config.status
 # Clean these up before each run.  Avoids a catch 22 with not being
 # able to re-generate these files (to fix a corruption) because these
 # files contain a corruption.
-OR1K_TEX_TMPS = or1k.aux or1k.cp* or1k.fn* or1k.ky* \
-	or1k.log or1k.pg* or1k.toc or1k.tp* or1k.vr*
+OR32_TEX_TMPS = or32.aux or32.cp* or32.fn* or32.ky* \
+	or32.log or32.pg* or32.toc or32.tp* or32.vr*
 
 # GDB for OpenRISC 1000 DOCUMENTATION: TeX dvi file
-or1k.dvi : $(OR1K_DOC_FILES)
-	rm -f $(OR1K_TEX_TMPS)
-	$(SET_TEXINPUTS) $(TEXI2DVI) $(srcdir)/or1k.texinfo
+or32.dvi : $(OR32_DOC_FILES)
+	rm -f $(OR32_TEX_TMPS)
+	$(SET_TEXINPUTS) $(TEXI2DVI) $(srcdir)/or32.texinfo
 
-or1k.ps: or1k.dvi
+or32.ps: or32.dvi
 	$(DVIPS) -o $@ $?
 
-or1k.pdf: $(OR1K_DOC_FILES)
-	rm -f $(OR1K_TEX_TMPS)
-	$(SET_TEXINPUTS) $(TEXI2DVI) --pdf $(srcdir)/or1k.texinfo
+or32.pdf: $(OR32_DOC_FILES)
+	rm -f $(OR32_TEX_TMPS)
+	$(SET_TEXINPUTS) $(TEXI2DVI) --pdf $(srcdir)/or32.texinfo
 
-or1k.info: $(OR1K_DOC_FILES)
-	$(MAKEINFO)  -I $(srcdir) -o or1k.info $(srcdir)/or1k.texinfo
+or32.info: $(OR32_DOC_FILES)
+	$(MAKEINFO)  -I $(srcdir) -o or32.info $(srcdir)/or32.texinfo
 
-or1k_toc.html: $(OR1K_DOC_FILES)
-	$(MAKEHTML) $(MAKEHTMLFLAGS) $(srcdir)/or1k.texinfo
+or32_toc.html: $(OR32_DOC_FILES)
+	$(MAKEHTML) $(MAKEHTMLFLAGS) $(srcdir)/or32.texinfo
 
 force:
 
@@ -570,7 +570,7 @@ mostlyclean:
 	rm -f $(GDBINT_TEX_TMPS)
 	rm -f $(STABS_TEX_TMPS)
 	rm -f $(ANNOTATE_TEX_TMPS)
-	rm -f $(OR1K_TEX_TMPS)
+	rm -f $(OR32_TEX_TMPS)
 	rm -f sedref.dvi sedref.tex tmp.sed
 
 clean: mostlyclean

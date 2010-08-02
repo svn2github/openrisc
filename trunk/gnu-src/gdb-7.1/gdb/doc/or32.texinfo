@@ -4,7 +4,7 @@
 @c %**start of header
 @c makeinfo ignores cmds prev to setfilename, so its arg cannot make use
 @c of @set vars.  However, you can override filename with makeinfo -o.
-@setfilename or1k.info
+@setfilename or32.info
 @c
 @include gdb-cfg.texi
 @c
@@ -37,7 +37,7 @@
 @c manuals to an info tree.
 @dircategory Software development
 @direntry
-* Gdb for OpenRISC 1000: (gdb for Or1K).   The GNU debugger for OpenRISC 1000.
+* Gdb for OpenRISC 1000: (gdb for Or32).   The GNU debugger for OpenRISC 1000.
 @end direntry
 
 @ifinfo
@@ -67,8 +67,8 @@ copy and modify this Manual.''
 @page
 @tex
 {\parskip=0pt
-\hfill Please report bugs using the OpenCores tracker:\par
-\hfill @uref{www.opencores.org/ptracker.cgi/list/or1k}.\par
+\hfill Please report bugs using the OpenRISC bug tracker:\par
+\hfill @uref{http://opencores.org/openrisc,bugtracker}.\par
 \hfill {\it Debugging the OpenRISC 1000 with @value{GDBN}}\par
 \hfill \TeX{}info \texinfoversion\par
 }
@@ -79,8 +79,8 @@ Copyright @copyright{} 2008
 Embecosm Limited.
 @sp 2
 Published by Embecosm Limited@*
-68 Hambledon Road
-Bournemouth BH7 6PJ, UK@*
+Palamos House #104
+Lymington SO41 9AL, UK@*
 
 Permission is granted to copy, distribute and/or modify this document
 under the terms of the GNU Free Documentation License, Version 3 or
@@ -122,7 +122,7 @@ Copyright (C) 2008 Embecosm Limited
 @contents
 
 @node Summary
-@unnumbered Summary of @value{GDBN} with OpenRISC 1000
+@unnumbered Summary of @value{GDBN} for the OpenRISC 1000
 @cindex Overview
 @cindex Summary
 
@@ -140,11 +140,18 @@ on a separate host processor. It communicates with the target via the
 @cindex JTAG
 @cindex jtag, target
 @cindex target jtag
-For backwards compatibility, @value{GDBN} for OpenRISC also supports the
-legacy custom remote protocol, which drives the JTAG interface on the OpenRISC
-1000.  This is provided by adding a special target, ``jtag'' to @value{GDBN},
-allowing the debugger to connect via the JTAG interface. @xref{Connecting to
-the Target,,Connecting to the Target}.
+Past releases of @value{GDBN} for OpenRISC supported a custom remote
+protocol, which drives the JTAG interface on the OpenRISC 1000. This is
+now obsolete, since all targets support the @dfn{Remote Serial
+Protocol}, with adapters available to drive JTAG. Support has been
+dropped from @value{GDBN} release 7.1.
+
+@cindex simulator,
+@cindex simlator, target
+@cindex target simulator
+This release implements a simulator, based on Or1ksim, the OpenRISC
+architectural simulator. @command{target sim} will connect to a vanilla
+Or1ksim model with 8MB of RAM starting at address zero.
 
 @cindex SPR
 @cindex Special Purpose Registers
@@ -177,11 +184,11 @@ program output is show like this: @code{Hello World!}.
 @cindex @command{gdbtui}
 @cindex @command{ddd}
 For those who like their debugging graphical, the @command{gdbtui} command is
-available (typically as @command{or32-uclinux-gdbtui}). @value{GDBN} for
+available (typically as @command{or32-elf-gdbtui}). @value{GDBN} for
 OpenRISC 1000 can also be run under @command{ddd} as follows:
 
 @example
-@command{ddd --debugger=or32-uclinux-gdb --gdb}
+@command{ddd --debugger=or32-elf-gdb --gdb}
 @end example
 
 @menu
@@ -196,8 +203,8 @@ user manual, `Debugging with GDB: The GNU Source-Level Debugger''.
 
 @cindex contributors, OpenRISC 1000
 There is no official history of contributors to the OpenRISC 1000
-version. However the current author believes the original GDB 5.0 and 5.3
-ports were the work of:
+version. However the current author believes the original @value{GDBN}
+5.0 and 5.3 ports were the work of:
 
 @itemize @bullet
 @item
@@ -226,8 +233,8 @@ of Wisconsin who wrote the main GDB interface; and
 @cindex Ziomkowski, Chris
 @cindex OpenRISC 1000 JTAG interface
 @cindex JTAG, OpenRISC 1000 interface
-Mark Mlinar at Cygnus Support and Chris Ziomkowski at ASICS.ws,who wrote the
-OpenRISC JTAG interface.
+Mark Mlinar at Cygnus Support and Chris Ziomkowski at ASICS.ws, who wrote the
+OpenRISC JTAG interface (now obsolete).
 @end itemize
 
 @cindex Jeremy Bennett
@@ -252,20 +259,6 @@ There are two ways to connect to an OpenRISC 1000 target with GDB.
 
 @enumerate
 @item
-@cindex @command{target jtag} command
-@cindex commands, @command{target jtag}
-@cindex OpenRISC 1000 target, local connecting
-@cindex target, local, OpenRISC 1000, connecting
-@cindex connecting, OpenRISC 1000 target, local
-@cindex local OpenRISC 1000 target, connecting
-@cindex OpenRISC 1000 target, direct connecting
-@cindex target, direct, OpenRISC 1000, connecting
-@cindex connecting, OpenRISC 1000 target, direct
-@cindex direct OpenRISC 1000 target, connecting
-To hardware directly connected via a JP1 header linked to the parallel
-port. This uses the @value{GDBN} command @command{target jtag}.
-
-@item
 @cindex @command{target remote} command
 @cindex commands, @command{target remote}
 @cindex @command{target extended-remote} command
@@ -280,90 +273,36 @@ is running the architectural simulator using the standard @value{GDBN}
 @command{target remote} or @command{target extended-remote}.
 
 @item
-@cindex @command{target jtag} command
-@cindex commands, @command{target jtag}
-@cindex OpenRISC 1000 target, remote connecting via JTAG
+@cindex @command{target sim} command
+@cindex commands, @command{target sim}
+@cindex OpenRISC 1000 target, simulator
+@cindex sim, target
+@cindex target sim
 @cindex target, remote, OpenRISC 1000, connecting via JTAG
 @cindex connecting, OpenRISC 1000 target, remote via JTAG
 @cindex remote OpenRISC 1000 target, connecting via JTAG
-Via a TCP/IP socket to a machine which has the hardware connected, or
-is running the architectural simulator using the custom OpenRISC 1000 Remote
-JTAG protocol. This uses the @value{GDBN} command @command{target jtag}.
-
-@quotation Note
-This connection mechanism is deprecated. It remains for backward compatibility
-only.
-@end quotation
+To the OpenRISC architectural simulator, Or1ksim, integrated as a GDB
+simulator.  This uses the @value{GDBN} command @command{target sim}.
 
 @end enumerate
 
-@cindex OpenRISC 1000 Architectural Simulator
-@cindex OpenRISC 1000 Architectural Simulator, patch
-@cindex patch, OpenRISC 1000 Architectural Simulator
-@cindex Or1ksim
-@cindex Or1ksim, patch
-@cindex patch, Or1ksim
-@quotation Caution
-If used with version 0.2.0 of the architectural simulator, Or1ksim,
-@value{GDBN} version @value{GDBVN} requires a patch to be applied to the
-architectural simulator. This should be available on the OpenCores website, or
-contact the author directly. Only the legacy OpenRISC 1000 Remote JTAG
-Protocol interface is available for this version of the architectural
-simualtor.
+@quotation Note
+Connection via the obsolete proprietary OpenRISC JTAG protocol is no
+longer supported.
+@end quotation
 
-The user is strongly recommended to use Or1ksim 0.3.0 or later, since this
-interfaces directly to @value{GDBN} using the @dfn{Remote Serial Protocol}.
+@cindex OpenRISC 1000 Architectural Simulator
+@cindex Or1ksim
+@quotation Caution
+This release of GDB requires the latest experimental version of Or1ksim,
+built from SVN revision 229 or later.
 @end quotation
 
 @menu
-* Direct JTAG Connection::            Direct connection via a JTAG JP1
-                                      interface
 * Remote Serial Protocol Connection:: Connection via the @value{GDBN} Remote
                                       Serial Protocol Interface
-* Remote JTAG Connection::            Connection via the OpenRISC 1000 Remote
-                                      JTAG Interface
+* Simulator Connection::              Connection to the built in simulator
 @end menu
-
-@node Direct JTAG Connection
-@section Direct connection via a JTAG JP1 Interface
-@cindex OpenRISC 1000 target, local connecting
-@cindex target, local, OpenRISC 1000, connecting
-@cindex connecting, OpenRISC 1000 target, local
-@cindex local OpenRISC 1000 target, connecting
-@cindex OpenRISC 1000 target, direct connecting
-@cindex target, direct, OpenRISC 1000, connecting
-@cindex connecting, OpenRISC 1000 target, direct
-@cindex direct OpenRISC 1000 target, connecting
-
-In this case the the device to which the JP1 header is connected must be
-specifed to the @command{target jtag} command. Typically that will be the
-parallel printer port, so the command would be:
-
-@cindex local @command{target jtag} command
-@cindex direct @command{target jtag} command
-@cindex @command{target jtag} command, local
-@cindex @command{target jtag} command, direct
-@cindex commands, @command{target jtag}, local
-@cindex commands, @command{target jtag}, direct
-@cindex local target specification
-@cindex direct target specification
-@cindex target specification, local
-@cindex target specification, direct
-@example
-@command{target jtag /dev/lp}
-@end example
-
-@cindex @command{target jtag} command, local, testing
-@cindex @command{target jtag} command, direct, testing
-@cindex commands, @command{target jtag}, local, testing
-@cindex commands, @command{target jtag}, direct, testing
-@quotation Caution
-The current author is not aware of anyone using the JP1
-interface. As a result this code has not been tested in the port to
-@value{GDBN} version @value{GDBVN}. Modern hardware connections are usually via
-interfaces such as USB, for which the OpenRISC Remote Interface can be used
-(@pxref{Remote JTAG Connection,,Remote JTAG Connection}).
-@end quotation
 
 @node Remote Serial Protocol Connection
 @section Connection via the @value{GDBN} Remote Serial Protocol
@@ -405,107 +344,47 @@ omitted, thus:
 @command{target remote :51000}
 @end example
 
-@node Remote JTAG Connection
-@section Connection via the OpenRISC 1000 Remote JTAG Interface
-@cindex OpenRISC 1000 target, remote connecting
-@cindex target, remote, OpenRISC 1000, connecting
-@cindex connecting, OpenRISC 1000 target, remote
-@cindex remote OpenRISC 1000 target, connecting
+@node Simulator Connection
+@section Connection to the Built in Simulator
+@cindex OpenRISC 1000 target, simulator
+@cindex target, simulator, OpenRISC 1000, connecting
+@cindex connecting, OpenRISC 1000 target, simulator
+@cindex simulator OpenRISC 1000 target, connecting
 
-Historically, @value{GDBN} communicated with remote OpenRISC 1000 targets
-using a customer protocol, the @dfn{OpenRISC 1000 Remote JTAG
-Interface}.
+The simplest way to run programs under @value{GDBN} is to connect to the
+built in simulator. This is the OpenRISC architectural simulator,
+Or1ksim, which has been integrated into GDB as a standard simulator.
 
-This protocol is maintained for backwards compatibility, but is now
-deprecated. It communicates to the target through a TCP/IP socket. The target
-must then implement the client side of the interface to drive either physical
-hardware (for example through a USB/JTAG connector) or a simulation of the
-hardware (such as the OpenRISC Architectural Simulator).
-
-Although referred to as the @emph{remote} interface, the target may actually
-be on the same machine, just running in a separate process, with its own
-terminal window.
-
-For example, to connect to the OpenRISC 1000 Architectural simulator, which is
-running on machine ``thomas'' and has been configured to talk to @value{GDBN}
-on port 50000, I could use the command:
-
-@cindex remote @command{target jtag} command
-@cindex @command{target jtag} command, remote
-@cindex commands, @command{target jtag}, remote
-@cindex remote target specification
-@cindex target specification, remote
+@cindex @command{target sim} command
+@cindex commands, @command{target sim}
 @example
-@command{target jtag jtag://thomas:50000}
+@command{target sim}
 @end example
 
-The target machine is specified after the @b{jtag://} and separated from the
-target port by a colon. If the architectural simulator was running on the same
-machine, just @b{locahost} would suffice as the machine name, thus:
+By default, the simulator is configured with 8MB of RAM running from
+address 0x0, and the simulator runs with the Or1ksim @command{--quiet}
+option, to mimize extraneous output.
 
-@cindex remote target specification, same machine
-@cindex target specification, same machine
-@example
-@command{target jtag jtag://localhost:50000}
-@end example
-
-@cindex Igor Mohor
-@cindex Mohor, Igor
-@cindex Debug interface types
-Unfortunately there are now two different flavours of the JTAG
-interface used with OpenRISC 1000. The original version was created
-for use with the OpenRISC 1000 System-on-Chip, @b{ORPSoC}. A new
-(smaller and simpler) JTAG interface was developed by Igor Mohor in
-2004, which is used on some designs.
-
-The default behavior of @value{GDBN} is to use the original ORPSoC
-version of the interface for backwards compatibility. @value{GDBN} can
-use the Igor Mohor version by specifying for example:
+@cindex @command{target sim}, additional options
+Additional options may be specified to the underlying Or1ksim engine,
+exactly as when using Or1ksim standalone, with the entire argument
+string prefixed by @command{-f}.  For example.
 
 @example
-@command{target jtag jtag_mohor://localhost:50000}
+@command{target sim "-f --report-memory-errors -f mysim.cfg"}
 @end example
 
-This interface is only available with remote connections using the legacy
-OpenRISC 1000 Remote JTAG Protocol (deprecated). The direct JP1 interface can
-support only the ORPSoC version of JTAG.
+@quotation Note
+It is possible to use @command{target sim} many times. However any arguments
+are only applied the first time. Or1ksim can only be instantiated
+once. On the completion of a run it is not actually cosed, merely
+stalled.
+@end quotation
 
-The recommended approach is to use the @value{GDBN} @dfn{Remote Serial
-Protocol} which interfaces directly to the simulator, and is independent of
-the JTAG implementation used.
-
-For completeness
-
-@example
-@command{target jtag jtag_orpsoc://localhost:50000}
-@end example
-
-is provided as a synonym for:
-
-@example
-@command{target jtag jtag://localhost:50000}
-@end example
-
-@cindex reset
-@cindex resetting the target
-@cindex target reset
-By default, establishing a connection @emph{does not} reset the target. This
-allows debugging to resume a partially complete program on connection. If a
-reset is required, the keyworkd @command{RESET} (case insensitive) may be
-added at the end of the @command{target} command. For example:
-
-@example
-@command{target jtag jtag://localhost:50000 reset}
-@end example
-
-@cindex robustness, OpenRISC remote JTAG interface
-@cindex JTAG, robustness or remote interface
-@cindex Remote Serial Protocol
-@cindex RSP
-@quotation Warning
-The OpenRISC remote JTAG interface is not particularly robust. In particular
-dropping and reconnecting sessions does not seem to work well. This was a key
-factor in its replacement by the generic @value{GDBN} Remote Serial Interface.
+@quotation Caution 
+Any additional configuration must take account of the existing
+8MB memory block. At present there is no way to remove that memory
+block.
 @end quotation
 
 @node OpenRISC 1000 Specific Commands
@@ -702,7 +581,7 @@ location 0x0. The debugging interface is enabled by using a debug section.
 @example
 section debug
   enabled         =          1
-  gdb_enabled     =          1
+  rsp_enabled     =          1
   server_port     =      50000
 end
 @end example
@@ -711,7 +590,7 @@ The architectural simulator is started in its own terminal window. If the
 configuration is in @code{rsp.cfg}, then the command might be:
 
 @example
-@command{or32-uclinux-sim -f rsp.cfg}
+@command{or32-elf-sim -f rsp.cfg}
 Reading script file from 'rsp.cfg'...
 Building automata... done, num uncovered: 0/213.
 Parsing operands data... done.
@@ -724,7 +603,7 @@ Note that no program is specified - that will be loaded from @value{GDBN}.
 In a separate window start up @value{GDBN}.
 
 @example
-@command{or32-uclinux-gdb}
+@command{or32-elf-gdb}
 @end example
 
 A local copy of the symbol table is needed, specified with the @command{file}
@@ -742,7 +621,7 @@ License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>
 This is free software: you are free to change and redistribute it.
 There is NO WARRANTY, to the extent permitted by law.  Type "show copying"
 and "show warranty" for details.
-This GDB was configured as "--host=i686-pc-linux-gnu --target=or32-uclinux".
+This GDB was configured as "--host=i686-pc-linux-gnu --target=or32-elf".
 (gdb) @command{file hello}
 Reading symbols from /home/jeremy/svntrunk/GNU/gdb-6.8/progs_or32/hello...done.
 (gdb) 
