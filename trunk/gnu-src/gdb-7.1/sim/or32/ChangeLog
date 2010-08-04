@@ -1,3 +1,9 @@
+2010-08-04  Jeremy Bennett  <jeremy.bennett@embecosm.com>
+
+	* wrapper.c (sim_resume): Only set the NPC back on a true
+	breakpoint, not a single step. Clear the single step flag if NOT
+	stepping before unstalling.
+
 2010-07-20  Jeremy Bennett  <jeremy.bennett@embecosm.com>
 
 	* configure: Regenerated.

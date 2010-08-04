@@ -568,11 +568,18 @@ sim_resume (SIM_DESC  sd,
   dsr |= OR32_SPR_DSR_TE;
   (void) or1ksim_write_spr (OR32_SPR_DSR, dsr);
 
-  /* Set the single step trigger in Debug Mode Register 1 if we are stepping. */
+  /* Set the single step trigger in Debug Mode Register 1 if we are
+     stepping. Otherwise clear it! */
   if (step)
     {
       (void) or1ksim_read_spr (OR32_SPR_DMR1, &dmr1);
       dmr1 |= OR32_SPR_DMR1_ST;
+      (void) or1ksim_write_spr (OR32_SPR_DMR1, dmr1);
+    }
+  else
+    {
+      (void) or1ksim_read_spr (OR32_SPR_DMR1, &dmr1);
+      dmr1 &= ~OR32_SPR_DMR1_ST;
       (void) or1ksim_write_spr (OR32_SPR_DMR1, dmr1);
     }
 
@@ -603,7 +610,17 @@ sim_resume (SIM_DESC  sd,
     case OR1KSIM_RC_BRKPT:
       sd->last_reason = sim_stopped;
       sd->last_rc     = TARGET_SIGNAL_TRAP;
-      (void) or1ksim_read_reg (OR32_PPC_REGNUM, &(sd->resume_npc));
+
+      /* This could have been a breakpoint or single step. */
+      if (step)
+	{
+	  (void) or1ksim_read_reg (OR32_NPC_REGNUM, &(sd->resume_npc));
+	}
+      else
+	{
+	  (void) or1ksim_read_reg (OR32_PPC_REGNUM, &(sd->resume_npc));
+	}
+
       break;
 
     case OR1KSIM_RC_OK:
