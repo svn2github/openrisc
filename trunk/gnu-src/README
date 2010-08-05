@@ -28,6 +28,35 @@ used to point to the directory where or1ksim is installed (default
 The current version builds GDB separately, because it is not compatible with
 the libraries in binutils used in the unified build.
 
+Apple OS X notes:
+
+  * Install required libraries with MacPorts:
+
+Some GNU libraries that are not supplied as standard with Apple's OS X must be
+installed. They could be built and installed independently but the author found
+the  MacPorts package management system a simple and easy way to install them.
+
+First the MacPorts app must be installed. To install MacPorts follow the
+instructions on the  project's page here:  http://www.macports.org
+
+Once MacPorts is installed install the packages "gmp", "mpfr", and "dejagnu" 
+with the command:
+
+$ sudo port install gmp mpfr dejagnu
+
+  * Build environment variables:
+
+Once the require libraries are installed, their location must be passed to the 
+compiler. The CPPFLAGS, CFLAGS and LFLAGS environment variables are used for
+this. The standard place MacPorts places its installed libraries is /opt/local
+so if this default location was used export the following flags before running 
+the bld.sh script:
+$ export CPPFLAGS="-I/opt/local/include"
+$ export CFLAGS="-L/opt/local/lib"
+$ export LDFLAGS="-L/opt/local/lib"
+
+The bld.sh script should then be OK to run as described above.
+
 Any questions should be posted on the OpenRISC forum at
 opencores.org/forum,OpenRISC.
 
