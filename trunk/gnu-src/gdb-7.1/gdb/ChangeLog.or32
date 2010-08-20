@@ -1,3 +1,17 @@
+2010-08-19  Jeremy Bennett  <jeremy.bennett@embecosm.com>
+
+	* or32-tdep.c (or32_register_name): Changed to rnn rather than
+	gprnn to mach the assembler.
+	(or32_is_arg_reg, or32_is_callee_saved_reg): Added.
+	(or32_skip_prologue): Don't use skip_prologue_using_sal. Check for
+	argument as well as callee saved registers in prologue.
+	(or32_frame_cache):Check for argument as well as callee saved
+	registers in prologue.
+
+2010-08-13  Jeremy Bennett  <jeremy.bennett@embecosm.com>
+
+	* or32-tdep.c (or32_frame_base_address): Frame base is FP, not SP.
+
 2010-07-30  Jeremy Bennett  <jeremy.bennett@embecosm.com>
 
 	* or32-tdep.c (or32_fetch_instruction): Rewritten to use

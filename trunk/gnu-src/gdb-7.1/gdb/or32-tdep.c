@@ -578,10 +578,10 @@ or32_register_name (struct gdbarch *gdbarch,
   static char *or32_gdb_reg_names[OR32_TOTAL_NUM_REGS] =
     {
       /* general purpose registers */
-      "gpr0",  "gpr1",  "gpr2",  "gpr3",  "gpr4",  "gpr5",  "gpr6",  "gpr7",
-      "gpr8",  "gpr9",  "gpr10", "gpr11", "gpr12", "gpr13", "gpr14", "gpr15",
-      "gpr16", "gpr17", "gpr18", "gpr19", "gpr20", "gpr21", "gpr22", "gpr23",
-      "gpr24", "gpr25", "gpr26", "gpr27", "gpr28", "gpr29", "gpr30", "gpr31",
+      "r0",  "r1",  "r2",  "r3",  "r4",  "r5",  "r6",  "r7",
+      "r8",  "r9",  "r10", "r11", "r12", "r13", "r14", "r15",
+      "r16", "r17", "r18", "r19", "r20", "r21", "r22", "r23",
+      "r24", "r25", "r26", "r27", "r28", "r29", "r30", "r31",
 
       /* previous program counter, next program counter and status register */
       "ppc",   "npc",   "sr"
@@ -758,13 +758,54 @@ or32_register_reggroup_p (struct gdbarch  *gdbarch,
 
 
 /*----------------------------------------------------------------------------*/
+/*!Is this one of the registers used for passing arguments?
+
+   These are r3-r8 in the API.
+
+   @param[in] regnum  The register to consider
+
+   @return  Non-zero (TRUE) if it is an argument register, zero (FALSE)
+            otherwise.                                                        */
+/*----------------------------------------------------------------------------*/
+static int
+or32_is_arg_reg (unsigned int  regnum)
+{
+  return (OR32_FIRST_ARG_REGNUM <= regnum) && (regnum <= OR32_LAST_ARG_REGNUM);
+
+}	/* or32_is_arg_reg () */
+
+
+/*----------------------------------------------------------------------------*/
+/*!Is this a callee saved register?
+
+   These are r10, r12, r14, r16, r18, r20, r22, r24, r26, r28 and r30 in the
+   API.
+
+   @param[in] regnum  The register to consider
+
+   @return  Non-zero (TRUE) if it is a callee saved register, zero (FALSE)
+            otherwise.                                                        */
+/*----------------------------------------------------------------------------*/
+static int
+or32_is_callee_saved_reg (unsigned int  regnum)
+{
+  return (OR32_FIRST_SAVED_REGNUM <= regnum) && (0 == regnum % 2);
+
+}	/* or32_is_callee_saved_reg () */
+
+
+/*----------------------------------------------------------------------------*/
 /*!Skip a function prolog
 
    If the input address, PC, is in a function prologue, return the address of
    the end of the prologue, otherwise return the input  address.
 
    @see For details of the stack frame, see the function
-   or32_frame_cache().
+        or32_frame_cache().
+
+   @note The old version of this function used to use skip_prologue_using_sal
+         to skip the prologue without checking if it had actually worked. It
+         doesn't for STABS, so we had better check for a valid result.
 
    This function reuses the helper functions from or32_frame_cache() to
    locate the various parts of the prolog, any or all of which may be missing.
@@ -775,7 +816,6 @@ or32_register_reggroup_p (struct gdbarch  *gdbarch,
    @return  The address of the end of the prolog if the PC is in a function
             prologue, otherwise the input  address.                           */
 /*----------------------------------------------------------------------------*/
-
 static CORE_ADDR
 or32_skip_prologue (struct gdbarch *gdbarch,
 		    CORE_ADDR       pc) 
@@ -789,12 +829,15 @@ or32_skip_prologue (struct gdbarch *gdbarch,
   int           frame_size = 0;
 
   /* Try using SAL first if we have symbolic information available. */
-  if (find_pc_partial_function (pc, NULL, NULL, NULL))
-    {
-      CORE_ADDR  prologue_end = skip_prologue_using_sal( gdbarch, pc );
+  /* if (find_pc_partial_function (pc, NULL, NULL, NULL)) */
+  /*   { */
+  /*     CORE_ADDR  prologue_end = skip_prologue_using_sal( gdbarch, pc ); */
 
-      return  (prologue_end > pc) ? prologue_end : pc;
-    }
+  /*     if (0 != prologue_end) */
+  /* 	{ */
+  /* 	  return  (prologue_end > pc) ? prologue_end : pc; */
+  /* 	} */
+  /*   } */
 
   /* Look to see if we can find any of the standard prologue sequence. All
      quite difficult, since any or all of it may be missing. So this is just a
@@ -837,14 +880,17 @@ or32_skip_prologue (struct gdbarch *gdbarch,
       inst  = or32_fetch_instruction (gdbarch, addr);
     }
 
-  /* Look for callee-saved register being saved. The register must be one
-     of the 10 callee saved registers (r10, r12, r14, r16, r18, r20, r22,
-     r24, r26, r28, r30).*/
+  /* Look for arguments or callee-saved register being saved. The register
+     must be one of the arguments (r3-r8) or the 10 callee saved registers
+     (r10, r12, r14, r16, r18, r20, r22, r24, r26, r28, r30). The base
+     register must be the FP (for the args) or the SP (for the callee_saved
+     registers). */
   while (1)
     {
       if (or32_analyse_l_sw (inst, &simm, &ra, &rb) &&
-	  (OR32_SP_REGNUM == ra) && (rb >= OR32_FIRST_SAVED_REGNUM) &&
-	  (0 == rb % 2) && (simm >= 0) && (0 == (simm % 4)))
+	  (((OR32_FP_REGNUM == ra) && or32_is_arg_reg (rb)) ||
+	   ((OR32_SP_REGNUM == ra) && or32_is_callee_saved_reg (rb))) &&
+	  (0 == (simm % 4)))
 	{
 	  addr += OR32_INSTLEN;
 	  inst  = or32_fetch_instruction (gdbarch, addr);
@@ -1248,8 +1294,9 @@ or32_frame_cache (struct frame_info  *this_frame,
                                    get_frame_register_unsigned (this_frame,
 								OR32_SP_REGNUM);
 
-  /* The frame base of THIS frame is its stack pointer. This is the same
-     whether we are frameless or not. */
+  /* The frame base of THIS frame (for ID purposes only - frame base is an
+     overloaded term) is its stack pointer. This is the same whether we are
+     frameless or not. */
   trad_frame_set_this_base (info, this_sp);
 
   /* The default is to find the PC of the PREVIOUS frame in the link register
@@ -1346,14 +1393,17 @@ or32_frame_cache (struct frame_info  *this_frame,
 	  trad_frame_set_reg_addr (info, OR32_NPC_REGNUM, this_sp + simm);
 	}
 
-      /* Look for callee-saved register being save. The register must be one
-	 of the 10 callee saved registers (r10, r12, r14, r16, r18, r20, r22,
-	 r24, r26, r28, r30).*/
+      /* Look for arguments or callee-saved register being saved. The register
+	 must be one of the arguments (r3-r8) or the 10 callee saved registers
+	 (r10, r12, r14, r16, r18, r20, r22, r24, r26, r28, r30). The base
+	 register must be the FP (for the args) or the SP (for the
+	 callee_saved registers). */
       while (addr < end_addr)
 	{
 	  if (or32_analyse_l_sw (inst, &simm, &ra, &rb) &&
-	      (OR32_SP_REGNUM == ra) && (rb >= OR32_FIRST_SAVED_REGNUM) &&
-	      (0 == rb % 2) && (simm >= 0) && (0 == (simm % 4)))
+	      (((OR32_FP_REGNUM == ra) && or32_is_arg_reg (rb)) ||
+	       ((OR32_SP_REGNUM == ra) && or32_is_callee_saved_reg (rb))) &&
+	      (0 == (simm % 4)))
 	    {
 	      addr += OR32_INSTLEN;
 	      inst  = or32_fetch_instruction (gdbarch, addr);
@@ -1465,7 +1515,7 @@ static const struct frame_unwind or32_frame_unwind = {
    The implementations has changed since GDB 6.8, since we are now provided
    with the address of THIS frame, rather than the NEXT frame.
 
-   For the OR32, the base address is defined to be the stack pointer.
+   For the OR32, the base address is the frame pointer
 
    @param[in] this_frame      The current stack frame.
    @param[in] prologue_cache  Any cached prologue for THIS function.
@@ -1477,7 +1527,7 @@ static CORE_ADDR
 or32_frame_base_address (struct frame_info  *this_frame,
 			 void              **prologue_cache) 
 {
-  return  (CORE_ADDR) get_frame_register_unsigned (this_frame, OR32_SP_REGNUM);
+  return  (CORE_ADDR) get_frame_register_unsigned (this_frame, OR32_FP_REGNUM);
 
 }	/* or32_frame_base_address() */
 

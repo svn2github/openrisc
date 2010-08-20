@@ -47,6 +47,9 @@
 #include "or1ksim.h"
 #include "or32sim.h"
 
+/* Define this to turn on debug messages */
+/* #define OR32_SIM_DEBUG */
+
 
 /* ------------------------------------------------------------------------- */
 /*!Create a fully initialized simulator instance.
@@ -110,6 +113,10 @@ sim_open (SIM_OPEN_KIND                kind,
   /*!A global record of the simulator description */
   static SIM_DESC  static_sd = NULL;
 
+#ifdef OR32_SIM_DEBUG
+  printf ("sim_open called\n");
+#endif
+
   /* If static_sd is not yet allocated, we allocate it and mark the simulator
      as not yet open. This is the only time we can process any custom
      arguments and only time we initialize the simulator. */
@@ -131,8 +138,9 @@ sim_open (SIM_OPEN_KIND                kind,
 	 config file or a memory size. */
       for (argc = 1; NULL != argv[argc]; argc++)
 	{
-	  /* printf ("argv[%d] = %s\n", argc, argv[argc]); */
-
+#ifdef OR32_SIM_DEBUG
+	  printf ("argv[%d] = %s\n", argc, argv[argc]);
+#endif
 	  if ((0 == strcmp (argv[argc], "-f"))    ||
 	      (0 == strcmp (argv[argc], "-file")) ||
 	      (0 == strcmp (argv[argc], "-m"))    ||
@@ -164,7 +172,7 @@ sim_open (SIM_OPEN_KIND                kind,
 
       /* Try to initialize, then we can free the local argument vector. If we
 	 fail to initialize return NULL to indicate that failure. */ 
-      res == or1ksim_init (local_argc, local_argv, NULL, NULL, NULL);
+      res = or1ksim_init (local_argc, local_argv, NULL, NULL, NULL);
       free (local_argv);
 
       if (res)
@@ -205,6 +213,10 @@ void
 sim_close (SIM_DESC  sd,
 	   int       quitting)
 {
+#ifdef OR32_SIM_DEBUG
+  printf ("sim_close called\n");
+#endif
+
   if (NULL == sd)
     {
       fprintf (stderr,
@@ -255,6 +267,10 @@ sim_load (SIM_DESC    sd,
 	  int         from_tty)
 {
   bfd *prog_bfd;
+
+#ifdef OR32_SIM_DEBUG
+  printf ("sim_load called\n");
+#endif
 
   /* Use the built in loader, which will in turn use our write function. */
   prog_bfd = sim_load_file (sd, sd->myname, sd->callback, prog, abfd,
@@ -314,6 +330,10 @@ sim_create_inferior (SIM_DESC     sd,
 		     char       **argv  ATTRIBUTE_UNUSED,
 		     char       **env   ATTRIBUTE_UNUSED)
 {
+#ifdef OR32_SIM_DEBUG
+  printf ("sim_create_inferior called\n");
+#endif
+
   or1ksim_set_stall_state (1);
   sd->entry_point = (NULL == abfd) ? OR32_RESET_EXCEPTION :
                                     bfd_get_start_address (abfd);
@@ -343,7 +363,9 @@ sim_read (SIM_DESC       sd  ATTRIBUTE_UNUSED,
 {
   int res = or1ksim_read_mem (mem, buf, len);
 
-  /* printf ("Reading %d bytes from 0x%08p\n", len, mem); */
+#ifdef OR32_SIM_DEBUG
+  printf ("Reading %d bytes from 0x%08p\n", len, mem);
+#endif
 
   return  res;
 
@@ -367,7 +389,9 @@ sim_write (SIM_DESC       sd  ATTRIBUTE_UNUSED,
 	   unsigned char *buf,
 	   int            len)
 {
-  /* printf ("Writing %d bytes to 0x%08p\n", len, mem); */
+#ifdef OR32_SIM_DEBUG
+  printf ("Writing %d bytes to 0x%08p\n", len, mem);
+#endif
 
   return  or1ksim_write_mem ((unsigned int) mem, buf, len);
 
@@ -404,6 +428,9 @@ sim_fetch_register (SIM_DESC       sd,
   unsigned long int  regval;
   int                res;
 
+#ifdef OR32_SIM_DEBUG
+  printf ("sim_fetch_register (regno=%d\n) called\n", regno);
+#endif
   if (4 != len)
     {
       fprintf (stderr, "Invalid register length %d\n");
@@ -427,11 +454,13 @@ sim_fetch_register (SIM_DESC       sd,
       buf[1] = (regval >> 16) & 0xff;
       buf[2] = (regval >>  8) & 0xff;
       buf[3] =  regval        & 0xff;
+
+      return  4;			/* Success */
     }
-
-  /* printf ("Read register 0x%02x, value 0x%08x\n", regno, regval); */
-  return  res;
-
+  else
+    {
+      return  0;			/* Failure */
+    }
 }	/* sim_fetch_register () */
 
 
@@ -464,6 +493,10 @@ sim_store_register (SIM_DESC       sd,
 {
   unsigned int  regval;
 
+#ifdef OR32_SIM_DEBUG
+  printf ("sim_store_register (regno=%d\n) called\n", regno);
+#endif
+
   if (4 != len)
     {
       fprintf (stderr, "Invalid register length %d\n");
@@ -476,7 +509,9 @@ sim_store_register (SIM_DESC       sd,
            (((unsigned int) buf[2]) <<  8) |
            (((unsigned int) buf[3])      );
 
-  /* printf ("Writing register 0x%02x, value 0x%08x\n", regno, regval); */
+#ifdef OR32_SIM_DEBUG
+  printf ("Writing register 0x%02x, value 0x%08x\n", regno, regval);
+#endif
 
   if (OR32_NPC_REGNUM == regno)
     {
@@ -555,6 +590,10 @@ sim_resume (SIM_DESC  sd,
 
   int                res;		/* Result of a run. */
 
+#ifdef OR32_SIM_DEBUG
+  printf ("sim_resume called\n");
+#endif
+
   /* Clear Debug Reason Register and watchpoint break generation in Debug Mode
      Register 2 */
   (void) or1ksim_write_spr (OR32_SPR_DRR, 0);
@@ -585,6 +624,10 @@ sim_resume (SIM_DESC  sd,
 
   /* Set the NPC if it has changed */
   (void) or1ksim_read_reg (OR32_NPC_REGNUM, &npc);
+
+#ifdef OR32_SIM_DEBUG
+  printf ("  npc = 0x%08lx, resume_npc = 0x%08lx\n", npc, sd->resume_npc);
+#endif
 
   if (npc != sd->resume_npc)
     {
@@ -645,6 +688,10 @@ sim_resume (SIM_DESC  sd,
 /* ------------------------------------------------------------------------- */
 int sim_stop (SIM_DESC  sd  ATTRIBUTE_UNUSED)
 {
+#ifdef OR32_SIM_DEBUG
+  printf ("sim_stop called\n");
+#endif
+
   return  0;			/* We don't support this */
 
 }	/* sim_stop () */
