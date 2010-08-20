@@ -58,8 +58,9 @@ $ export LDFLAGS="-L/opt/local/lib"
 The bld.sh script should then be OK to run as described above.
 
 Any questions should be posted on the OpenRISC forum at
-opencores.org/forum,OpenRISC.
+opencores.org/forum,OpenRISC, or discussed on IRC at freenode.net, channel
+#opencores.
 
 
 Jeremy Bennett
-31 July 2010
+20 August 2010

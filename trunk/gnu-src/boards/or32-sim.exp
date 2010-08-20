@@ -13,7 +13,7 @@ setup_sim or32
 
 # Options for the simulator
 set cfg_file [lookfor_file ${srcdir} libgloss/or32/sim.cfg]
-set_board_info sim,options "-a \"-q -f ${cfg_file}\""
+set_board_info sim,options "-a \"-f ${cfg_file}\""
 
 # No multilib options needed by default.
 process_multilib_options ""
@@ -22,9 +22,18 @@ process_multilib_options ""
 # target.  We assume that all multilib options have been specified
 # before we get here.
 
+# We do not specify the newlib include flags, since our strange file structure
+# doesn't work with the standard expect commands, and will end up generating a
+# blank -isystem option, which confuses things severely.
+
+# It's sufficient just to specify -mor32-newlib. Bit of a shame to specify it
+# both in cflags, which are also used when linking, so we'll get the libraries
+# OK as well.
+
 set_board_info compiler  "[find_gcc]"
-set_board_info cflags    "[libgloss_include_flags] [newlib_include_flags]"
-set_board_info ldflags   "[libgloss_link_flags] -mor32-newlib [newlib_link_flags]"
+#set_board_info cflags    "[libgloss_include_flags] [newlib_include_flags]"
+set_board_info cflags    "-mor32-newlib"
+#set_board_info ldflags   "[libgloss_link_flags] -mor32-newlib [newlib_link_flags]"
 # No linker script needed.
 set_board_info ldscript ""
 
@@ -41,6 +50,17 @@ set_board_info gdb,nosignals  1
 # be.
 set_board_info gcc,stack_size 65536
 
-# GDB sets additional behavior using global variables, rather than board_info
-global GDB_TESTCASE_OPTIONS
-set GDB_TESTCASE_OPTIONS "-mor32-newlib"
+# GDB opions
+
+# We can't do input in GDB (yet! HA!). It *will* do output, hurrah.
+set_board_info gdb,noinferiorio 1
+# Or pass arguments.
+set_board_info gdb,noargs  1
+set_board_info noargs 1
+# Or do signals.
+set_board_info gdb,nosignals 1
+
+# GDB sets some additional behavior using global variables, rather than
+# board_info
+# global GDB_TESTCASE_OPTIONS
+# set GDB_TESTCASE_OPTIONS "-mor32-newlib"

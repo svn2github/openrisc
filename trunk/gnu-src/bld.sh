@@ -319,7 +319,7 @@ fi
 # Only make newlib if required.
 if [ "x${newlibmake}" != "x" ]
 then
-    make ${newlibmake} all-gdb
+    make ${newlibmake}
     if [ $? != 0 ]
     then
 	echo "make (Newlib) failed."
