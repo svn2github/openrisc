@@ -257,14 +257,34 @@ md_assemble (char *str)
 
 static int mask_or_shift = 0;
 
+/*----------------------------------------------------------------------------*/
+/*!Parse an operand
+
+   We use some semantic information about the operand to determine its type.
+
+   @param[in]  s         Pointer to start of the operand string
+   @param[out] operandp  The parsed operand expression
+   @param[in]  opt       Non-zero (TRUE) if this operand is optional, zero
+                         (FALSE) otherwise.
+   @param[in]  is_reg    Non-zero (TRUE) if this operand is a register, zero
+                         (FALSE) otherwise.
+
+   @return  Pointer to the operand string immediately after the operand just
+            parsed.                                                           */
+/*----------------------------------------------------------------------------*/
 static char *
-parse_operand (char *s, expressionS *operandp, int opt)
+parse_operand (char        *s,
+	       expressionS *operandp,
+	       int          opt,
+	       int          is_reg)
 {
   char *save = input_line_pointer;
   char *new_pointer;
 
 #if DEBUG
-  printf ("  PROCESS NEW OPERAND(%s) == %c (%d)\n", s, opt ? opt : '!', opt);
+  printf ("  PROCESS NEW OPERAND(%s): %s, %s\n", s,
+	  opt ? "optional" : "not optional",
+	  is_reg ? "register", "not register");
 #endif
 
   input_line_pointer = s;
@@ -287,16 +307,30 @@ parse_operand (char *s, expressionS *operandp, int opt)
   if ((*s == '(') && (*(s+1) == 'r'))
     s++;
 
-  if ((*s == 'r') && ISDIGIT (*(s + 1)))
+  /* JPB 18-Aug-10: The old assumption was that any symbol starting with 'r'
+     and followed by a digit was a register. That was fine when we prepended
+     underscores, but not when that was dropped. We need to makes sure that
+     this is a register operand. */
+  if (is_reg)
     {
-      operandp->X_add_number = strtol (s + 1, NULL, 10);
-      operandp->X_op = O_register;
-      operandp->X_add_symbol = NULL;// Added to stop a know() in machine_ip()
-      operandp->X_op_symbol = NULL; // Added to stop a know() in machine_ip()
-                                    // erroring out - it appears this wasn't 
-                                    // getting cleared sometimes. - JB 100718
+      if ((*s == 'r') && ISDIGIT (*(s + 1)))
+	{
+	  operandp->X_add_number = strtol (s + 1, NULL, 10);
+	  operandp->X_op = O_register;
+	  operandp->X_add_symbol = NULL;// Added to stop know() in machine_ip()
+	  operandp->X_op_symbol = NULL; // Added to stop know() in machine_ip()
+                                        // erroring out - it appears this
+                                        // wasn't getting cleared sometimes. -
+                                        // JB 100718
+	}
+      else
+	{
+	  as_bad (_("register expected"));
+	}
+
+      /* Skip the argument */
       for (; (*s != ',') && (*s != '\0');)
-        s++;
+	s++;
       input_line_pointer = save;
       return s;
     }
@@ -306,12 +340,12 @@ parse_operand (char *s, expressionS *operandp, int opt)
   if (operandp->X_op == O_absent)
     {
       if (! opt)
-        as_bad (_("missing operand"));
+	as_bad (_("missing operand"));
       else
-        {
-          operandp->X_add_number = 0;
-          operandp->X_op = O_constant;
-        }
+	{
+	  operandp->X_add_number = 0;
+	  operandp->X_op = O_constant;
+	}
     }
 
   new_pointer = input_line_pointer;
@@ -384,7 +418,8 @@ machine_ip (char *str)
     s = parse_operand (s,
                        &operand,
                        (insn->args[0] == 'I') ||
-                       (strcmp(insn->name, "l.nop") == 0) );
+                       (strcmp(insn->name, "l.nop") == 0),
+		       'r' == insn->args[0]);
 
   for (args = insn->args;; ++args)
     {
@@ -415,7 +450,7 @@ machine_ip (char *str)
               reloc = BFD_RELOC_NONE;
 
               /* Parse next operand.  */
-              s = parse_operand (s, &operand, args[1] == 'I');
+              s = parse_operand (s, &operand, args[1] == 'I', 'r' == args[1]);
 #if DEBUG
 	      printf ("    ',' case: operand->X_add_number = %d, *args = %s, *s = %s\n",
 		      (int) operand.X_add_number, args, s);
@@ -425,7 +460,7 @@ machine_ip (char *str)
           break;
 
         case '(':   /* Must match a (.  */
-          s = parse_operand (s, &operand, args[1] == 'I');
+          s = parse_operand (s, &operand, args[1] == 'I', 'r' == args[1]);
           continue;
 
         case ')':   /* Must match a ).  */

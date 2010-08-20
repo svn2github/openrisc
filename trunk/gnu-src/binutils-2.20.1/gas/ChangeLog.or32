@@ -1,0 +1,5 @@
+2010-08-18  Jeremy Bennett  <jeremy.bennett@embecosm.com>
+
+	* config/tc-or32.c (parse_operand): New argument to specify that
+	operand is a register.
+	(machine_ip): All uses of parse_operand updated to use new argument.
