@@ -56,7 +56,7 @@
 	l.ori	r4,r4,lo(str)						;\
 	l.sw	4(r1),r4						;\
 	l.mfspr r5,r0,SPR_EPCR_BASE	/* Source of the interrupt */	;\
-	l.jal	_printf							;\
+	l.jal	printf							;\
 	l.sw	8(r1),r5						;\
 									;\
 	l.ori	r3,r0,0xffff		/* Failure RC */		;\
@@ -117,18 +117,27 @@ _reset:
 
 	/* 0x200: BUS exception is special, because during startup we use it
 	   to detect where the stack should go. So we need some special code
-	   before we return, which wel will later overwrite with l.nop.
+	   before we return, which wel will later overwrite with l.nop. We
+	   need to deal with the case when _start is called multiple times, so
+	   this code must be copied into the bus error vector each time. It is
+	   position independent to allow this copying.
 
 	   We use registers we know will not interfere in this case. */
 	.org	0x200
 _buserr:
+	l.nop				/* Will be overwritten */
+	l.nop
+	l.nop
+	l.nop
+
+_buserr_std:
+	UNHANDLED_EXCEPTION (.L200)
+
+_buserr_special:	
 	l.mfspr	r24,r0,SPR_EPCR_BASE
 	l.addi	r24,r24,4		/* Return one instruction on */
 	l.mtspr	r0,r24,SPR_EPCR_BASE
 	l.rfe
-
-_buserr_std:
-	UNHANDLED_EXCEPTION (.L200)
 
 	/* 0x300: Data Page Fault exception */
 	.org	0x300
@@ -253,17 +262,36 @@ _buserr_std:
 /* -------------------------------------------------------------------------- */
 	/* The stack grows down from the top of writable memory. */
 	.section .data
-	.global	_stack
-_stack:	.space	4,0
+	.global	stack
+stack:	.space	4,0
 
 	.section .text
 	.global	_start
         .type	_start,@function
 
-_start:	
+_start:
+	/* Finding the end of stack means we need to handle the bus
+	   error. Patch in some special handler code. */
+	l.movhi	r30,hi(_buserr)		/* Where to copy to */
+	l.ori	r30,r30,lo(_buserr)
+	l.movhi	r28,hi(_buserr_std)	/* Where to stop copying */
+	l.ori	r28,r28,lo(_buserr_std)
+	l.movhi	r26,hi(_buserr_special)	/* Where to copy from */
+	l.ori	r26,r26,lo(_buserr_special)
+
+.L11:	l.sfeq	r28,r30
+	l.bf	.L12
+	l.nop
+
+	l.lwz	r24,0(r26)		/* Get the instruction */
+	l.sw	0(r30),r24		/* Patch the instruction */
+	l.addi	r26,r26,4		/* Next source instruction */
+	l.j	.L11
+	l.addi	r30,r30,4		/* Delay slot: next dest location */
+	
 	/* Determine where the stack should end. Must be somewhere above the
 	   end of loaded memory. We look in blocks of 64KB. */
-	l.movhi r30,hi(end)
+.L12:	l.movhi r30,hi(end)
 	l.ori   r30,r30,lo(end)
 	l.srli	r30,r30,16		/* Round down to 64KB boundary */
 	l.slli	r30,r30,16
@@ -278,8 +306,7 @@ _start:
 	l.ori	r26,r26,0xaaaa
 
 	/* Is this a writeable location? */
-.L3:
-	l.sw	0(r30),r26
+.L3:	l.sw	0(r30),r26
 	l.lwz	r24,0(r30)
 	l.sfeq	r24,r26
 	l.bnf	.L4
@@ -288,10 +315,9 @@ _start:
 	l.j	.L3
 	l.add	r30,r30,r28		/* Try 64KB higher */
 
-.L4:
-	l.sub	r30,r30,r28		/* Previous value was wanted */
-	l.movhi	r26,hi(_stack)
-	l.ori	r26,r26,lo(_stack)
+.L4:	l.sub	r30,r30,r28		/* Previous value was wanted */
+	l.movhi	r26,hi(stack)
+	l.ori	r26,r26,lo(stack)
 	l.sw	0(r26),r30
 
 	/* Initialise stack and frame pointer (set to same value) */
@@ -306,8 +332,7 @@ _start:
 	l.movhi	r26,0x1500		/* l.nop 0 */
 	l.ori	r26,r26,0x0000
 
-.L5:
-	l.sfeq	r28,r30
+.L5:	l.sfeq	r28,r30
 	l.bf	.L6
 	l.nop
 
@@ -315,10 +340,9 @@ _start:
 	l.j	.L5
 	l.addi	r30,r30,4		/* Delay slot: next instruction */
 
-.L6:
 	/* Instruction cache enable */
 	/* Check if IC present and skip enabling otherwise */
-	l.mfspr r24,r0,SPR_UPR
+.L6:	l.mfspr r24,r0,SPR_UPR
 	l.andi  r26,r24,SPR_UPR_ICP
 	l.sfeq  r26,r0
 	l.bf    .L8
@@ -355,8 +379,7 @@ _start:
 	l.addi  r6,r0,0
 	l.sll   r5,r14,r28
 	
-.L7:
-	l.mtspr r0,r6,SPR_ICBIR
+.L7:	l.mtspr r0,r6,SPR_ICBIR
 	l.sfne  r6,r5
 	l.bf    .L7
 	l.add   r6,r6,r14
@@ -374,10 +397,9 @@ _start:
 	l.nop
 	l.nop
 
-.L8:
 	/* Data cache enable */
         /* Check if DC present and skip enabling otherwise */
-        l.mfspr r24,r0,SPR_UPR
+.L8:    l.mfspr r24,r0,SPR_UPR
         l.andi  r26,r24,SPR_UPR_DCP
         l.sfeq  r26,r0
         l.bf    .L10
@@ -409,8 +431,8 @@ _start:
         /* Invalidate DC */
         l.addi  r6,r0,0
         l.sll   r5,r14,r28
-.L9:
-        l.mtspr r0,r6,SPR_DCBIR
+
+.L9:    l.mtspr r0,r6,SPR_DCBIR
         l.sfne  r6,r5
         l.bf    .L9
 	l.add   r6,r6,r14
@@ -419,15 +441,13 @@ _start:
         l.ori   r6,r6,SPR_SR_DCE
         l.mtspr r0,r6,SPR_SR
 
-.L10:
 	/* Clear BSS */
-	l.movhi r28,hi(__bss_start)
+.L10:	l.movhi r28,hi(__bss_start)
 	l.ori   r28,r28,lo(__bss_start)
 	l.movhi r30,hi(end)
 	l.ori   r30,r30,lo(end)
 
-.L1:
-        l.sw    (0)(r28),r0
+.L1:    l.sw    (0)(r28),r0
         l.sfltu r28,r30
         l.bf    .L1
         l.addi  r28,r28,4		/* Delay slot */
@@ -438,18 +458,18 @@ _start:
 	
 	/* Set up destructors to be called from exit if main never returns */
 	l.movhi	r3,hi(fini)
-	l.jal	_atexit
+	l.jal	atexit
 	l.ori	r3,r3,lo(fini)		/* Delay slot */
 
 	/* Initialise UART in a C function. If the UART isn't present, we'll */
 	/* link against a dummy function. */
-	l.jal    __uart_init
+	l.jal    _uart_init
 	l.nop
 
 	/* Jump to main program entry point (argc = argv = envp = 0) */
 	l.or	r3,r0,r0
 	l.or	r4,r0,r0
-	l.jal   _main
+	l.jal   main
 	l.or	r5,r0,r0		/* Delay slot */
 
 	/* If program exits, call exit routine */
@@ -457,8 +477,7 @@ _start:
 	l.addi  r3,r11,0		/* Delay slot */
 
 	/* Loop forever */
-.L2:
-	l.j	.L2
+.L2:	l.j	.L2
 	l.nop
 	
 	.size	_start, .-_start
