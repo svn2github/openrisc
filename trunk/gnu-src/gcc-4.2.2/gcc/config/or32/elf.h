@@ -33,8 +33,10 @@ Boston, MA 02111-1307, USA.  */
 #undef  PREFERRED_DEBUGGING_TYPE
 #define PREFERRED_DEBUGGING_TYPE DBX_DEBUG
 
-#undef  PUT_SDB_DEF
-#define PUT_SDB_DEF
+/* JPB 19-Aug-10: Why do we need this? */
+/* #undef  PUT_SDB_DEF */
+/* #define PUT_SDB_DEF */
 
+/* JPB: Make this match or32.h */
 #undef  USER_LABEL_PREFIX
-#define USER_LABEL_PREFIX "_"
+#define USER_LABEL_PREFIX ""

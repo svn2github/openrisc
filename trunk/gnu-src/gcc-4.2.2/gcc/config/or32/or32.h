@@ -63,10 +63,10 @@ Boston, MA 02111-1307, USA.  */
    version of the library, but it does have a debugging version (libg.a) */
 #undef LIB_SPEC 
 #define LIB_SPEC "%{!mor32-newlib*:%{!p:%{!pg:-lc}}%{p:-lc_p}%{pg:-lc_p}} \
-                  %{mor32-newlib:%{!g:-lc -lor32 -u _free -lc}            \
-                                 %{g:-lg -lor32 -u _free -lg}}            \
-                  %{mor32-newlib-uart:%{!g:-lc -lor32uart -u _free -lc}   \
-                                 %{g:-lg -lor32uart -u _free -lg}}"
+                  %{mor32-newlib:%{!g:-lc -lor32 -u free -lc}            \
+                                 %{g:-lg -lor32 -u free -lg}}            \
+                  %{mor32-newlib-uart:%{!g:-lc -lor32uart -u free -lc}   \
+                                 %{g:-lg -lor32uart -u free -lg}}"
 
 /* Old definition of LIB_SPEC, not longer used. */
 /* Which library to get.  The only difference from the default is to get
@@ -1013,20 +1013,19 @@ fprintf (FILE, ".file\t");   \
 /*#define ASM_OUTPUT_LABELREF(stream,name)                \
  { fputc('_',stream); fputs(name,stream); }
 */
-#define ASM_OUTPUT_LABELREF(stream,name)                \
-{if(name[0] == '*') 					\
-   fputs(name,stream);					\
-else {							\
-   fputc('_',stream); fputs(name,stream); 		\
-}}
+/* JPB. We need to implement this, otherwise we get a leading underscore added
+   by default. Not sure where that default implementation is coming from
+   yet... */
+/* #define ASM_OUTPUT_LABELREF(stream, name) fputs (name, stream) */
 #endif
 
 /* The prefix to add to user-visible assembler symbols. */
 
 /* Remove any previous definition (elfos.h).  */
 /* We use -fno-leading-underscore to remove it, when necessary.  */
+/* JPB: No prefix for global symbols */
 #undef  USER_LABEL_PREFIX
-#define USER_LABEL_PREFIX "_"
+#define USER_LABEL_PREFIX ""
 
 /* Remove any previous definition (elfos.h).  */
 #ifndef ASM_GENERATE_INTERNAL_LABEL
@@ -1125,7 +1124,7 @@ else {							\
 
 /* Invoked just before function output. */
 #define ASM_OUTPUT_FUNCTION_PREFIX(stream, fnname)              \
-  fputs(".proc ",stream); assemble_name(stream,fnname);         \
+  fputs("\t.proc\t",stream); assemble_name(stream,fnname);         \
   fputs("\n",stream);
 
 /* This says how to output an assembler line

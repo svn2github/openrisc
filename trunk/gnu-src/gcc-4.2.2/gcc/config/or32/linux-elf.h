@@ -30,8 +30,9 @@ Boston, MA 02111-1307, USA.  */
 /* Do not assume anything about header files.  */
 #define NO_IMPLICIT_EXTERN_C
 
+/* Make this match or32.h */
 #undef  USER_LABEL_PREFIX
-#define USER_LABEL_PREFIX "_"
+#define USER_LABEL_PREFIX ""
 
 
 /* This is how we tell the assembler that two symbols have the same value.  */

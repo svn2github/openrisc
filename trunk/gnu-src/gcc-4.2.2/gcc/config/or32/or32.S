@@ -8,7 +8,7 @@
 symbol:			
 
 #ifdef L__mulsi3
-ENTRY(___mulsi3)
+ENTRY(__mulsi3)
 	l.addi r11,r0,0x0
 	l.sfne r3,r11
 	l.bnf 3f
@@ -30,7 +30,7 @@ ENTRY(___mulsi3)
 #endif
 
 #ifdef L__udivsi3
-ENTRY(___udivsi3)
+ENTRY(__udivsi3)
 	l.addi          r1,r1,-4
         l.sw            0(r1),r9
         l.addi          r11,r0,0
@@ -106,7 +106,7 @@ ENTRY(___udivsi3)
 
 
 #ifdef L__divsi3
-ENTRY(___divsi3)
+ENTRY(__divsi3)
 	l.addi          r1,r1,-8
         l.sw            0(r1),r9
         l.sw            4(r1),r14
@@ -124,7 +124,7 @@ ENTRY(___divsi3)
         l.addi          r14,r14,1
         l.sub           r4,r0,r4
 1:
-        l.jal           ___udivsi3
+        l.jal           __udivsi3
         l.addi          r3,r5,0
         l.sfeqi         r14,1
         l.bnf           1f
@@ -139,10 +139,10 @@ ENTRY(___divsi3)
 
 
 #ifdef L__umodsi3
-ENTRY(___umodsi3)
+ENTRY(__umodsi3)
 	l.addi          r1,r1,-4
 	l.sw            0(r1),r9
-	l.jal           ___udivsi3
+	l.jal           __udivsi3
 	l.nop           0
 	l.addi		r11,r7,0
 	l.lwz           r9,0(r1)
@@ -152,7 +152,7 @@ ENTRY(___umodsi3)
 
 
 #ifdef L__modsi3	
-ENTRY(___modsi3)
+ENTRY(__modsi3)
         l.addi          r1,r1,-8
         l.sw            0(r1),r9
         l.sw            4(r1),r14
@@ -168,7 +168,7 @@ ENTRY(___modsi3)
         l.nop           0
         l.sub           r4,r0,r4
 1:
-        l.jal           ___udivsi3
+        l.jal           __udivsi3
         l.nop           0
         l.sfeqi         r14,1
         l.bnf           1f
