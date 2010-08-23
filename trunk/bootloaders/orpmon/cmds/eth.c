@@ -2,7 +2,7 @@
 #include "uart.h"
 #include "eth.h"
 #include "support.h"
-#include "spr_defs.h"
+#include "spr-defs.h"
 #include "net.h"
 
 #if 1

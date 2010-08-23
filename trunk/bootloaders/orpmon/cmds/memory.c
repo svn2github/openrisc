@@ -1,6 +1,6 @@
 #include "common.h"
 #include "support.h"
-#include "spr_defs.h"
+#include "spr-defs.h"
 #include "spincursor.h"
 
 void show_mem (int start, int stop)

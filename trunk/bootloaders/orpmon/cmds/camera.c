@@ -1,6 +1,6 @@
 #include "common.h"
 #include "support.h"
-#include "spr_defs.h"
+#include "spr-defs.h"
 
 /* Camera and CRT test.
    Draws gray cross across the screen, few color boxes at top left and moves around camera captured screen left/right

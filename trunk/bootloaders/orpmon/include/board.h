@@ -14,23 +14,20 @@
  * 2 - ORSoC A3PE1500 board
  * 3 - ORSoC A3P1000 board
  */
-#define BOARD                   3
+#define BOARD                   2
 
 /* Ethernet IP and TFTP config
  * 0 - JB ORSoC board
  * 1 - AE ORSoC board
  * 2 - JB Southpole board
- * 3 - Unassigned
+ * 3 - JB ORSoC board 2
+ * 4 - Unassigned
  */
-#define IPCONFIG                 0
+#define IPCONFIG                 3
 
 #if BOARD==0
 // Nibbler on bender1
 
-#  define IC_ENABLE       	1
-#  define IC_SIZE         	4096
-#  define DC_ENABLE       	1
-#  define DC_SIZE         	2048
 #  define FLASH_BASE_ADDR         0xf0000000
 #  define FLASH_SIZE              0x02000000
 #  define FLASH_BLOCK_SIZE        0x00020000
@@ -45,72 +42,49 @@
 #  define FLASH_ORG_16_1          1
 #elif BOARD==1
 //Marvin
-
-#  define IC_ENABLE       	1
-#  define IC_SIZE         	8192
-#  define DC_ENABLE       	0
-#  define DC_SIZE         	8192
 #  define FLASH_BASE_ADDR         0xf0000000
 #  define FLASH_SIZE              0x04000000
 #  define FLASH_BLOCK_SIZE        0x00040000
 #  define START_ADD               0x0
 #  define CONFIG_OR32_MC_VERSION  1
-/*#  define IN_CLK		  100000000*/
 #  define IN_CLK		  50000000
 #  define FLASH_ORG_16_2          1
 #  define BOARD_DEF_NAME       	  "marvin"
 #elif BOARD==2
 //ORSoC usbethdev board
 
-#  define IC_ENABLE       	1
-#  define IC_SIZE         	8192
-#  define DC_ENABLE       	0
-#  define DC_SIZE         	8192
 #  define FLASH_BASE_ADDR         0xf0000000
 #  define FLASH_SIZE              0x04000000
 #  define FLASH_BLOCK_SIZE        0x00040000
 #  define START_ADD               0x0
-#  define SDRAM_SIZE             0x02000000
-#  define SDRAM_ROW_SIZE         0x00000400
-#  define SDRAM_BANK_SIZE        0x00800000
-//#  define IN_CLK		  32000000
-//#  define IN_CLK		  24000000
+#  define SDRAM_SIZE              0x02000000
+#  define SDRAM_ROW_SIZE          0x00000400
+#  define SDRAM_BANK_SIZE         0x00800000
 #  define IN_CLK		  20000000
-//#  define IN_CLK		  16000000
-//#  define IN_CLK		  17000000
 
 #  define FLASH_ORG_16_2          1
 #  define BOARD_DEF_NAME       	  "ORSoC devboard"
 #elif BOARD==3
 //ORSoC A3P1000 usbethdev board
 
-#  define IC_ENABLE       	1
-#  define IC_SIZE         	4096
-#  define DC_ENABLE       	0
-#  define DC_SIZE         	8192
 #  define FLASH_BASE_ADDR         0xf0000000
 #  define FLASH_SIZE              0x04000000
 #  define FLASH_BLOCK_SIZE        0x00040000
 #  define START_ADD               0x0
-#  define SDRAM_SIZE             0x02000000
-#  define SDRAM_ROW_SIZE             0x00000400
-#  define SDRAM_BANK_SIZE             0x00800000
-//#  define IN_CLK		  20000000
-#  define IN_CLK		  24000000
+#  define SDRAM_SIZE              0x02000000
+#  define SDRAM_ROW_SIZE          0x00000400
+#  define SDRAM_BANK_SIZE         0x00800000
+#  define IN_CLK		  25000000
 #  define FLASH_ORG_16_2          1
 #  define BOARD_DEF_NAME       	  "ORSoC A3P1000 devboard"
 
 #else
 //Custom Board
-#  define IC_ENABLE       	0
-#  define IC_SIZE         	8192
-#  define DC_ENABLE       	0
-#  define DC_SIZE         	8192
+
 #  define FLASH_BASE_ADDR         0xf0000000
 #  define FLASH_SIZE              0x04000000
 #  define FLASH_BLOCK_SIZE        0x00040000
 #  define START_ADD               0x0
-#  define CONFIG_OR32_MC_VERSION  1
 #  define IN_CLK		  25000000
 #  define FLASH_ORG_16_2          1
 #  define BOARD_DEF_NAME       	  "custom"
@@ -167,7 +141,23 @@
 #define ETH_MACADDR4      	0x78
 #define ETH_MACADDR5      	0x9c
 
-#elif IPCONFIG==3 // Unassigned config...
+#elif IPCONFIG==3 // ORSoC LAN
+
+#define BOARD_DEF_IP    	0xc0a80003 // 192.168.0.3
+#define BOARD_DEF_MASK  	0xffffff00 // 255.255.255.0
+#define BOARD_DEF_GW    	0xc0a80002 // 192.168.0.2
+#define BOARD_DEF_TBOOT_SRVR 	0xc0a80108 // 192.168.1.8
+#define BOARD_DEF_IMAGE_NAME    "boot.img"
+#define BOARD_DEF_LOAD_SPACE    0xa00000
+#define ETH_MDIOPHYADDR      	0x00
+#define ETH_MACADDR0      	0xad
+#define ETH_MACADDR1      	0xaa
+#define ETH_MACADDR2      	0x34
+#define ETH_MACADDR3      	0x56
+#define ETH_MACADDR4      	0x78
+#define ETH_MACADDR5      	0x9d
+
+#elif IPCONFIG==4 // Unassigned config...
 
 #define BOARD_DEF_IP    	0x0a01010a // 10.1.1.10
 #define BOARD_DEF_MASK  	0xffffff00 // 255.255.255.0
@@ -221,7 +211,8 @@
 #define KBD_IRQ         	5
 
 #define SANCHO_BASE_ADD         0x98000000
-#define ETH_DATA_BASE  		(SDRAM_SIZE - (0x600 * 128)) /*  Address for ETH_DATA */
+/*  Address for ETH_DATA */
+#define ETH_DATA_BASE  		(SDRAM_SIZE - (0x600 * 128)) 
 
 #define CRT_ENABLED	    	0
 #define FB_BASE_ADDR    	0xa8000000

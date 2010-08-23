@@ -1,1 +1,1 @@
-#define BUILD_VERSION "Fri Jul  9 18:27:45 CEST 2010"
+#define BUILD_VERSION "Mon Aug 23 20:04:04 CEST 2010"

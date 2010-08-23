@@ -1,4 +1,4 @@
-#include "spr_defs.h"
+#include "spr-defs.h"
 #include "board.h"
 #include "mc.h"
 
@@ -69,8 +69,13 @@ _reset:
         l.addi  r5,r0,0x00
         l.sw    0(r3),r5
 .endif
-        l.addi  r3,r0,SPR_SR_SM
-        l.mtspr r0,r3,SPR_SR
+	l.movhi r0, 0
+	/* Clear status register, set supervisor mode */
+	l.ori r1, r0, SPR_SR_SM
+	l.mtspr r0, r1, SPR_SR
+	/* Clear timer  */
+	l.mtspr r0, r0, SPR_TTMR
+	/* Jump to start routine */
         l.movhi r3,hi(_start)
         l.ori   r3,r3,lo(_start)
         l.jr    r3
@@ -83,9 +88,11 @@ _reset:
         .org (0x200 - 0x100 + _reset)
 .endif
 _buserr:
-	/* Just trap */
+.if 0
+	/* Just trap */	
 	l.trap 0
-	l.nop
+.endif	
+	l.nop 0x1
 	l.j 0
 	l.nop
 
@@ -98,10 +105,12 @@ _buserr:
 .endif
 _tickint:	
         l.addi  r1,r1,-128
-        l.sw    0x4(r1),r2
-        l.movhi r2,hi(_tick)
-        l.ori   r2,r2,lo(_tick)
-        l.jr    r2
+	l.sw 	0(r1), r2
+	l.addi 	r2, r1, 128
+        l.sw    0x4(r1),r3
+        l.movhi r3,hi(_tick)
+        l.ori   r3,r3,lo(_tick)
+        l.jr    r3
         l.nop
 
 .if IN_FLASH
@@ -111,17 +120,10 @@ _tickint:
         .org (0x600 - 0x100 + _reset)
 .endif
 _alignerr:	
-.if 0
-	/* Let's crash on align errors */
-        l.addi  r1,r1,-128
-        l.sw    0x08(r1),r2
-        l.movhi r2,hi(_align)
-        l.ori   r2,r2,lo(_align)
-        l.jr    r2
-        l.nop
-.endif
+.if 0	
 	l.trap 0
-	l.nop
+.endif	
+	l.nop 0x1
 	l.j 0
 	l.nop
 	
@@ -130,10 +132,12 @@ _alignerr:
 .else
 	.org (0x700 - 0x100 + _reset)
 .endif
-_illinsn:	
+_illinsn:
+.if 0	
 	/* Just trap */
 	l.trap 0
-	l.nop
+.endif	
+	l.nop 0x1
 	l.j 0
 	l.nop
 
@@ -145,10 +149,12 @@ _illinsn:
 .endif
 _userint:
         l.addi  r1,r1,-128
-        l.sw    0x4(r1),r2
-        l.movhi r2,hi(_int_wrapper)
-        l.ori   r2,r2,lo(_int_wrapper)
-        l.jr    r2
+        l.sw    0x0(r1),r2
+	l.addi 	r2, r1, 128
+	l.sw	0x4(r1), r3
+        l.movhi r3,hi(_int_wrapper)
+        l.ori   r3,r3,lo(_int_wrapper)
+        l.jr    r3
         l.nop
 
         .section .text
@@ -201,137 +207,162 @@ _start:
         l.addi  r4,r0,0
 3:
 .endif
-/*
-	l.jal   _ic_disable
-        l.nop	
-*/
-.if IC_ENABLE
-        l.jal   _ic_enable
-        l.nop
-.endif
 
-.if DC_ENABLE
-        l.jal   _dc_enable
-        l.nop
-.endif
 
+	/* Instruction cache enable */
+	/* Check if IC present and skip enabling otherwise */
+	l.mfspr r24,r0,SPR_UPR
+	l.andi  r26,r24,SPR_UPR_ICP
+	l.sfeq  r26,r0
+	l.bf    .L8
+	l.nop
+	
+	/* Disable IC */
+	l.mfspr r6,r0,SPR_SR
+	l.addi  r5,r0,-1
+	l.xori  r5,r5,SPR_SR_ICE
+	l.and   r5,r6,r5
+	l.mtspr r0,r5,SPR_SR
+	
+	/* Establish cache block size
+	If BS=0, 16;
+	If BS=1, 32;
+	r14 contain block size
+	*/
+	l.mfspr r24,r0,SPR_ICCFGR
+	l.andi  r26,r24,SPR_ICCFGR_CBS
+	l.srli  r28,r26,7
+	l.ori   r30,r0,16
+	l.sll   r14,r30,r28
+	
+	/* Establish number of cache sets
+	r16 contains number of cache sets
+	r28 contains log(# of cache sets)
+	*/
+	l.andi  r26,r24,SPR_ICCFGR_NCS
+	l.srli  r28,r26,3
+	l.ori   r30,r0,1
+	l.sll   r16,r30,r28
+	
+	/* Invalidate IC */
+	l.addi  r6,r0,0
+	l.sll   r5,r14,r28
+	
+.L7:
+	l.mtspr r0,r6,SPR_ICBIR
+	l.sfne  r6,r5
+	l.bf    .L7
+	l.add   r6,r6,r14
+	
+	/* Enable IC */
+	l.mfspr r6,r0,SPR_SR
+	l.ori   r6,r6,SPR_SR_ICE
+	l.mtspr r0,r6,SPR_SR
+	l.nop
+	l.nop
+	l.nop
+	l.nop
+	l.nop
+	l.nop
+	l.nop
+	l.nop
+
+.L8:
+	/* Data cache enable */
+        /* Check if DC present and skip enabling otherwise */
+        l.mfspr r24,r0,SPR_UPR
+        l.andi  r26,r24,SPR_UPR_DCP
+        l.sfeq  r26,r0
+        l.bf    .L10
+        l.nop
+        /* Disable DC */
+        l.mfspr r6,r0,SPR_SR
+        l.addi  r5,r0,-1
+        l.xori  r5,r5,SPR_SR_DCE
+	l.and   r5,r6,r5
+        l.mtspr r0,r5,SPR_SR
+        /* Establish cache block size
+           If BS=0, 16;
+           If BS=1, 32;
+           r14 contain block size
+        */
+        l.mfspr r24,r0,SPR_DCCFGR
+        l.andi  r26,r24,SPR_DCCFGR_CBS
+        l.srli  r28,r26,7
+        l.ori   r30,r0,16
+        l.sll   r14,r30,r28
+        /* Establish number of cache sets
+           r16 contains number of cache sets
+           r28 contains log(# of cache sets)
+        */
+	l.andi  r26,r24,SPR_DCCFGR_NCS
+	l.srli  r28,r26,3
+        l.ori   r30,r0,1
+        l.sll   r16,r30,r28
+        /* Invalidate DC */
+        l.addi  r6,r0,0
+        l.sll   r5,r14,r28
+.L9:
+        l.mtspr r0,r6,SPR_DCBIR
+        l.sfne  r6,r5
+        l.bf    .L9
+	l.add   r6,r6,r14
+        /* Enable DC */
+        l.mfspr r6,r0,SPR_SR
+        l.ori   r6,r6,SPR_SR_DCE
+        l.mtspr r0,r6,SPR_SR
+
+.L10:
+	/* Set up stack */
         l.movhi r1,hi(_stack-4)
         l.ori   r1,r1,lo(_stack-4)
         l.addi  r2,r0,-3
         l.and   r1,r1,r2
- 
-        l.movhi r2,hi(_main)
-        l.ori   r2,r2,lo(_main)
-        l.jr    r2
-        l.addi  r2,r0,0
-
-_ic_enable:
-
-        /* Flush IC */
-        l.addi  r10,r0,0
-        l.addi  r11,r0,IC_SIZE
-1:
-        l.mtspr r0,r10,SPR_ICBIR
-        l.sfne  r10,r11
-        l.bf    1b
-        l.addi  r10,r10,16
-
-        /* Enable IC */
-        l.mfspr r10,r0,SPR_SR
-        l.ori   r10,r10,(SPR_SR_ICE|SPR_SR_SM)
-        l.mtspr r0,r10,SPR_SR
-        l.nop
-        l.nop
-        l.nop
-        l.nop
-        l.nop
-
-        l.jr    r9
-        l.nop
-
-_ic_disable:
-
-        l.addi  r10,r0,0
-        l.addi  r11,r0,IC_SIZE
-1:
-        l.mtspr r0,r10,SPR_ICBIR
-        l.sfne  r10,r11
-        l.bf    1b
-        l.addi  r10,r10,16
+/*	l.or 	r2, r1, r1 - remove this helped with odd UART output problem?!*/
 	
-
-        l.mfspr r10,r0,SPR_SR
-	l.movhi r11, 0xffff
-	l.ori 	r11, r11, 0xffef
-	l.and   r10, r10, r11
-	l.ori   r10, r10, SPR_SR_SM
-        l.mtspr r0,r10,SPR_SR
-        l.nop
-        l.nop
-        l.nop
-        l.nop
-        l.nop
-
-        l.jr    r9
-        l.nop
-
-_dc_enable:
-
-        /* Flush DC */
-        l.addi  r10,r0,0
-        l.addi  r11,r0,DC_SIZE
-1:
-        l.mtspr r0,r10,SPR_DCBIR
-        l.sfne  r10,r11
-        l.bf    1b
-        l.addi  r10,r10,16
-
-        /* Enable DC */
-        l.mfspr r10,r0,SPR_SR
-        l.ori   r10,r10,(SPR_SR_DCE|SPR_SR_SM)
-        l.mtspr r0,r10,SPR_SR
-
-        l.jr    r9
-        l.nop
+        l.movhi r3,hi(main)
+        l.ori   r3,r3,lo(main)
+        l.jr    r3
+	l.nop
 
 
 _tick:
-        l.sw    0x8(r1),r4
-        l.sw    0xc(r1),r5
-        l.sw    0x10(r1),r6
-        l.sw    0x14(r1),r7
-        l.sw    0x18(r1),r8
-        l.sw    0x1c(r1),r9
-        l.sw    0x20(r1),r10
-        l.sw    0x24(r1),r11
-        l.sw    0x28(r1),r12
-        l.sw    0x2c(r1),r13
-        l.sw    0x30(r1),r14
-        l.sw    0x34(r1),r15
-        l.sw    0x38(r1),r16
-        l.sw    0x3c(r1),r17
-        l.sw    0x40(r1),r18
-        l.sw    0x44(r1),r19
-        l.sw    0x48(r1),r20
-        l.sw    0x4c(r1),r21
-        l.sw    0x50(r1),r22
-        l.sw    0x54(r1),r23
-        l.sw    0x58(r1),r24
-        l.sw    0x5c(r1),r25
-        l.sw    0x60(r1),r26
-        l.sw    0x64(r1),r27
-        l.sw    0x68(r1),r28
-        l.sw    0x6c(r1),r29
-        l.sw    0x70(r1),r30
-        l.sw    0x74(r1),r31
-        l.sw    0x78(r1),r3
 
-        l.movhi r3,hi(_tick_interrupt)
-        l.ori   r3,r3,lo(_tick_interrupt)
+        l.sw    0x8(r1), r4
+        l.sw    0xc(r1), r5
+        l.sw    0x10(r1), r6
+        l.sw    0x14(r1), r7
+        l.sw    0x18(r1), r8
+        l.sw    0x1c(r1), r9
+        l.sw    0x20(r1), r10
+        l.sw    0x24(r1), r11
+        l.sw    0x28(r1), r12
+        l.sw    0x2c(r1), r13
+        l.sw    0x30(r1), r14
+        l.sw    0x34(r1), r15
+        l.sw    0x38(r1), r16
+        l.sw    0x3c(r1), r17
+        l.sw    0x40(r1), r18
+        l.sw    0x44(r1), r19
+        l.sw    0x48(r1), r20
+        l.sw    0x4c(r1), r21
+        l.sw    0x50(r1), r22
+        l.sw    0x54(r1), r23
+        l.sw    0x58(r1), r24
+        l.sw    0x5c(r1), r25
+        l.sw    0x60(r1), r26
+        l.sw    0x64(r1), r27
+        l.sw    0x68(r1), r28
+        l.sw    0x6c(r1), r29
+        l.sw    0x70(r1), r30
+        l.sw    0x74(r1), r31
+	
+        l.movhi r3,hi(tick_interrupt)
+        l.ori   r3,r3,lo(tick_interrupt)
         l.jalr  r3
         l.nop
 
-        l.lwz   r2,0x4(r1)
+	l.lwz   r3,0x4(r1)
         l.lwz   r4,0x8(r1)
         l.lwz   r5,0xc(r1)
         l.lwz   r6,0x10(r1)
@@ -359,51 +390,50 @@ _tick:
         l.lwz   r28,0x68(r1)
         l.lwz   r29,0x6c(r1)
         l.lwz   r30,0x70(r1)
-        l.mfspr r31,r0,0x40
-        l.lwz   r31,0x74(r1)
-        l.lwz   r3,0x78(r1)
+	l.lwz   r31,0x74(r1)	
 
+	l.lwz  	r2, 0x0(r1)
         l.addi  r1,r1,128
         l.rfe
         l.nop
 
 _int_wrapper:
-        l.sw    0x8(r1),r4
-        l.sw    0xc(r1),r5
-        l.sw    0x10(r1),r6
-        l.sw    0x14(r1),r7
-        l.sw    0x18(r1),r8
-        l.sw    0x1c(r1),r9
-        l.sw    0x20(r1),r10
-        l.sw    0x24(r1),r11
-        l.sw    0x28(r1),r12
-        l.sw    0x2c(r1),r13
-        l.sw    0x30(r1),r14
-        l.sw    0x34(r1),r15
-        l.sw    0x38(r1),r16
-        l.sw    0x3c(r1),r17
-        l.sw    0x40(r1),r18
-        l.sw    0x44(r1),r19
-        l.sw    0x48(r1),r20
-        l.sw    0x4c(r1),r21
-        l.sw    0x50(r1),r22
-        l.sw    0x54(r1),r23
-        l.sw    0x58(r1),r24
-        l.sw    0x5c(r1),r25
-        l.sw    0x60(r1),r26
-        l.sw    0x64(r1),r27
-        l.sw    0x68(r1),r28
-        l.sw    0x6c(r1),r29
-        l.sw    0x70(r1),r30
-        l.sw    0x74(r1),r31
-        l.sw    0x78(r1),r3
 
-        l.movhi r3,hi(_int_main)
-        l.ori   r3,r3,lo(_int_main)
+        l.sw    0x8(r1), r4
+        l.sw    0xc(r1), r5
+        l.sw    0x10(r1), r6
+        l.sw    0x14(r1), r7
+        l.sw    0x18(r1), r8
+        l.sw    0x1c(r1), r9
+        l.sw    0x20(r1), r10
+        l.sw    0x24(r1), r11
+        l.sw    0x28(r1), r12
+        l.sw    0x2c(r1), r13
+        l.sw    0x30(r1), r14
+        l.sw    0x34(r1), r15
+        l.sw    0x38(r1), r16
+        l.sw    0x3c(r1), r17
+        l.sw    0x40(r1), r18
+        l.sw    0x44(r1), r19
+        l.sw    0x48(r1), r20
+        l.sw    0x4c(r1), r21
+        l.sw    0x50(r1), r22
+        l.sw    0x54(r1), r23
+        l.sw    0x58(r1), r24
+        l.sw    0x5c(r1), r25
+        l.sw    0x60(r1), r26
+        l.sw    0x64(r1), r27
+        l.sw    0x68(r1), r28
+        l.sw    0x6c(r1), r29
+        l.sw    0x70(r1), r30
+        l.sw    0x74(r1), r31
+	
+        l.movhi r3,hi(int_main)
+        l.ori   r3,r3,lo(int_main)
         l.jalr  r3
         l.nop
 
-        l.lwz   r2,0x4(r1)
+	l.lwz   r3,0x4(r1)
         l.lwz   r4,0x8(r1)
         l.lwz   r5,0xc(r1)
         l.lwz   r6,0x10(r1)
@@ -431,14 +461,13 @@ _int_wrapper:
         l.lwz   r28,0x68(r1)
         l.lwz   r29,0x6c(r1)
         l.lwz   r30,0x70(r1)
-        l.lwz   r31,0x74(r1)
-        l.lwz   r3,0x78(r1)
+	l.lwz   r31,0x74(r1)	
 
-        l.mtspr r0,r0,SPR_PICSR
-
+	l.lwz  	r2, 0x0(r1)
         l.addi  r1,r1,128
         l.rfe
         l.nop
+	
 
 _align:
         l.sw    0x0c(r1),r3

@@ -67,8 +67,10 @@
 #include "arp.h"
 #if OC_LAN==1
 #include "eth.h"
-#else if SMC91111_LAN==1
-#include "smc91111.h"
+#else 
+# if SMC91111_LAN==1
+#  include "smc91111.h"
+# endif
 #endif
 
 #if 0
@@ -310,8 +312,10 @@ NetSendPacket(volatile unsigned char * pkt, int len)
   
   memcpy(p, (void *)pkt, len);
   eth_send(p, len);
-#else if SMC91111_LAN==1
+#else
+# if  SMC91111_LAN==1
   eth_send(pkt, len);
+# endif
 #endif
 }
 

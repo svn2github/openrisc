@@ -1,6 +1,6 @@
 #include "common.h"
 #include "support.h"
-#include "spr_defs.h"
+#include "spr-defs.h"
 
 int ic_enable_cmd (int argc, char *argv[])
 {
@@ -62,11 +62,22 @@ int dc_enable_cmd (int argc, char *argv[])
 
 int dc_disable_cmd (int argc, char *argv[])
 {
-  unsigned long sr;
 
   if (argc) return -1;
+
+  unsigned long sr = mfspr(SPR_SR);
+  
+  // If it's enabled and write back is on, we'd better flush it first
+  // (CWS=1 is write back)
+
+  unsigned long dccfgr = mfspr(SPR_DCCFGR);
+  int i;
+  int bs= (dccfgr & SPR_DCCFGR_CBS) ? 32 : 16;
+  int ways = (1 << ((dccfgr & SPR_DCCFGR_NCS) >> 3));
+  for(i=0;i<ways;i++)
+      mtspr(SPR_DCBFR, i*bs);
+
   /* Disable DC */
-  asm("l.mfspr %0,r0,%1": "=r" (sr) : "i" (SPR_SR));
   sr &= ~SPR_SR_DCE;
   asm("l.mtspr r0,%0,%1": : "r" (sr), "i" (SPR_SR));  
   asm("l.nop");

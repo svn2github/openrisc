@@ -31,7 +31,7 @@ void uart_init(void)
 {
         int divisor;
 	float float_divisor;
-	
+
         /* Reset receiver and transmiter */
         REG8(UART_BASE + UART_FCR) = UART_FCR_ENABLE_FIFO | UART_FCR_CLEAR_RCVR | UART_FCR_CLEAR_XMIT | UART_FCR_TRIGGER_4;
  

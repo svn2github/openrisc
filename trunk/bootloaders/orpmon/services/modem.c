@@ -2,7 +2,7 @@
 #include "support.h"
 #include "net.h"
 #include "uart.h"
-#include "spr_defs.h"
+#include "spr-defs.h"
 #include "flash.h"
 
 #define SOH    0x01

@@ -6,7 +6,7 @@
 #include "uart.h"
 #include "eth.h"
 #include "int.h"
-#include "spr_defs.h"
+#include "spr-defs.h"
 
 //#define PRINT_PACKETS
 //#define ETHPHY_10MBPS
@@ -332,6 +332,7 @@ void *eth_get_tx_buf ()
 void eth_send (void *buf, unsigned long len)
 {
     eth_bd  *bd;
+    int i;
 
 #ifdef PRINT_PACKETS  
   printf("transmitted packet:\t");
@@ -341,6 +342,7 @@ void eth_send (void *buf, unsigned long len)
   bd = (eth_bd *)ETH_BD_BASE;
 
   bd[tx_last].addr = (unsigned long)buf;
+
  retry_eth_send:
   bd[tx_last].len_status &= 0x0000ffff & ~ETH_TX_BD_STATS;
   if (eth_monitor_enabled) // enable IRQ when sending
@@ -369,6 +371,7 @@ unsigned long eth_rx (void)
 {
   eth_bd  *bd;
   unsigned long len = 0;
+  int i;
 
   bd = (eth_bd *)ETH_BD_BASE + ETH_TXBD_NUM;
   
@@ -378,7 +381,7 @@ unsigned long eth_rx (void)
 
     if(bd[rx_next].len_status & ETH_RX_BD_EMPTY)
       return len;
- 
+
     if(bd[rx_next].len_status & ETH_RX_BD_OVERRUN) {
       printf("eth rx: ETH_RX_BD_OVERRUN\n");
       bad = 1;
@@ -413,6 +416,7 @@ unsigned long eth_rx (void)
       printf("received packet:\t");
       print_packet(bd[rx_next].addr, bd[rx_next].len_status >> 16);
 #endif
+
       receive((void *)bd[rx_next].addr, bd[rx_next].len_status >> 16); 
       len += bd[rx_next].len_status >> 16;
     }

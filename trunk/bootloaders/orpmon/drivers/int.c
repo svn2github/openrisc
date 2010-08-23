@@ -3,7 +3,7 @@
 
 #include "common.h"
 #include "support.h"
-#include "spr_defs.h"
+#include "spr-defs.h"
 #include "int.h"
 
 #ifdef OR1K

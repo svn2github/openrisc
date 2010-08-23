@@ -3,13 +3,15 @@
 #include "screen.h"
 #include "support.h"
 #include "keyboard.h"
-#include "spr_defs.h"
+#include "spr-defs.h"
+#include "spincursor.h"
 #include "int.h"
 
 #include "build.h"
 
 #define MAX_COMMANDS  100
 
+// Value from linker script
 extern unsigned long src_addr;
 
 bd_t bd;
@@ -92,6 +94,53 @@ int ctrlc ()
   return 0;
 }
 
+void
+print_or1k_cache_info()
+{
+  // Read out UPR, check what modules we have
+  unsigned long upr = mfspr(SPR_UPR);
+  printf("Instruction cache:\t");
+  if (upr & SPR_UPR_ICP)
+    {
+      // We have instruction cache, read out ICCFGR
+      
+      unsigned long iccfgr = mfspr(SPR_ICCFGR);
+      unsigned int cbs; // cache block size
+      unsigned long ncs = 1 << ((iccfgr & SPR_ICCFGR_NCS) >> 3);
+      if (iccfgr & SPR_ICCFGR_CBS)
+	cbs = 32;
+      else
+	cbs = 16;
+
+      printf("%dkB (BS: %d Sets: %d)\n",
+	     (cbs * ncs)/1024, cbs, ncs);
+      
+    }
+  else
+    printf(" not present\n");
+
+  printf("Data cache:\t\t");
+  if (upr & SPR_UPR_DCP)
+    {
+      // We have instruction cache, read out DCCFGR
+      
+      unsigned long iccfgr = mfspr(SPR_DCCFGR);
+      unsigned int cbs; // cache block size
+      unsigned long ncs = 1 << ((iccfgr & SPR_DCCFGR_NCS) >> 3);
+      if (iccfgr & SPR_DCCFGR_CBS)
+	cbs = 32;
+      else
+	cbs = 16;
+
+      printf("%dkB (BS: %d Sets: %d)\n",
+	     (cbs * ncs)/1024, cbs, ncs);
+      
+    }
+  else
+    printf(" not present\n");
+  
+}
+
 unsigned long parse_ip (char *ip)
 {
   unsigned long num;
@@ -159,27 +208,39 @@ void mon_command(void)
   char *command_str;
   char *argv[20];
   int argc = 0;
+  int chcnt = 0;
 
   /* Show prompt */
-#ifdef XESS
-  printf ("\norp-xsv> ");
-#else
   printf ("\n" BOARD_DEF_NAME"> ");
-#endif
 
-  /* Get characters from UART */
-  c = getc();
-  while (c != '\r' && c != '\f' && c != '\n')
-  {
-    if (c == '\b')
-      pstr--;
-    else
-      *pstr++ = c;
-    putc(c);
-    c = getc();
-  }
-  *pstr = '\0';
-  printf ("\n");
+  while(1)
+    {
+      c=getc();
+      if (c == '\r' || c == '\f' || c == '\n')
+	{
+	  // Mark end of string
+	  *pstr = '\0';
+	  putc('\n');
+	  break;
+	}
+      else if (c == '\b') // Backspace
+	{
+	  if (chcnt > 0)
+	    {
+	      putc(c);
+	      putc(' '); // cover char with space
+	      putc(c);
+	      pstr--;
+	      chcnt--;
+	    }
+	}
+      else
+	{
+	  putc(c);
+	  *pstr++ = c;
+	  chcnt++;
+	}
+    }
 
   /* Skip leading blanks */
   pstr = str;
@@ -209,7 +270,8 @@ void mon_command(void)
         switch ( command[i].func(argc, &argv[0]) )
         {
           case -1:
-            printf ("Missing/wrong parameters, usage: %s %s\n", command[i].name, command[i].params);
+            printf ("Missing/wrong parameters, usage: %s %s\n", 
+		    command[i].name, command[i].params);
             break;
         }
 
@@ -228,7 +290,7 @@ void mon_command(void)
 }
 
 #if HELP_ENABLED
-extern unsigned long src_addr; // Stack section ends here
+extern unsigned long src_addr; // Stack section ends here, will print it out
 /* Displays help screen */
 int help_cmd (int argc, char *argv[])
 {
@@ -237,13 +299,10 @@ int help_cmd (int argc, char *argv[])
     printf ("%-10s %-20s - %s\n", command[i].name, command[i].params, command[i].help);
 
   // Build info....
-  printf("Info: CPU@ %dMHz", IN_CLK/1000000);
-#if IC_ENABLE==1
-  printf(" IC=%dB",IC_SIZE);
-#endif
-#if DC_ENABLE==1
-  printf(" DC=%dB",DC_SIZE);
-#endif
+  printf("\n");
+  printf("CPU info\n");
+  printf("Frequency\t\t%dMHz\n", IN_CLK/1000000);
+  print_or1k_cache_info();
   printf("\n");
   printf("Info: Stack section addr 0x%x\n",(unsigned long) &src_addr);
   printf("Build tag: %s", BUILD_VERSION);
@@ -322,7 +381,8 @@ void mon_init (void)
   module_hdbug_init ();
 #endif
 
-  tick_init();
+#ifdef TICK_CMDS
+#endif
 
 }
 int tboot_cmd (int argc, char *argv[]);
@@ -330,13 +390,17 @@ int tboot_cmd (int argc, char *argv[]);
 int main(int argc, char **argv)
 {
   extern unsigned long calc_mycrc32 (void);
+
 #if 0
   extern unsigned long mycrc32, mysize;
 #endif
+
   timestamp = 0; // clear timer counter
   
   int_init ();
+
   change_console_type (CONSOLE_TYPE);
+
   mtspr(SPR_SR, mfspr(SPR_SR) | SPR_SR_IEE);
 
 #if SELF_CHECK
@@ -346,18 +410,24 @@ int main(int argc, char **argv)
   else
       printf ("OK\n");
 #endif /* SELF_CHECK */
+
   num_commands=0;
   mon_init ();
 
+  disable_spincursor();
+  
+  tick_init();
+
+
   if (HELP_ENABLED) register_command ("help", "", "shows this help", help_cmd);
 
-#ifdef XESS
-  printf ("\nORP-XSV Monitor (type 'help' for help)\n");
-#else
   printf ("\n" BOARD_DEF_NAME " monitor (type 'help' for help)\n");
   printf("\tbuild: %s", BUILD_VERSION);
-#endif
 
-  while(1) mon_command();
-  // Run tboot in sim for now:  tboot_cmd (0,0);
+  // Loop forever, accepting commands
+  while(1) 
+    {
+      mon_command();
+    }
+
 }

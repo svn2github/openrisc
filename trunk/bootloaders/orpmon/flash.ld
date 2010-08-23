@@ -73,6 +73,6 @@ SECTIONS
 	_fprog_addr = .;
 	*(.mytext)
 	. += 0x500;
-	_src_addr = .;
+	src_addr = .;
 	} > ram
 }

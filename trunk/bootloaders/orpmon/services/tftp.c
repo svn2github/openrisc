@@ -10,8 +10,6 @@
 #include "tftp.h"
 #include "bootp.h"
 
-//#undef	ET_DEBUG
-#define ET_DEBUG
 
 #define WELL_KNOWN_PORT	69		/* Well known TFTP port #		*/
 #define TIMEOUT		2		/* Seconds to timeout for a lost pkt	*/
@@ -161,7 +159,7 @@ TftpSend (void)
 	int			len = 0;
 
 #ifdef ET_DEBUG
-	//printf("TftpSend: %d\n", TftpState);
+	printf("TftpSend: %d\n", TftpState);
 #endif
 
 
@@ -279,25 +277,28 @@ TftpHandler (unsigned char * pkt, unsigned dest, unsigned src, unsigned len)
 				break;
 			}
 		}
-
+		
 		if (TftpBlock == TftpLastBlock) {
-			/*
-			 *	Same block again; ignore it.
-			 */
-			break;
+		  /*
+		   *	Same block again; resend ack (maybe got lost last time)
+		   */
+		  TftpSend ();
+		  break;
 		}
-
-		TftpLastBlock = TftpBlock;
-		NetSetTimeout (TIMEOUT * TICKS_PER_SEC, TftpTimeout);
-
-		store_block (TftpBlock - 1, pkt + 2, len);
-
+		else
+		  {
+		    TftpLastBlock = TftpBlock;
+		    NetSetTimeout (TIMEOUT * TICKS_PER_SEC, TftpTimeout);
+		    
+		    store_block (TftpBlock - 1, pkt + 2, len);
+		  }
+		
 		/*
 		 *	Acknoledge the block just received, which will prompt
 		 *	the server for the next one.
 		 */
 		TftpSend ();
-
+		
 		if (len < 512) {
 			/*
 			 *	We received the whole thing.  Try to

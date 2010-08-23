@@ -15,7 +15,7 @@
  ****************************************************************************
  */
 #include "dhry.h"
-#include "spr_defs.h"
+#include "spr-defs.h"
 #include "common.h"
 #include "support.h"
 

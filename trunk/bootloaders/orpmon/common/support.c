@@ -1,6 +1,6 @@
 /* Support */
 
-#include "spr_defs.h"
+#include "spr-defs.h"
 #include "support.h"
 #include "common.h"
 #include "int.h"

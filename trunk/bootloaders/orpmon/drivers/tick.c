@@ -1,7 +1,7 @@
 
 #include "common.h"
 #include "support.h"
-#include "spr_defs.h"
+#include "spr-defs.h"
 #include "spincursor.h"
 
 void tick_init(void)

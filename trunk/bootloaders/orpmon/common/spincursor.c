@@ -1,9 +1,9 @@
 #include "uart.h"
+#include "board.h"
 #include "support.h"
 
 int spin_cursor_enabled = 0;
-static int last_spin_char = 0;
-static int last_spin_ticks = 0;
+
 
 void enable_spincursor(void)
 {
@@ -19,8 +19,13 @@ void disable_spincursor(void)
 
 void spincursor(void)
 {
+  static int last_spin_char = 0;
+  static int last_spin_ticks = 0;
   
   if (!spin_cursor_enabled)
+    return;
+  
+  if ((get_timer(0) - last_spin_ticks) < (TICKS_PER_US*2000))
     return;
   
   // Put a backspace

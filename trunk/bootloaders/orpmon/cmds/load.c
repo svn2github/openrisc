@@ -3,7 +3,7 @@
 #include "flash.h"
 #include "net.h"
 #include "uart.h"
-#include "spr_defs.h"
+#include "spr-defs.h"
 
 #ifndef MAX_IMAGES
 #define MAX_IMAGES 20
@@ -592,6 +592,9 @@ void relocate_code(void* destination, void* function, int length_words)
     p1[i] = p2[i];
 }
 
+// DC disable command in cpu.c
+extern int dc_disable_cmd(int argc, char *argv[]);
+
 int tboot_cmd (int argc, char *argv[])
 {
   int copied;
@@ -612,8 +615,14 @@ int tboot_cmd (int argc, char *argv[])
     break;
   }
 
-  //  global.src_addr = (unsigned long)0x0;
-
+  // Disable data cache if present
+  if (mfspr(SPR_SR) & SPR_SR_DCE)
+    {
+      printf("Disabling data cache\n");
+      dc_disable_cmd(0, 0);
+    }
+  
+  // Kick off copy
   copied =NetLoop(TFTP);
   if (copied <= 0) {
     printf("tboot: error while getting the image '%s'", tftp_filename);
