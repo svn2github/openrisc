@@ -1,3 +1,18 @@
+2010-08-25  Jeremy Bennett  <jeremy.bennett@embecosm.com>
+
+	* config/or32/elf.h <DWARF2_DEBUGGING_INFO>: Defined.
+	<PREFERRED_DEBUGGING_TYPE>: Changed to DWARF2_DEBUG.
+	<PUT_SDB_DEF>: Deleted.
+	* config/or32/or32.h: Obsolete code surrounded by "#if 0" removed
+	for clarity.
+	<SDB_DELIM>: Definition deleted.
+	<DBX_CONTIN_LENGTH, DBX_CONTIN_CHAR, DBX_REGISTER_NUMBER>:
+	Definition deleted (default suffices).
+	<DWARF2_UNWIND_INFO, DWARF2_FRAME_INFO>: Defined.
+	<DWARF2_ASM_LINE_DEBUG_INFO, INCOMIN_RETURN_ADDR_RTX>: Defined.
+	* config/or32/or32.md: Commenting clarified. Obsolete code for
+	define_function_unit deleted.
+
 2010-08-19  Jeremy Bennett  <jeremy.bennett@embecosm.com>
 
 	* config/or32/elf.h <PUT_SDB_DEF>: Definition removed.

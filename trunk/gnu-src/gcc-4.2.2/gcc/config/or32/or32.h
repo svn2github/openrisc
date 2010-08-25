@@ -783,30 +783,6 @@ enum reg_class
   if(LEGITIMATE_NONOFFSET_ADDRESS_P(MODE,X)) goto ADDR;
 
 /*
-  if(GET_CODE(X) == SYMBOL_REF) goto ADDR;  */ /* If used, smaller code */
-
-/* Alternative */
-#if 0
-#define GO_IF_LEGITIMATE_ADDRESS(MODE, X, ADDR)  \
-{                                                                       \
-  if (GET_CODE (X) == REG) goto ADDR;                                   \
-  if (GET_CODE (X) == SYMBOL_REF) goto ADDR;				\
-  if (CONSTANT_ADDRESS_P (X)) goto ADDR;                                \
-  if (GET_CODE (X) == PLUS)                                             \
-    {                                                                   \
-      /* Handle [index]<address> represented with index-sum outermost */\
-      if (GET_CODE (XEXP (X, 0)) == REG                                 \
-          && REG_OK_FOR_BASE_P (XEXP (X, 0))                            \
-          && GET_CODE (XEXP (X, 1)) == CONST_INT)                       \
-        goto ADDR;                                                      \
-      if (GET_CODE (XEXP (X, 1)) == REG                                 \
-          && REG_OK_FOR_BASE_P (XEXP (X, 0))                            \
-          && GET_CODE (XEXP (X, 0)) == CONST_INT)                       \
-        goto ADDR;                                                      \
-    }                                                                   \
- }
-#endif
-/*
  * We have to force symbol_ref's into registers here
  * because nobody else seems to want to do that!
  */
@@ -880,26 +856,6 @@ enum reg_class
    so give the MEM rtx a byte's mode.  */
 #define FUNCTION_MODE SImode
 
-/* Compute the cost of computing a constant rtl expression RTX
-   whose rtx-code is CODE.  The body of this macro is a portion
-   of a switch statement.  If the code is computed here,
-   return it with a return statement.  Otherwise, break from the switch.  */
-#if 0
-__PHX__ cleanup
-#define CONST_COSTS(RTX,CODE,OUTER_CODE) \
-  case CONST_INT:						\
-    /* Constant zero is super cheap due to clr instruction.  */	\
-    if (RTX == const0_rtx) return 0;				\
-    if ((unsigned) INTVAL (RTX) < 077) return 1;		\
-  case CONST:							\
-  case LABEL_REF:						\
-  case SYMBOL_REF:						\
-    return 3;							\
-  case CONST_DOUBLE:						\
-    return 5;
-#endif
-
-
 /* Given a comparison code (EQ, NE, etc.) and the first operand of a
    COMPARE, return the mode to be used for the comparison.
 */
@@ -961,31 +917,47 @@ fprintf (FILE, ".file\t");   \
 {"r0", "r1", "r2", "r3", "r4", "r5", "r6", "r7",   "r8", "r9", "r10", "r11", "r12", "r13", "r14", "r15" \
 , "r16", "r17", "r18", "r19", "r20", "r21", "r22", "r23", "r24", "r25", "r26", "r27", "r28", "r29", "r30", "r31", "cc-flag"}
 
+/* -------------------------------------------------------------------------- */
+/* Debug things for DBX (STABS)                                               */
+/*                                                                            */
+/* Note. Our config.gcc includes dbxelf.h, which sets up appropriate          */
+/*       defaults. Choice of which debug format to use is in our elf.h        */
+/* -------------------------------------------------------------------------- */
 
-/* Define this to be the delimiter between SDB sub-sections.  The default
-   is ";".  */
-#define SDB_DELIM       "\n"
-   
-/* Do not break .stabs pseudos into continuations.  */
-#define DBX_CONTIN_LENGTH 0
-   
 /* Don't try to use the  type-cross-reference character in DBX data.
    Also has the consequence of putting each struct, union or enum
    into a separate .stabs, containing only cross-refs to the others.  */
+/* JPB 24-Aug-10: Is this really correct. Can't GDB use this info? */
 #define DBX_NO_XREFS
          
-/* How to renumber registers for dbx and gdb.
-   Vax needs no change in the numeration.  */
+/* -------------------------------------------------------------------------- */
+/* Debug things for DWARF2                                                    */
+/*                                                                            */
+/* Note. Choice of which debug format to use is in our elf.h                  */
+/* -------------------------------------------------------------------------- */
 
-#define DBX_REGISTER_NUMBER(REGNO) (REGNO)
+/* We support frame unwind info including for exceptions handling. This needs
+   INCOMING_RETURN_ADDR_RTX to be set and OBJECT_FORMAT_ELF to be defined (in
+   elfos.h). Override any default value. */
+#undef  DWARF2_UNWIND_INFO
+#define DWARF2_UNWIND_INFO 1
 
-/* This is the char to use for continuation (in case we need to turn
-   continuation back on).  */
+/* We want frame info produced. Note that this is superfluous if
+   DWARF2_UNWIND_INFO is non-zero, but we set so this so, we can produce frame
+   info even when it is zero. Override any default value. */
+#undef  DWARF2_FRAME_INFO
+#define DWARF2_FRAME_INFO 1
 
-#define DBX_CONTIN_CHAR '?'
+/* Macro to idenfity where the incoming return address is on a function call
+   before the start of the prologue (i.e. the link register). Used to produce
+   DWARF2 frame debug info when DWARF2_UNWIND_INFO is non-zero. Override any
+   default value. */
+#undef  INCOMING_RETURN_ADDR_RTX
+#define INCOMING_RETURN_ADDR_RTX gen_rtx_REG (Pmode, LINK_REGNUM)
 
-
-
+/* We believe this works for our assembler. Override any default value */
+#undef  DWARF2_ASM_LINE_DEBUG_INFO
+#define DWARF2_ASM_LINE_DEBUG_INFO 1
 
 
 /* Node: Label Output */
@@ -1000,24 +972,6 @@ fprintf (FILE, ".file\t");   \
 
 #define ASM_OUTPUT_LABEL(FILE,NAME)	\
  { assemble_name (FILE, NAME); fputs (":\n", FILE); }
-#if 0
-/* This is how to output a command to make the user-level label named NAME
-   defined for reference from other files.  */
-/*
- __PHX__ CLEANUP
-#define ASM_GLOBALIZE_LABEL(FILE,NAME)	\
- { fputs ("\t.global ", FILE); assemble_name (FILE, NAME); fputs ("\n", FILE); }
-*/
-
-/* SIMON */
-/*#define ASM_OUTPUT_LABELREF(stream,name)                \
- { fputc('_',stream); fputs(name,stream); }
-*/
-/* JPB. We need to implement this, otherwise we get a leading underscore added
-   by default. Not sure where that default implementation is coming from
-   yet... */
-/* #define ASM_OUTPUT_LABELREF(stream, name) fputs (name, stream) */
-#endif
 
 /* The prefix to add to user-visible assembler symbols. */
 

@@ -26,16 +26,17 @@ Boston, MA 02111-1307, USA.  */
 #undef  OBJECT_FORMAT_ELF
 #define OBJECT_FORMAT_ELF
 
-/* use SDB debugging info and make it default */
+/* Offer DBX (STABS) debugging info */
 #undef  DBX_DEBUGGING_INFO
 #define DBX_DEBUGGING_INFO
 
-#undef  PREFERRED_DEBUGGING_TYPE
-#define PREFERRED_DEBUGGING_TYPE DBX_DEBUG
+/* Also offer DWARF2 debugging info */
+#undef  DWARF2_DEBUGGING_INFO
+#define DWARF2_DEBUGGING_INFO
 
-/* JPB 19-Aug-10: Why do we need this? */
-/* #undef  PUT_SDB_DEF */
-/* #define PUT_SDB_DEF */
+/* Make DBX (STABS) the default debugging info */
+#undef  PREFERRED_DEBUGGING_TYPE
+#define PREFERRED_DEBUGGING_TYPE DWARF2_DEBUG
 
 /* JPB: Make this match or32.h */
 #undef  USER_LABEL_PREFIX
