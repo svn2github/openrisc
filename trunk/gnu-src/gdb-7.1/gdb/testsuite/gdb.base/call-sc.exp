@@ -338,6 +338,10 @@ proc test_scalar_returns { } {
 		# What a suprize.  The architecture hasn't implemented
 		# return_value, and hence has to fail.
 		kfail "$test" gdb/1444
+	    } elseif $return_value_unknown {
+		# If the return value is unknown, the caller will pick up
+		# whatever random value is in the return structure location.
+		pass "$test"
 	    } else {
 		fail "$test"
 	    }

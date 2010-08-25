@@ -868,6 +868,12 @@ gdb_expect {
 
 set bp_location13 [gdb_get_line_number "set breakpoint 13 here" $srcfile1]
 set bp_location14 [gdb_get_line_number "set breakpoint 14 here" $srcfile1]
+
+send_user "bp_location13: $bp_location13\n"
+send_user "bp_location14: $bp_location14\n"
+send_user "decimal:       $decimal\n"
+send_user "hex:           $hex\n"
+
 send_gdb "continue\n"
 gdb_expect {
     -re "Breakpoint $decimal, marker4 \\(d=177601976\\) at .*$srcfile1:$bp_location13\[\r\n\]+$bp_location13\[\t \]+void marker4.*" {
@@ -876,7 +882,11 @@ gdb_expect {
     -re "Breakpoint $decimal, $hex in marker4 \\(d=177601976\\) at .*$srcfile1:$bp_location13\[\r\n\]+$bp_location13\[\t \]+void marker4.*" {
 	pass "run until breakpoint set at small function, optimized file"
     }
-    -re "Breakpoint $decimal, marker4 \\(d=177601976\\) at .*$srcfile1:$bp_location14\[\r\n\]+$bp_location14\[\t \]+void marker4.*" {
+    # JPB 21-Aug-10: The default runs w/o prototypes and uses the line
+    # above. The output should be identical with prototypes (here), just the
+    # line number different. For some reason the text "$hex in" had been
+    # omitted.
+    -re "Breakpoint $decimal, $hex in marker4 \\(d=177601976\\) at .*$srcfile1:$bp_location14\[\r\n\]+$bp_location14\[\t \]+void marker4.*" {
         # marker4() is defined at line 46 when compiled with -DPROTOTYPES
 	pass "run until breakpoint set at small function, optimized file (line bp_location14)"
     }
