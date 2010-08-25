@@ -1054,20 +1054,27 @@ or32_push_dummy_call (struct gdbarch  *gdbarch,
       if((len > bpw) && (argreg <= (OR32_LAST_ARG_REGNUM - 1)))
 	{
 
-	  /* Big scalars use two registers, must be pair aligned. This code
-	     breaks if we can have quad-word scalars (e.g. long double). */
+	  /* Big scalars use two registers, but need NOT be pair aligned. This
+	     code breaks if we can have quad-word scalars (e.g. long
+	     double). */
 	  ULONGEST regval = extract_unsigned_integer (val, len, byte_order);
+
+	  unsigned int  bits_per_word = bpw * 8;
+	  ULONGEST      mask          = (((ULONGEST) 1) << bits_per_word) - 1;
+	  ULONGEST      lo            = regval & mask;
+	  ULONGEST      hi            = regval >> bits_per_word;
 
 	  gdb_assert (len <= (bpw * 2));
 
-	  argreg = 1 == (argreg & 1) ? argreg + 1 : argreg;
-	  regcache_cooked_write_unsigned (regcache, argreg, regval >> bpw);
-	  regcache_cooked_write_unsigned (regcache, argreg + 1,
-					  regval && ((ULONGEST)(1 << bpw) - 1));
+	  regcache_cooked_write_unsigned (regcache, argreg,     hi);
+	  regcache_cooked_write_unsigned (regcache, argreg + 1, lo);
 	  argreg += 2;
 	}
       else if (argreg <= OR32_LAST_ARG_REGNUM)
 	{
+	  printf ("Writing 0x%08llx to r%d\n",
+		  extract_unsigned_integer (val, len, byte_order), argreg);
+
 	  regcache_cooked_write_unsigned (regcache, argreg,
 					  extract_unsigned_integer (val, len,
 								   byte_order));
@@ -1186,8 +1193,12 @@ or32_dummy_id (struct gdbarch    *gdbarch,
    or32_frame_unwind_cache), in that it is based on THIS frame, not the NEXT
    frame.
 
-   Build up the information (saved registers etc) for the given frame if it
-   does not already exist.
+   We build a cache, saying where registers of the PREV frame can be found
+   from the data so far set up in this THIS.
+
+   We also compute a unique ID for this frame, based on the function start
+   address and the stack pointer (as it will be, even if it has yet to be
+   computed.
 
    STACK FORMAT
    ============
@@ -1239,8 +1250,13 @@ or32_dummy_id (struct gdbarch    *gdbarch,
    This prolog is used, even for -O3 with GCC.
 
    All this analysis must allow for the possibility that the PC is in the
-   middle of the prologue. Data should only be set up insofar as it has been
-   computed.
+   middle of the prologue. Data in the cache should only be set up insofar as
+   it has been computed.
+
+   HOWEVER. The frame_id must be created with the SP *as it will be* at the
+   end of the Prologue. Otherwise a recursive call, checking the frame with
+   the PC at the start address will end up with the same frame_id as the
+   caller.
 
    A suite of "helper" routines are used, allowing reuse for
    or32_skip_prologue().
@@ -1262,6 +1278,7 @@ or32_frame_cache (struct frame_info  *this_frame,
 
   CORE_ADDR                this_pc;
   CORE_ADDR                this_sp;
+  CORE_ADDR                this_sp_for_id;
   int                      frame_size = 0;
 
   CORE_ADDR                start_addr;
@@ -1294,22 +1311,25 @@ or32_frame_cache (struct frame_info  *this_frame,
                                    get_frame_register_unsigned (this_frame,
 								OR32_SP_REGNUM);
 
-  /* The frame base of THIS frame (for ID purposes only - frame base is an
-     overloaded term) is its stack pointer. This is the same whether we are
-     frameless or not. */
+  /* The default frame base of THIS frame (for ID purposes only - frame base
+     is an overloaded term) is its stack pointer. For now we use the value of
+     the SP register in THIS frame. However if the PC is in the prologue of
+     THIS frame, before the SP has been set up, then the value will actually
+     be that of the PREV frame, and we'll need to adjust it later. */
   trad_frame_set_this_base (info, this_sp);
+  this_sp_for_id = this_sp;
 
   /* The default is to find the PC of the PREVIOUS frame in the link register
      of this frame. This may be changed if we find the link register was saved
      on the stack. */
   trad_frame_set_reg_realreg (info, OR32_NPC_REGNUM, OR32_LR_REGNUM);
 
-  /* We should only examine code that is in the prologue and which has been
-     executed. This is all code up to (but not including) end_addr or the PC,
-     whichever is first. */
+  /* We should only examine code that is in the prologue. This is all code up
+     to (but not including) end_addr. We should only populate the cache while
+     the address is up to (but not including) the PC or end_addr, whichever is
+     first. */
   gdbarch = get_frame_arch (this_frame);
   end_addr = or32_skip_prologue (gdbarch, start_addr);
-  end_addr = (this_pc > end_addr) ? end_addr : this_pc;
 
   /* All the following analysis only occurs if we are in the prologue and have
      executed the code. Check we have a sane prologue size, and if zero we
@@ -1342,11 +1362,33 @@ or32_frame_cache (struct frame_info  *this_frame,
 	  addr       += OR32_INSTLEN;
 	  inst        = or32_fetch_instruction (gdbarch, addr);
 
-	  /* The stack pointer of the PREVIOUS frame is frame_size greater
-	     than the stack pointer of THIS frame. */
-	  trad_frame_set_reg_value (info, OR32_SP_REGNUM,
-				    this_sp + frame_size);
+	  /* If the PC has not actually got to this point, then the frame base
+	     will be wrong, and we adjust it.
+
+	     If we are past this point, then we need to populate the stack
+	     accoringly. */
+	  if (this_pc <= addr)
+	    {
+	      /* Only do if executing */
+	      if (0 != this_sp)
+		{
+		  this_sp_for_id = this_sp + frame_size;
+		  trad_frame_set_this_base (info, this_sp_for_id);
+		}
+	    }
+	  else
+	    {
+	      /* We are past this point, so the stack pointer of the PREV
+		 frame is frame_size greater than the stack pointer of THIS
+		 frame. */
+	      trad_frame_set_reg_value (info, OR32_SP_REGNUM,
+					this_sp + frame_size);
+	    }
 	}
+
+      /* From now on we are only populating the cache, so we stop once we get
+	 to either the end OR the current PC. */
+      end_addr = (this_pc < end_addr) ? this_pc : end_addr;
 
       /* Look for the frame pointer being manipulated. */
       if ((addr < end_addr) &&
@@ -1420,7 +1462,7 @@ or32_frame_cache (struct frame_info  *this_frame,
     }
 
   /* Build the frame ID */
-  trad_frame_set_id (info, frame_id_build (this_sp, start_addr));
+  trad_frame_set_id (info, frame_id_build (this_sp_for_id, start_addr));
 
   return info;
 
