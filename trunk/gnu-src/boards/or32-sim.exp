@@ -30,9 +30,13 @@ process_multilib_options ""
 # both in cflags, which are also used when linking, so we'll get the libraries
 # OK as well.
 
+# Calling dummy functions with float arguments fails if a K&R prototype is
+# used rather than an ANSI function prototype. This needs more investigation,
+# but for now we avoid by using -DPROTOTYPES.
+
 set_board_info compiler  "[find_gcc]"
 #set_board_info cflags    "[libgloss_include_flags] [newlib_include_flags]"
-set_board_info cflags    "-mor32-newlib"
+set_board_info cflags    "-mor32-newlib -DPROTOTYPES"
 #set_board_info ldflags   "[libgloss_link_flags] -mor32-newlib [newlib_link_flags]"
 # No linker script needed.
 set_board_info ldscript ""
