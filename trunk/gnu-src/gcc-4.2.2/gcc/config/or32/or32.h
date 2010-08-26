@@ -302,18 +302,28 @@ extern int target_flags;
 #define CAN_DEBUG_WITHOUT_FP 
  */
 
-#define INITIAL_FRAME_POINTER_OFFSET(DEPTH)						\
-{ int regno;										\
-  int offset = 0;									\
-  for( regno=0; regno < FIRST_PSEUDO_REGISTER;  regno++ )				\
-    if( regs_ever_live[regno] && !call_used_regs[regno] )				\
-      offset += 4;									\
-  (DEPTH) = (!current_function_is_leaf || regs_ever_live[LINK_REGNUM] ? 4 : 0)	+	\
-		(frame_pointer_needed ? 4 : 0)					+	\
-		offset								+	\
-		OR32_ALIGN(current_function_outgoing_args_size,4)		+	\
-		OR32_ALIGN(get_frame_size(),4);						\
-}
+/* This function computes the initial size of the frame (difference between SP
+   and FP) after the function prologue. */
+#define INITIAL_FRAME_POINTER_OFFSET(DEPTH)				\
+  {									\
+    int regno;								\
+    int offset = 0;							\
+  									\
+    for (regno=0; regno < FIRST_PSEUDO_REGISTER;  regno++)		\
+      {									\
+	if (regs_ever_live[regno] && !call_used_regs[regno])		\
+	  {								\
+	    offset += 4;						\
+	  }								\
+      }									\
+									\
+    (DEPTH) = ((!current_function_is_leaf				\
+		|| regs_ever_live[LINK_REGNUM]) ? 4 : 0)		\
+      + (frame_pointer_needed ? 4 : 0)					\
+      + offset								\
+      + OR32_ALIGN (current_function_outgoing_args_size,4)		\
+      + OR32_ALIGN (get_frame_size(),4);				\
+  }
 
 /* Base register for access to arguments of the function.  */
 #define ARG_POINTER_REGNUM FRAME_POINTER_REGNUM
@@ -354,13 +364,14 @@ extern int target_flags;
    
 /* The or32 has only one kind of registers, so NO_REGS, GENERAL_REGS
    and ALL_REGS are the only classes.  */
-
+/* JPB 26-Aug-10: Based on note from Mikhael (mirekez@gmail.com), we don't
+   need CR_REGS and it is in the wrong place for later things! */
 enum reg_class 
 { 
   NO_REGS,
   GENERAL_REGS,
-  CR_REGS,
   ALL_REGS,
+  /* CR_REGS, */
   LIM_REG_CLASSES 
 };
 
@@ -782,18 +793,9 @@ enum reg_class
   if(LEGITIMATE_OFFSET_ADDRESS_P(MODE,X)) goto ADDR;    \
   if(LEGITIMATE_NONOFFSET_ADDRESS_P(MODE,X)) goto ADDR;
 
-/*
- * We have to force symbol_ref's into registers here
- * because nobody else seems to want to do that!
- */
-#define LEGITIMIZE_ADDRESS(X,OLDX,MODE,WIN) {}
-/*
-{ if (GET_CODE (x) == SYMBOL_REF)                               \
-    (X) = copy_to_reg (X);                                      \
-  if (memory_address_p (MODE, X))                               \
-    goto WIN;                                                   \
-}
-*/
+/* This isn't needed at present, but we may want it in the future if a machine
+   specific code can do better than GCC's default rules. */
+/* #define LEGITIMIZE_ADDRESS(X,OLDX,MODE,WIN) */
 
 /*
  * OR32 addresses do not depend on the machine mode they are
@@ -879,16 +881,7 @@ enum reg_class
 #define ASM_COMMENT_START "#"
 
 /* Output at beginning of assembler file.  */
-/*
-__PHX__ clenup
-#ifndef ASM_FILE_START
-#define ASM_FILE_START(FILE) do {\
-fprintf (FILE, "%s file %s\n", ASM_COMMENT_START, main_input_filename);\
-fprintf (FILE, ".file\t");   \
-  output_quoted_string (FILE, main_input_filename);\
-  fputc ('\n', FILE);} while (0)
-#endif
-*/
+
 /* Output to assembler file text saying following lines
    may contain character constants, extra white space, comments, etc.  */
 
@@ -955,9 +948,50 @@ fprintf (FILE, ".file\t");   \
 #undef  INCOMING_RETURN_ADDR_RTX
 #define INCOMING_RETURN_ADDR_RTX gen_rtx_REG (Pmode, LINK_REGNUM)
 
-/* We believe this works for our assembler. Override any default value */
-#undef  DWARF2_ASM_LINE_DEBUG_INFO
-#define DWARF2_ASM_LINE_DEBUG_INFO 1
+/* Where is the start of our stack frame in relation to the end of the
+   previous stack frame at the start of a function, before the prologue */
+#define INCOMING_FRAME_SP_OFFSET  0
+
+
+
+/* This doesn't work for the OR32 assembler at present. If it did, we'd have
+   more compact debug tables. */
+/* #undef  DWARF2_ASM_LINE_DEBUG_INFO */
+/* #define DWARF2_ASM_LINE_DEBUG_INFO 1 */
+
+/* We don't need an alternative return address for now. */
+/* DWARF_ALT_FRAME_RETURN_COLUMN */
+
+/* We always save registers in the prologue with word alignment, so don't
+   need this. */
+/* DWARF_CIE_DATA_ALIGNMENT */
+
+/* This specifies the maximum number of registers we can save in a frame. We
+   could note that only SP, FP, LR, arg regs and callee saved regs come into
+   this category. However this is only an efficiency thing, so for now we
+   don't use it. */
+/* DWARF_FRAME_REGISTERS */
+
+/* This specifies a mapping from register numbers in .dwarf_frame to
+   .eh_frame. However for us they are the same, so we don't need it. */
+/* DWARF_FRAME_REGNUM */
+
+/* Defined if the DWARF column numbers do not match register numbers. For us
+   they do, so this is not needed. */
+/* DWARF_REG_TO_UNWIND_COLUMN */
+
+/* Can be used to define a register guaranteed to be zero. Only useful if zero
+   is used to terminate backtraces, and not recommended for new ports, so we
+   don't use it. */
+/* DWARF_ZERO_REG */
+
+/* This is the inverse function for DWARF_FRAME_REGNUM. Again not needed. */
+/* DWARF2_FRAME_REG_OUT  */
+
+/* The following macros are not needed. */
+/* TARGET_DWARF_CALLING_CONVENTION */
+/* TARGET_DWARF_HANDLE_FRAME_UNSPEC */
+/* TARGET_DWARF_REGISTER_SPAN  */
 
 
 /* Node: Label Output */

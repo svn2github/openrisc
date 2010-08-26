@@ -1,3 +1,14 @@
+2010-08-26  mirekez  <mirekez@gmail.com>
+
+	* config/or32/or32.h <enum reg_class>: CR_REGS removed from
+	enumeration.
+
+2010-08-26  Jeremy Bennett  <jeremy.bennett@embecosm.com>
+
+	* vec.h: All references to VEC_TA_GTY with an empty fourth
+	argument replaced by VEC_TA_GTY_ANON with only three arguments
+	<VEC_TA_GTY_ANON>: Created.
+
 2010-08-25  Jeremy Bennett  <jeremy.bennett@embecosm.com>
 
 	* config/or32/elf.h <DWARF2_DEBUGGING_INFO>: Defined.
