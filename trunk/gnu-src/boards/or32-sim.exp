@@ -36,7 +36,7 @@ process_multilib_options ""
 
 set_board_info compiler  "[find_gcc]"
 #set_board_info cflags    "[libgloss_include_flags] [newlib_include_flags]"
-set_board_info cflags    "-mor32-newlib -DPROTOTYPES"
+set_board_info cflags    "-mor32-newlib"
 #set_board_info ldflags   "[libgloss_link_flags] -mor32-newlib [newlib_link_flags]"
 # No linker script needed.
 set_board_info ldscript ""
@@ -63,8 +63,3 @@ set_board_info gdb,noargs  1
 set_board_info noargs 1
 # Or do signals.
 set_board_info gdb,nosignals 1
-
-# GDB sets some additional behavior using global variables, rather than
-# board_info
-# global GDB_TESTCASE_OPTIONS
-# set GDB_TESTCASE_OPTIONS "-mor32-newlib"
