@@ -820,6 +820,7 @@ static CORE_ADDR
 or32_skip_prologue (struct gdbarch *gdbarch,
 		    CORE_ADDR       pc) 
 {
+  CORE_ADDR     start_pc;
   CORE_ADDR     addr;
   uint32_t      inst;
 
@@ -828,16 +829,24 @@ or32_skip_prologue (struct gdbarch *gdbarch,
       
   int           frame_size = 0;
 
-  /* Try using SAL first if we have symbolic information available. */
-  /* if (find_pc_partial_function (pc, NULL, NULL, NULL)) */
-  /*   { */
-  /*     CORE_ADDR  prologue_end = skip_prologue_using_sal( gdbarch, pc ); */
+  /* Try using SAL first if we have symbolic information available. This only
+     works for DWARF 2, not STABS. */
+  if (find_pc_partial_function (pc, NULL, &start_pc, NULL))
+    {
+      CORE_ADDR  prologue_end = skip_prologue_using_sal( gdbarch, pc );
 
-  /*     if (0 != prologue_end) */
-  /* 	{ */
-  /* 	  return  (prologue_end > pc) ? prologue_end : pc; */
-  /* 	} */
-  /*   } */
+      if (0 != prologue_end)
+  	{
+	  struct symtab_and_line  prologue_sal = find_pc_line (start_pc, 0);
+	  char *debug_format = prologue_sal.symtab->debugformat;
+
+	  if ((strlen ("dwarf") <= strlen (debug_format))
+	      && (0 == strncasecmp ("dwarf", debug_format, strlen ("dwarf"))))
+	    {
+	      return  (prologue_end > pc) ? prologue_end : pc;
+	    }
+  	}
+    }
 
   /* Look to see if we can find any of the standard prologue sequence. All
      quite difficult, since any or all of it may be missing. So this is just a

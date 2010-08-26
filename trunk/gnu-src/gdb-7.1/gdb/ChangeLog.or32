@@ -1,3 +1,10 @@
+2010-08-25  Jeremy Bennett  <jeremy.bennett@embecosm.com>
+
+	* or32-tdep.c (or32_push_dummy_call): Corrected handling of double
+	args provided in two regs.
+	(or32_frame_cache): Set frame_id based on SP as it will be, even
+	it not yet computed.
+
 2010-08-19  Jeremy Bennett  <jeremy.bennett@embecosm.com>
 
 	* or32-tdep.c (or32_register_name): Changed to rnn rather than

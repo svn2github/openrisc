@@ -4,4 +4,4 @@
 	should be identical whether run with or without prototypes.
 	* gdb.base/call-sc.exp (test_scalar_returns): When the result of a
 	return is unknown, the value returned is undefined, not unchanged.
-	
+
