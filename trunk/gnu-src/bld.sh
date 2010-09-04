@@ -24,8 +24,8 @@
 
 # The current version of GDB (7.1) is incompatible with the current version of
 # binutils, so is built on its own.
-component_dirs='binutils-2.20.1 newlib-1.18.0 gcc-4.2.2'
-gdb_dir='gdb-7.1'
+component_dirs='binutils-2.20.1 newlib-1.18.0 gcc-4.5.1'
+gdb_dir='gdb-7.2'
 unified_src=srcw
 build_dir=bld-or32
 gdb_build_dir=bld-gdb
@@ -305,7 +305,7 @@ then
     exit 1
 fi
 
-# Actually GCC seems to have minor problems at 4.2.2 with parallel make. We
+# Actually GCC seems to have minor problems at 4.5.1 with parallel make. We
 # leave the structure here, since we'll reinstate it on a future release.
 
 # make $make_load all-gcc
@@ -316,15 +316,11 @@ then
     exit 1
 fi
 
-# Only make newlib if required.
-if [ "x${newlibmake}" != "x" ]
+make all-target-libgcc ${newlibmake}
+if [ $? != 0 ]
 then
-    make ${newlibmake}
-    if [ $? != 0 ]
-    then
-	echo "make (Newlib) failed."
-	exit 1
-    fi
+    echo "make (libgcc and Newlib) failed."
+    exit 1
 fi
 
 # GDB has to be built separately at present.
@@ -350,7 +346,7 @@ then
     cd {build_dir}
 
     for tool_check in check-binutils check-gas check-ld check-gcc \
-	              ${newlibcheck}
+	              check-target-libgcc ${newlibcheck}
     do
 	make ${tool_check}
 
@@ -381,7 +377,7 @@ then
     cd ${build_dir}
 
     make install-binutils install-gas install-ld install-gcc \
-	 ${newlibinstall}
+	 install-target-libgcc ${newlibinstall}
 
     if [ $? != 0 ];
     then
@@ -408,13 +404,35 @@ fi
 # If we have built newlib, move it. This means the target specific include
 # directory and the crt0.o and libraries from the target specific lib
 # directory.
+
+# There is a catch here. If we are doing a rebuild, some of these files may
+# have already been moved, and some no. So we check for their existence before
+# doing the move.
 if [ "x${newlibconfigure}" != "x" ]
 then
     mkdir -p ${install_dir}/or32-elf/newlib
     rm -rf ${install_dir}/or32-elf/newlib-include
-    mv ${install_dir}/or32-elf/include ${install_dir}/or32-elf/newlib-include
-    mv ${install_dir}/or32-elf/lib/*.a ${install_dir}/or32-elf/newlib
-    mv ${install_dir}/or32-elf/lib/crt0.o ${install_dir}/or32-elf/newlib
+
+    if [ -d ${install_dir}/or32-elf/include ]
+    then
+	mv ${install_dir}/or32-elf/include \
+	    ${install_dir}/or32-elf/newlib-include
+    fi
+
+    if [ -d ${install_dir}/or32-elf/lib ]
+    then
+	afiles=`ls -1 ${install_dir}/or32-elf/lib | grep '\.a' | head -1`
+
+	if [ "x$afiles" != "x" ]
+	then
+	    mv ${install_dir}/or32-elf/lib/*.a ${install_dir}/or32-elf/newlib
+	fi
+    fi
+
+    if [ -f ${install_dir}/or32-elf/lib/crt0.o ]
+    then
+	mv ${install_dir}/or32-elf/lib/crt0.o ${install_dir}/or32-elf/newlib
+    fi
 fi
 
 # uClibc could be safely built and installed now
