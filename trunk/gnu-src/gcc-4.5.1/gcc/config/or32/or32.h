@@ -367,8 +367,12 @@ extern int target_flags;
 /* Base register for access to arguments of the function.  */
 #define ARG_POINTER_REGNUM FRAME_POINTER_REGNUM
 
-/* Register in which static-chain is passed to a function.  */
-#define STATIC_CHAIN_REGNUM 0
+/* Register in which static-chain is passed to a function. 
+
+   JPB 4-Sep-10: r0 was the wrong thing to use here. I'll take a punt at
+                 using r11 (return value reg). This is a change to the
+                 ABI, which needs documenting. */
+#define STATIC_CHAIN_REGNUM 11
 
 /* Register in which address to store a structure value
    is passed to a function.  */
@@ -1336,9 +1340,15 @@ enum reg_class
     }									\
 }
 
-/* Trampoline stuff are stubs yet to be written */
-#define TRAMPOLINE_SIZE 26
+/* The size of the trampoline in bytes. This is a block of code followed by
+   two words specifying the function address and static chain pointer. */
+#define TRAMPOLINE_SIZE							\
+  (or32_trampoline_code_size + GET_MODE_SIZE (ptr_mode) * 2)
 
+/* Alignment required for trampolines, in bits.
+
+   For the OR32, there is no need for anything other than word alignment. */
+#define TRAMPOLINE_ALIGNMENT  32
 
 /* Mark functions for garbage collection. */
 extern GTY(()) rtx or32_compare_op0;

@@ -3,8 +3,10 @@
 #ifndef GCC_OR32_PROTOS_H
 #define GCC_OR32_PROTOS_H
 
-/* The following are only needed when handling the machine definition. */
+/* The following are for general support. */
+extern int         or32_trampoline_code_size (void);
 
+/* The following are only needed when handling the machine definition. */
 #ifdef RTX_CODE
 extern void        or32_expand_prologue (void);
 extern void        or32_expand_epilogue (int sibcall);

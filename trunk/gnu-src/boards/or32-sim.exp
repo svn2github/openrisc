@@ -47,19 +47,16 @@ set_board_info slow_simulator 0
 # Can't pass arguments to programs on this target..
 set_board_info noargs  1
 
-# And there's no support for signals.
-set_board_info gdb,nosignals  1
-
 # Used by a few gcc.c-torture testcases to delimit how large the stack can
 # be.
 set_board_info gcc,stack_size 65536
 
-# GDB opions
+# GDB options
 
 # We can't do input in GDB (yet! HA!). It *will* do output, hurrah.
 set_board_info gdb,noinferiorio 1
 # Or pass arguments.
 set_board_info gdb,noargs  1
 set_board_info noargs 1
-# Or do signals.
-set_board_info gdb,nosignals 1
+# And there's no support for signals.
+set_board_info gdb,nosignals  1

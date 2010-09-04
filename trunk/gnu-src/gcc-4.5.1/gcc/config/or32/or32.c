@@ -54,6 +54,24 @@
 #include "dwarf2.h"
 
 
+/* ========================================================================== */
+/* Local macros                                                               */
+
+/* Construct a l.movhi instruction for the given reg and value */
+#define OR32_MOVHI(rd, k)						\
+  ((0x6 << 26) | ((rd) << 21) | (k))
+
+/* Construct a l.ori instruction for the given two regs and value */
+#define OR32_ORI(rd, ra, k)						\
+  ((0x2a << 26) | ((rd) << 21) | ((ra) << 16) | (k))
+
+/* Construct a l.lwz instruction for the given two registers and offset */
+#define OR32_LWZ(rd, ra, i)						\
+  ((0x21 << 26) | ((rd) << 21) | ((ra) << 16) | (i))
+
+/* Construct a l.jr instruction for the given register */
+#define OR32_JR(rb)							\
+  ((0x11 << 26) | ((rb) << 11))
 
 /* ========================================================================== */
 /* Static variables (i.e. global to this file only.                           */
@@ -459,6 +477,103 @@ or32_regnum_ok_for_base_p (HOST_WIDE_INT  num,
       return (num <= OR32_LAST_INT_REG) || (num >= FIRST_PSEUDO_REGISTER);
     }
 }	/* or32_regnum_ok_for_base_p () */
+
+
+/* -------------------------------------------------------------------------- */
+/*!Emit a move from SRC to DEST.
+
+   Assume that the move expanders can handle all moves if !can_create_pseudo_p
+   ().  The distinction is important because, unlike emit_move_insn, the move
+   expanders know how to force Pmode objects into the constant pool even when
+   the constant pool address is not itself legitimate.
+
+   @param[in] dest  Destination of the move.
+   @param[in] src   Source for the move.
+
+   @return  RTX for the move.                                                 */
+/* -------------------------------------------------------------------------- */
+rtx
+or32_emit_move (rtx dest, rtx src)
+{
+  return (can_create_pseudo_p ()
+	  ? emit_move_insn (dest, src)
+	  : emit_move_insn_1 (dest, src));
+
+}	/* or32_emit_move () */
+
+
+/* -------------------------------------------------------------------------- */
+/*!Emit an instruction of the form (set TARGET (CODE OP0 OP1)).
+
+   @param[in] code    The code for the operation.
+   @param[in] target  Destination for the set operation.
+   @param[in] op0     First operand.
+   @param[in] op1     Second operand.                                         */
+/* -------------------------------------------------------------------------- */
+static void
+or32_emit_binary (enum rtx_code  code,
+		  rtx            target,
+		  rtx            op0,
+		  rtx            op1)
+{
+  emit_insn (gen_rtx_SET (VOIDmode, target,
+			  gen_rtx_fmt_ee (code, GET_MODE (target), op0, op1)));
+
+}	/* or32_emit_binary () */
+
+
+/* -------------------------------------------------------------------------- */
+/*!Compute the result of an operation into a new register.
+
+   Compute ("code" "op0" "op1") and store the result in a new register of mode
+   "mode".
+
+   @param[in] mode  Mode of the result
+   @parma[in] code  RTX for the operation to perform
+   @param[in] op0   RTX for the first operand
+   @param[in] op1   RTX for the second operand
+   
+   @return  The RTX for the new register.                                     */
+/* -------------------------------------------------------------------------- */
+static rtx
+or32_force_binary (enum machine_mode  mode,
+		   enum rtx_code      code,
+		   rtx                op0,
+		   rtx                op1)
+{
+  rtx  reg;
+
+  reg = gen_reg_rtx (mode);
+  or32_emit_binary (code, reg, op0, op1);
+
+  return reg;
+
+}	/* or32_force_binary () */
+
+
+/* ========================================================================== */
+/* Global support functions                                                   */
+
+/* -------------------------------------------------------------------------- */
+/* Return the size in bytes of the trampoline code.
+
+   Padded to TRAMPOLINE_ALIGNMENT bits. The code sequence is documented in
+   or32_trampoline_init ().
+
+   This is just the code size. the static chain pointer and target function
+   address immediately follow.
+
+   @return  The size of the trampoline code in bytes.                         */
+/* -------------------------------------------------------------------------- */
+int
+or32_trampoline_code_size (void)
+{
+  const int  TRAMP_BYTE_ALIGN = TRAMPOLINE_ALIGNMENT / 8;
+
+  /* Five 32-bit code words are needed */
+  return (5 * 4 + TRAMP_BYTE_ALIGN - 1) / TRAMP_BYTE_ALIGN * TRAMP_BYTE_ALIGN;
+
+}	/* or32_trampoline_code_size () */
 
 
 /* ========================================================================== */
@@ -872,16 +987,16 @@ or32_output_bf (rtx * operands)
   if (!TARGET_MASK_ALIGNED_JUMPS)
     {
       if (mode_calc != mode_got)
-	return "\tl.bnf\t%l0%(";
+	return "l.bnf\t%l0%(";
       else
-	return "\tl.bf\t%l0%(";
+	return "l.bf\t%l0%(";
     }
   else
     {
       if (mode_calc != mode_got)
-	return "\t.balignl\t0x8,0x15000015,0x4\n\tl.bnf\t%l0%(";
+	return ".balignl\t0x8,0x15000015,0x4\n\tl.bnf\t%l0%(";
       else
-	return "\t.balignl 0x8,0x15000015,0x4;\n\tl.bf\t%l0%(";
+	return ".balignl 0x8,0x15000015,0x4;\n\tl.bf\t%l0%(";
     }
 }	/* or32_output_bf () */
 
@@ -1690,6 +1805,172 @@ or32_legitimate_address_p (enum machine_mode  mode,
 
 
 /* -------------------------------------------------------------------------- */
+/*!Initialize a trampoline for nested functions.
+
+   A nested function is defined by *two* pieces of information, the address of
+   the function (like any other function) and a pointer to the frame of the
+   enclosing function. The latter is required to allow the nested function to
+   access local variables in the enclosing function's frame.
+
+   This represents a problem, since a function in C is represented as an
+   address that can be held in a single variable as a pointer. Requiring two
+   pointers will not fit.
+
+   The solution is documented in "Lexical Closures for C++" by Thomas
+   M. Breuel (USENIX C++ Conference Proceedings, October 17-21, 1988). The
+   nested function is represented by a small block of code and data on the
+   enclosing function's stack frame, which sets up a pointer to the enclosing
+   function's stack frame (the static chain pointer) in a register defined by
+   the ABI, and then jumps to the code of the function proper.
+
+   The function can be represented as a single pointer to this block of code,
+   known as a trampoline, which when called generates both pointers
+   needed. The nested function (which knows it is a nested function at compile
+   time) can then generate code to access the enclosing frame via the static
+   chain register.
+
+   There is a catch that the trampoline is set up as data, but executed as
+   instructions. The former will be via the data cache, the latter via the
+   instruction cache. There is a risk that a later trampoline will not be seen
+   by the instruction cache, so the wrong code will be executed. So the
+   instruction cache should be flushed for the trampoline address range.
+
+   This hook is called to initialize a trampoline. "m_tramp" is an RTX for the
+   memory block for the trampoline; "fndecl" is the FUNCTION_DECL for the
+   nested function; "static_chain" is an RTX for the static chain value that
+   should be passed to the function when it is called.
+
+   If the target defines TARGET_ASM_TRAMPOLINE_TEMPLATE, then the first thing
+   this hook should do is emit a block move into "m_tramp" from the memory
+   block returned by assemble_trampoline_template. Note that the block move
+   need only cover the constant parts of the trampoline. If the target
+   isolates the variable parts of the trampoline to the end, not all
+   TRAMPOLINE_SIZE bytes need be copied.
+
+   If the target requires any other actions, such as flushing caches or
+   enabling stack execution, these actions should be performed after
+   initializing the trampoline proper.
+
+   For the OR32, no static chain register is used. We choose to use the return
+   value (rv) register. The rvh register is used as a temporary. The code is
+   based on that for MIPS. The trampoline code is:
+
+              l.movhi r12,hi(end_addr)
+              l.ori   r12,lo(end_addr)
+              l.lwz   r13,4(r12)
+              l.jr    r13
+              l.lwz   r11,0(r12)
+      end_addr:
+              .word   <static chain>
+              .word   <nested_function>
+
+   @note For the OR32 we need to flush the instruction cache, which is a
+         privileged operation. Needs fixing.
+
+   @param[in] m_tramp      The lowest address of the trampoline on the stack.
+   @param[in] fndecl       Declaration of the enclosing function.
+   @param[in] chain_value  Static chain pointer to pass to the nested
+                           function.                                          */
+/* -------------------------------------------------------------------------- */
+static void
+or32_trampoline_init (rtx   m_tramp,
+		      tree  fndecl,
+		      rtx   chain_value)
+{
+  rtx  addr;				/* Start address of the trampoline */
+  rtx  end_addr;			/* End address of the code block */
+
+  rtx  high;				/* RTX for the high part of end_addr */
+  rtx  low;				/* RTX for the low part of end_addr */
+  rtx  opcode;				/* RTX for generated opcodes */
+  rtx  mem;				/* RTX for trampoline memory */
+
+  rtx trampoline[5];			/* The trampoline code */
+
+  unsigned int  i;			/* Index into trampoline */
+  unsigned int  j;			/* General counter */
+
+  HOST_WIDE_INT  end_addr_offset;	  /* Offset to end of code */
+  HOST_WIDE_INT  static_chain_offset;	  /* Offset to stack chain word */
+  HOST_WIDE_INT  target_function_offset;  /* Offset to func address word */
+
+  /* Work out the offsets of the pointers from the start of the trampoline
+     code.  */
+  end_addr_offset        = or32_trampoline_code_size ();
+  static_chain_offset    = end_addr_offset;
+  target_function_offset = static_chain_offset + GET_MODE_SIZE (ptr_mode);
+
+  /* Get pointers in registers to the beginning and end of the code block.  */
+  addr     = force_reg (Pmode, XEXP (m_tramp, 0));
+  end_addr = or32_force_binary (Pmode, PLUS, addr, GEN_INT (end_addr_offset));
+
+  /* Build up the code in TRAMPOLINE.
+
+              l.movhi r12,hi(end_addr)
+              l.ori   r12,lo(end_addr)
+              l.lwz   r13,4(r12)
+              l.jr    r13
+              l.lwz   r11,0(r12)
+       end_addr:
+  */
+
+  i = 0;
+
+  /* Break out the high and low parts of the end_addr */
+  high = expand_simple_binop (SImode, LSHIFTRT, end_addr, GEN_INT (16),
+			      NULL, false, OPTAB_WIDEN);
+  low  = convert_to_mode (SImode, gen_lowpart (HImode, end_addr), true);
+
+  /* Emit the l.movhi, adding an operation to OR in the high bits from the
+     RTX. */
+  opcode = gen_int_mode (OR32_MOVHI (12, 0), SImode);
+  trampoline[i++] = expand_simple_binop (SImode, IOR, opcode, high, NULL,
+					 false, OPTAB_WIDEN); 
+  
+  /* Emit the l.ori, adding an operations to OR in the low bits from the
+     RTX. */
+  opcode = gen_int_mode (OR32_ORI (12, 12, 0), SImode);
+  trampoline[i++] = expand_simple_binop (SImode, IOR, opcode, low, NULL,
+					 false, OPTAB_WIDEN); 
+
+  /* Emit the l.lwz of the function address. No bits to OR in here, so we can
+     do the opcode directly. */
+  trampoline[i++] =
+    gen_int_mode (OR32_LWZ (13, 12, target_function_offset - end_addr_offset),
+		  SImode);
+
+  /* Emit the l.jr of the function. No bits to OR in here, so we can do the
+     opcode directly. */
+  trampoline[i++] = gen_int_mode (OR32_JR (13), SImode);
+
+  /* Emit the l.lwz of the static chain. No bits to OR in here, so we can
+     do the opcode directly. */
+  trampoline[i++] =
+    gen_int_mode (OR32_LWZ (STATIC_CHAIN_REGNUM, 12,
+			    static_chain_offset - end_addr_offset), SImode);
+
+  /* Copy the trampoline code.  Leave any padding uninitialized.  */
+  for (j = 0; j < i; j++)
+    {
+      mem = adjust_address (m_tramp, SImode, j * GET_MODE_SIZE (SImode));
+      or32_emit_move (mem, trampoline[j]);
+    }
+
+  /* Set up the static chain pointer field.  */
+  mem = adjust_address (m_tramp, ptr_mode, static_chain_offset);
+  or32_emit_move (mem, chain_value);
+
+  /* Set up the target function field.  */
+  mem = adjust_address (m_tramp, ptr_mode, target_function_offset);
+  or32_emit_move (mem, XEXP (DECL_RTL (fndecl), 0));
+
+  /* Flushing the trampoline from the instruction cache needs to be done
+     here. */
+
+}	/* or32_trampoline_init () */
+
+
+/* -------------------------------------------------------------------------- */
 /*!Provide support for DW_AT_calling_convention
 
    Define this to enable the dwarf attribute DW_AT_calling_convention to be
@@ -1735,28 +2016,28 @@ or32_dwarf_calling_convention (const_tree  function ATTRIBUTE_UNUSED)
    FUNCTION_DECL with which this section is associated.
 
    For OR32, we use the default ELF sectioning. */
-#undef TARGET_ASM_NAMED_SECTION
+#undef  TARGET_ASM_NAMED_SECTION
 #define TARGET_ASM_NAMED_SECTION  default_elf_asm_named_section
 
-#undef TARGET_ASM_FUNCTION_PROLOGUE
+#undef  TARGET_ASM_FUNCTION_PROLOGUE
 #define TARGET_ASM_FUNCTION_PROLOGUE or32_output_function_prologue
 
-#undef TARGET_ASM_FUNCTION_EPILOGUE
+#undef  TARGET_ASM_FUNCTION_EPILOGUE
 #define TARGET_ASM_FUNCTION_EPILOGUE or32_output_function_epilogue
 
-#undef TARGET_FUNCTION_VALUE
+#undef  TARGET_FUNCTION_VALUE
 #define TARGET_FUNCTION_VALUE or32_function_value
 
-#undef TARGET_FUNCTION_OK_FOR_SIBCALL
+#undef  TARGET_FUNCTION_OK_FOR_SIBCALL
 #define TARGET_FUNCTION_OK_FOR_SIBCALL or32_function_ok_for_sibcall
 
-#undef TARGET_PASS_BY_REFERENCE
+#undef  TARGET_PASS_BY_REFERENCE
 #define TARGET_PASS_BY_REFERENCE or32_pass_by_reference
 
-#undef TARGET_FRAME_POINTER_REQUIRED
+#undef  TARGET_FRAME_POINTER_REQUIRED
 #define TARGET_FRAME_POINTER_REQUIRED or32_frame_pointer_required
 
-#undef TARGET_ARG_PARTIAL_BYTES
+#undef  TARGET_ARG_PARTIAL_BYTES
 #define TARGET_ARG_PARTIAL_BYTES or32_arg_partial_bytes
 
 /* This target hook returns TRUE if an argument declared in a prototype as an
@@ -1768,14 +2049,17 @@ or32_dwarf_calling_convention (const_tree  function ATTRIBUTE_UNUSED)
 
    For the OR32 we do require this, so use a utility hook, which always
    returns TRUE. */
-#undef TARGET_PROMOTE_PROTOTYPES
+#undef  TARGET_PROMOTE_PROTOTYPES
 #define TARGET_PROMOTE_PROTOTYPES hook_bool_const_tree_true
 
-#undef TARGET_PROMOTE_FUNCTION_MODE
+#undef  TARGET_PROMOTE_FUNCTION_MODE
 #define TARGET_PROMOTE_FUNCTION_MODE or32_promote_function_mode
 
-#undef TARGET_LEGITIMATE_ADDRESS_P
+#undef  TARGET_LEGITIMATE_ADDRESS_P
 #define TARGET_LEGITIMATE_ADDRESS_P  or32_legitimate_address_p
+
+#undef  TARGET_TRAMPOLINE_INIT
+#define TARGET_TRAMPOLINE_INIT  or32_trampoline_init
 
 #undef TARGET_DWARF_CALLING_CONVENTION
 #define TARGET_DWARF_CALLING_CONVENTION  or32_dwarf_calling_convention
