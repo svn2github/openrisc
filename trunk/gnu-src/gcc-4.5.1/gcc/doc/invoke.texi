@@ -727,6 +727,11 @@ Objective-C and Objective-C++ Dialects}.
 -mreturn-pointer-on-d0 @gol
 -mno-crt0  -mrelax}
 
+@emph{OpenRISC 1000 Options}
+@gccoptlist{-mhard-float -msoft-float -mdouble-float -mhard-div @gol
+-msoft-div -mhard-mul -msoft-mul -maj -msext -mcmov -mlogue @gol
+-mror -msibcall -mor32-newlib -mor32-newlib-uart}
+
 @emph{PDP-11 Options}
 @gccoptlist{-mfpu  -msoft-float  -mac0  -mno-ac0  -m40  -m45  -m10 @gol
 -mbcopy  -mbcopy-builtin  -mint32  -mno-int16 @gol
@@ -9609,6 +9614,7 @@ platform.
 * MIPS Options::
 * MMIX Options::
 * MN10300 Options::
+* OpenRISC 1000 Options::
 * PDP-11 Options::
 * picoChip Options::
 * PowerPC Options::
@@ -14477,6 +14483,110 @@ to shorten branches, calls and absolute memory addresses.  This option only
 has an effect when used on the command line for the final link step.
 
 This option makes symbolic debugging impossible.
+@end table
+
+@node OpenRISC 1000 Options
+@subsection OpenRISC 1000 Options
+@cindex OpenRISC 1000 options
+
+These @samp{-m} options are defined for OpenRISC 1000 implementations:
+
+@table @gcctabopt
+
+@item -mhard-float
+@opindex mhard-float
+Generate code to use hardware (single precision) floating point
+opcodes. The default is to use the software floating point library.
+
+@item -msoft-float
+@opindex msoft-float
+Use the software library for floating point. This is enabled by default.
+
+@item -mdouble-float
+@opindex mdouble-float
+Generate code to use double precision hardware floating point
+opcodes. The default is not to enable this.  Since no targets (hardware
+or modelled) currently implement the double precision floating point
+instruction set, this option is of little use, and also has not been
+properly tested.
+
+@item -mhard-div
+@opindex mhard-div
+Generate code to use hardware divide instructions.  By default this is
+not enabled.
+
+@item -msoft-div
+@opindex msoft-div
+Generate code to use the software library for division.  By default this
+is enabled.
+
+@item -mhard-mul
+@opindex mhard-mul
+Generate code to use hardware multiply instructions.  By default this is
+enabled.
+
+@quotation Note
+The standard Verilog RTL for OpenRISC includes a hardware multiply but
+not divide instruction, so this will be the correct setting.
+@end quotation
+
+@item -msoft-mul
+@opindex msoft-mul
+Generate code to use the software library for multiplication.  By
+default this is not enabled.
+
+@item -maj
+@opindex maj
+Align all branch and jump instructions on a double word boundary, padding with
+@samp{l.nop} where necessary.  It is not clear why this option exists, of
+why it should ever be used.  It is disabled by default and likely to be
+removed in a future release of GCC.
+
+@item -msext
+@opindex msext
+Use sign extending instructions. By default this is not enabled. It is
+not clear why this has not been enabled by default, since the instructions
+concerned are all mandatory on the OpenRISC 1000.
+
+@item -mcmov
+@opindex mcmov
+Use the @samp{l.cmov} instruction in generated code. This is an optional
+instruction on the OpenRISC 1000, so by default this option is not
+enabled.
+
+@item -mlogue
+@opindex logue
+Generate the prologue and epilogue using patterns in the machine
+description, rather than fixed templates.  This potentially allows
+generation of more efficient code. However the functionality has not yet been
+fully tested, and is disabled by default.
+
+@item -mror
+@opindex mror
+Use rotate instructions in generated code.  This is an optional
+instruction on the OpenRISC 1000, so by default this option is not
+enabled.
+
+@item -msibcall
+@opindex msibcall
+Generate code to optimize tail calls of sibling functions.  This
+potentially allows generation of more efficient code.  However the
+functionality has not yet been fully tested, and is disabled by default.
+
+@item -mor32-newlib
+@opindex mor32-newlib
+Use the headers for the simple OpenRISC 1000 newlib library when
+preprocessing and includes this library when linking.  This is a small C
+library, designed for standalone applications, which offers only
+standard output.
+
+@item -mor32-newlib-uart
+@opindex mor32-newlib-uart
+Use the headers for the OpenRISC 1000 newlib library with UART support
+when preprocessing and includes this library when linking.  This is a
+small C library, designed for standalone applications, which includes a
+UART connection for I/O to and from standard output and standard input.
+
 @end table
 
 @node PDP-11 Options

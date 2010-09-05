@@ -594,6 +594,15 @@ New Targets and Target Specific Improvements
        use_debug_exception_return. See the documentation for more details
        about these attributes.
 
+  OpenRISC 1000
+
+     * GCC now generates global variables and functions without a leading
+       underscore.
+     * GCC now generates DWARF 2 debugging output by default (with -g).
+     * -mhard-mul is enabled by default.
+     * The -mor32-newlib and -mor32-newlib-uart options enable support for the
+       OpenRISC newlib library implementations.
+
   picochip
 
   RS/6000 (POWER/PowerPC)

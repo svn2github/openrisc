@@ -932,6 +932,11 @@ definitions, and of the VAX machine description.
 Daniel Towner and Hariharan Sandanagobalane contributed and 
 maintain the picoChip port.
 
+@item 
+Jeremy Bennett of Embecosm and Jonas Bonn of South Pole contributed the
+OpenRISC 1000 port, which in turn was based on earlier work by Rich
+D'Addio, Damjan Lampret, Matjaz Breskvar and others.
+
 @item
 Tom Tromey for internationalization support and for his many Java
 contributions and libgcj maintainership.

@@ -2003,12 +2003,16 @@ or32_dwarf_calling_convention (const_tree  function ATTRIBUTE_UNUSED)
    In most cases these use the static functions declared above. They have
    defaults, so must be undefined first, before being redefined.
 
-   The description of what they do is found with the function above, unless
-   it is a standard function, in which case it is defined here (as with
-   TARGET_ASM_NAMED_SECTION).
+   The description of what they do is found with the function above, unless it
+   is a standard function or a constant, in which case it is defined here (as
+   with TARGET_ASM_NAMED_SECTION).
 
    The final declaration is of the global "targetm" structure. */
 
+
+/* Default target_flags if no switches specified. */
+#undef  TARGET_DEFAULT_TARGET_FLAGS
+#define TARGET_DEFAULT_TARGET_FLAGS (MASK_HARD_MUL)
 
 /* Output assembly directives to switch to section name. The section should
    have attributes as specified by flags, which is a bit mask of the SECTION_*

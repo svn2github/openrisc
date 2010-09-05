@@ -67,17 +67,11 @@ Boston, MA 02111-1307, USA.  */
                   %{mor32-newlib-uart:%{!g:-lc -lor32uart -u free -lc}   \
                                  %{g:-lg -lor32uart -u free -lg}}"
 
-#define TARGET_VERSION fprintf (stderr, " (OpenRISC 1000)");
+#define TARGET_VERSION fprintf (stderr, " (OpenRISC 1000) Mask 0x%x", MASK_HARD_MUL);
 
 /* Run-time compilation parameters selecting different hardware subsets.  */
 
 extern int target_flags;
-
-/* Default target_flags if no switches specified.
-
-   JPB 30-Aug-10: Is this still what we want? It's not documented in the GCC
-                  internals manual. */
-#define TARGET_DEFAULT (MASK_HARD_MUL)
 
 /* Target machine storage layout */
 
