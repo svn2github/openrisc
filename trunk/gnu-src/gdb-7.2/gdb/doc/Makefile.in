@@ -71,12 +71,12 @@ SET_TEXINPUTS = \
    TEXINPUTS=${TEXIDIR}:.:$(srcdir):$(READLINE_DIR):$(GDBMI_DIR):$$TEXINPUTS
 
 # Files which should be generated via 'info' and installed by 'install-info'
-INFO_DEPS = gdb.info gdbint.info stabs.info annotate.info or32.info
+INFO_DEPS = gdb.info gdbint.info stabs.info annotate.info
 
 # Files which should be generated via 'pdf' and installed by 'install-pdf'
-PDFFILES = gdb.pdf gdbint.pdf stabs.pdf refcard.pdf annotate.pdf or32.pdf
+PDFFILES = gdb.pdf gdbint.pdf stabs.pdf refcard.pdf annotate.pdf
 # Files which should be generated via 'html' and installed by 'install-html'
-HTMLFILES =  gdb/index.html gdbint/index.html stabs/index.html annotate/index.html or32/index.html
+HTMLFILES =  gdb/index.html gdbint/index.html stabs/index.html annotate/index.html
 HTMLFILES_INSTALL = gdb gdbint stabs annotate
 
 # There may be alternate predefined collections of switches to configure
@@ -154,26 +154,14 @@ ANNOTATE_DOC_FILES = \
 	$(ANNOTATE_DOC_SOURCE_INCLUDES) \
 	$(ANNOTATE_DOC_BUILD_INCLUDES)
 
-# GDB for OpenRISC 1000 User Guide
-OR32_DOC_SOURCE_INCLUDES = \
-	$(srcdir)/fdl.texi \
-	$(srcdir)/gpl.texi
-OR32_DOC_BUILD_INCLUDES = \
-	gdb-cfg.texi \
-	GDBvn.texi
-OR32_DOC_FILES = \
-	$(srcdir)/or32.texinfo \
-	$(OR32_DOC_SOURCE_INCLUDES) \
-	$(OR32_DOC_BUILD_INCLUDES)
-
 #### Host, target, and site specific Makefile fragments come in here.
 ###
 
 all:
 
 info: $(INFO_DEPS)
-dvi: gdb.dvi gdbint.dvi stabs.dvi refcard.dvi annotate.dvi or32.dvi
-ps: gdb.ps gdbint.ps stabs.ps refcard.ps annotate.ps or32.ps
+dvi: gdb.dvi gdbint.dvi stabs.dvi refcard.dvi annotate.dvi
+ps: gdb.ps gdbint.ps stabs.ps refcard.ps annotate.ps
 html: $(HTMLFILES)
 pdf: $(PDFFILES)
 all-doc: info dvi ps # pdf
@@ -531,36 +519,6 @@ Makefile: Makefile.in $(host_makefile_frag) config.status
 	$(SHELL) ./config.status
 
 
-# Clean these up before each run.  Avoids a catch 22 with not being
-# able to re-generate these files (to fix a corruption) because these
-# files contain a corruption.
-OR32_TEX_TMPS = or32.aux or32.cp* or32.fn* or32.ky* \
-	or32.log or32.pg* or32.toc or32.tp* or32.vr*
-
-# GDB for OpenRISC 1000 DOCUMENTATION: TeX dvi file
-or32.dvi : $(OR32_DOC_FILES)
-	rm -f $(OR32_TEX_TMPS)
-	$(SET_TEXINPUTS) $(TEXI2DVI) $(srcdir)/or32.texinfo
-
-or32.ps: or32.dvi
-	$(DVIPS) -o $@ $?
-
-or32.pdf: $(OR32_DOC_FILES)
-	rm -f $(OR32_TEX_TMPS)
-	$(SET_TEXINPUTS) $(TEXI2DVI) --pdf $(srcdir)/or32.texinfo
-
-or32.info: $(OR32_DOC_FILES)
-	$(MAKEINFO)  -I $(srcdir) -o or32.info $(srcdir)/or32.texinfo
-
-or32_toc.html: $(OR32_DOC_FILES)
-	$(MAKEHTML) $(MAKEHTMLFLAGS) $(srcdir)/or32.texinfo
-
-force:
-
-Makefile: Makefile.in $(host_makefile_frag) config.status
-	$(SHELL) ./config.status
-
-
 # The "least clean" level of cleaning.  Get rid of files which are
 # automatically generated files that are just intermediate files,
 
@@ -570,7 +528,6 @@ mostlyclean:
 	rm -f $(GDBINT_TEX_TMPS)
 	rm -f $(STABS_TEX_TMPS)
 	rm -f $(ANNOTATE_TEX_TMPS)
-	rm -f $(OR32_TEX_TMPS)
 	rm -f sedref.dvi sedref.tex tmp.sed
 
 clean: mostlyclean

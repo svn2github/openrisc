@@ -1,3 +1,7 @@
+2010-09-05  Jeremy Bennett  <jeremy.bennett@embecosm.com>
+
+	* version.in: Updated for release 7.2-or32-1.0rc1.
+
 2010-08-25  Jeremy Bennett  <jeremy.bennett@embecosm.com>
 
 	* or32-tdep.c (or32_push_dummy_call): Corrected handling of double
