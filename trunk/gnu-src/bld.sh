@@ -264,7 +264,7 @@ then
 	  --with-or1ksim=${or1ksim_dir} \
 	  ${newlibconfigure} \
 	  --enable-fast-install=N/A --disable-libssp \
-	  --enable-languages=c --prefix=${install_dir}
+	  --enable-languages=c,c++ --prefix=${install_dir}
 
     if [ $? != 0 ]
     then
@@ -316,10 +316,10 @@ then
     exit 1
 fi
 
-make all-target-libgcc ${newlibmake}
+make all-target-libgcc all-target-libstdc++-v3 ${newlibmake}
 if [ $? != 0 ]
 then
-    echo "make (libgcc and Newlib) failed."
+    echo "make (libraries) failed."
     exit 1
 fi
 
@@ -346,7 +346,8 @@ then
     cd {build_dir}
 
     for tool_check in check-binutils check-gas check-ld check-gcc \
-	              check-target-libgcc ${newlibcheck}
+	              check-target-libgcc check-target-libstdc++-v3 \
+	              ${newlibcheck}
     do
 	make ${tool_check}
 
@@ -377,7 +378,7 @@ then
     cd ${build_dir}
 
     make install-binutils install-gas install-ld install-gcc \
-	 install-target-libgcc ${newlibinstall}
+	 install-target-libgcc install-target-libstdc++-v3 ${newlibinstall}
 
     if [ $? != 0 ];
     then
