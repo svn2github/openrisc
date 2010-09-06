@@ -1,4 +1,4 @@
-This is gdb.info, produced by makeinfo version 4.8 from ./gdb.texinfo.
+This is gdb.info, produced by makeinfo version 4.13 from ./gdb.texinfo.
 
 INFO-DIR-SECTION Software development
 START-INFO-DIR-ENTRY
@@ -23,7 +23,7 @@ developing GNU and promoting software freedom."
    This file documents the GNU debugger GDB.
 
    This is the Ninth Edition, of `Debugging with GDB: the GNU
-Source-Level Debugger' for GDB (GDB) Version 7.2.
+Source-Level Debugger' for GDB (GDB) Version 7.2-or32-1.0rc1.
 
    Copyright (C) 1988, 1989, 1990, 1991, 1992, 1993, 1994, 1995, 1996,
 1998, 1999, 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009,
@@ -204,7 +204,7 @@ interrupt the debuggee even if it ignores `C-c'.
 
    There are various additional Cygwin-specific commands, described in
 this section.  Working with DLLs that have no debugging symbols is
-described in *Note Non-debug DLL Symbols::.
+described in *note Non-debug DLL Symbols::.
 
 `info w32'
      This is a prefix of MS Windows-specific commands which print
@@ -307,8 +307,8 @@ will have been loaded.  The easiest way around this problem is simply to
 start the program -- either by setting a breakpoint or letting the
 program run once to completion.  It is also possible to force GDB to
 load a particular DLL before starting the executable -- see the shared
-library information in *Note Files::, or the `dll-symbols' command in
-*Note Cygwin Native::.  Currently, explicitly loading symbols from a
+library information in *note Files::, or the `dll-symbols' command in
+*note Cygwin Native::.  Currently, explicitly loading symbols from a
 DLL with no debugging information will cause the symbol names to be
 duplicated in GDB's lookup table, which may adversely affect symbol
 lookup performance.
@@ -1167,32 +1167,47 @@ File: gdb.info,  Node: OpenRISC 1000,  Next: PA,  Prev: MIPS Embedded,  Up: Embe
 21.3.6 OpenRISC 1000
 --------------------
 
-See OR1k Architecture document (`www.opencores.org') for more
-information about platform and commands.
+Previous versions of GDB supported remote connection via a proprietary
+JTAG protocol using the `target jtag' command. Support for this has now
+been dropped.
 
-`target jtag jtag://HOST:PORT'
-     Connects to remote JTAG server.  JTAG remote server can be either
-     an or1ksim or JTAG server, connected via parallel port to the
-     board.
+`target remote'
+     This is now the only way to connect to a remote OpenRISC 1000
+     target.  This is supported by "Or1ksim", the OpenRISC 1000
+     architectural simulator, and Verilator and Icarus Verilog
+     simulations.  "Remote serial protocol" servers are also available
+     to drive various hardware implementations via JTAG.  Connects to
+     remote JTAG server.
 
-     Example: `target jtag jtag://localhost:9999'
+     Example: `target remote :51000'
 
-`or1ksim COMMAND'
-     If connected to `or1ksim' OpenRISC 1000 Architectural Simulator,
-     proprietary commands can be executed.
+`target sim'
+     "Or1ksim", the OpenRISC 1000 architectural simulator is now
+     incorporated within GDB as a simulator target.  It is started in
+     quiet mode with 8M of memory starting at address 0.  It is possible
+     to pass arguments to extend this configuration using the `-f'
+     option to `target sim'.  However for more complex use, the user is
+     advised to run "Or1ksim" separately, with its own configuration
+     file, and connect using `target remote'
+
+     Example: `target sim'
 
 `info or1k spr'
-     Displays spr groups.
+     Displays groups.
 
-`info or1k spr GROUP'
-`info or1k spr GROUPNO'
+`info spr GROUP'
+`info spr GROUPNO'
      Displays register names in selected group.
 
-`info or1k spr GROUP REGISTER'
-`info or1k spr REGISTER'
-`info or1k spr GROUPNO REGISTERNO'
-`info or1k spr REGISTERNO'
+`info spr GROUP REGISTER'
+`info spr REGISTER'
+`info spr GROUPNO REGISTERNO'
+`info spr REGISTERNO'
      Shows information about specified spr register.
+
+     Example: `info spr DRR'
+
+     `DEBUG.DRR = SPR6_21 = 0 (0x0)'
 
 `spr GROUP REGISTER VALUE'
 `spr REGISTER VALUE'
@@ -1200,71 +1215,31 @@ information about platform and commands.
 `spr REGISTERNO VALUE'
      Writes VALUE to specified spr register.
 
-   Some implementations of OpenRISC 1000 Architecture also have
-hardware trace.  It is very similar to GDB trace, except it does not
-interfere with normal program execution and is thus much faster.
-Hardware breakpoints/watchpoint triggers can be set using:
-`$LEA/$LDATA'
-     Load effective address/data
+     Example: spr PICMR 0x24
 
-`$SEA/$SDATA'
-     Store effective address/data
+   The use of `info' and `spr' commands is anachronistic.  At some time
+in the future they will be replaced by `show spr' and `set spr'.
 
-`$AEA/$ADATA'
-     Access effective address ($SEA or $LEA) or data ($SDATA/$LDATA)
+   There are some known problems with the current implementation 
 
-`$FETCH'
-     Fetch data
+  1. Some OpenRISC 1000 targets support hardware breakpoints and
+     watchpoints.  Consult the target documentation for details.  GDB
+     is not perfect in handling of watchpoints.  It is possible to
+     allocate hardware watchpoints and not discover until running that
+     sufficient watchpoints are not available.  It is also possible
+     that GDB will report watchpoints being hit spuriously.  This can
+     be down to the assembly code having additional memory accesses
+     that are not obviously reflected in the source code.
 
-   When triggered, it can capture low level data, like: `PC', `LSEA',
-`LDATA', `SDATA', `READSPR', `WRITESPR', `INSTR'.
+  2. The OpenRISC 1000 architecture has evolved since the first port of
+     GDB. In particular the structure of the Unit Present register has
+     changed and the CPU Configuration register has been added.  The
+     port of GDB version 7.2-or32-1.0rc1 uses the _current_
+     specification of the OpenRISC 1000.
 
-   `htrace' commands: 
-`hwatch CONDITIONAL'
-     Set hardware watchpoint on combination of Load/Store Effective
-     Address(es) or Data.  For example:
 
-     `hwatch ($LEA == my_var) && ($LDATA < 50) || ($SEA == my_var) &&
-     ($SDATA >= 50)'
-
-     `hwatch ($LEA == my_var) && ($LDATA < 50) || ($SEA == my_var) &&
-     ($SDATA >= 50)'
-
-`htrace info'
-     Display information about current HW trace configuration.
-
-`htrace trigger CONDITIONAL'
-     Set starting criteria for HW trace.
-
-`htrace qualifier CONDITIONAL'
-     Set acquisition qualifier for HW trace.
-
-`htrace stop CONDITIONAL'
-     Set HW trace stopping criteria.
-
-`htrace record [DATA]*'
-     Selects the data to be recorded, when qualifier is met and HW
-     trace was triggered.
-
-`htrace enable'
-`htrace disable'
-     Enables/disables the HW trace.
-
-`htrace rewind [FILENAME]'
-     Clears currently recorded trace data.
-
-     If filename is specified, new trace file is made and any newly
-     collected data will be written there.
-
-`htrace print [START [LEN]]'
-     Prints trace buffer, using current record configuration.
-
-`htrace mode continuous'
-     Set continuous trace mode.
-
-`htrace mode suspend'
-     Set suspend trace mode.
-
+   Reports of bugs are much welcomed. Please report problems through the
+OpenRISC tracker at downloads (http://opencores.org/openrisc).
 
 
 File: gdb.info,  Node: PowerPC Embedded,  Next: Sparclet,  Prev: PA,  Up: Embedded Processors
@@ -1815,8 +1790,8 @@ commands:
      Set whether to automatically flush the software-managed cache.
      When set to `on', GDB will automatically cause the SPE
      software-managed cache to be flushed whenever SPE execution stops.
-     This provides a consistent view of PowerPC memory that is
-     accessed via the cache.  If an application does not use the
+     This provides a consistent view of PowerPC memory that is accessed
+     via the cache.  If an application does not use the
      software-managed cache, this option has no effect.
 
 `show spu auto-flush-cache'
@@ -1849,7 +1824,7 @@ File: gdb.info,  Node: Controlling GDB,  Next: Extending GDB,  Prev: Configurati
 ******************
 
 You can alter the way GDB interacts with you by using the `set'
-command.  For commands controlling how GDB displays data, see *Note
+command.  For commands controlling how GDB displays data, see *note
 Print Settings: Print Settings.  Other settings are described here.
 
 * Menu:
@@ -2184,7 +2159,7 @@ will not think it has crashed.
 
    Currently, the messages controlled by `set verbose' are those which
 announce that the symbol table for a source file is being read; see
-`symbol-file' in *Note Commands to Specify Files: Files.
+`symbol-file' in *note Commands to Specify Files: Files.
 
 `set verbose on'
      Enables GDB output of certain informational messages.
@@ -2591,7 +2566,7 @@ been passed.  This expands to a number in the range 0...10.
      infinite recursion and aborts the command.
 
    In addition to the above commands, user-defined commands frequently
-use control flow commands, described in *Note Command Files::.
+use control flow commands, described in *note Command Files::.
 
    When user-defined commands are executed, the commands of the
 definition are not printed.  An error in any command stops execution of
@@ -3028,7 +3003,7 @@ classes added by GDB are placed in this module.  GDB automatically
  -- Function: execute command [from_tty] [to_string]
      Evaluate COMMAND, a string, as a GDB CLI command.  If a GDB
      exception happens while COMMAND runs, it is translated as
-     described in *Note Exception Handling: Exception Handling.
+     described in *note Exception Handling: Exception Handling.
 
      FROM_TTY specifies whether GDB ought to consider this command as
      having originated from the user invoking it interactively.  It
@@ -3265,7 +3240,7 @@ access its `foo' element with:
           ENCODING argument is not provided, or is an empty string, GDB
           will automatically select the encoding most suitable for the
           string type.  For further information on encoding in GDB
-          please see *Note Character Sets::.
+          please see *note Character Sets::.
 
           If the optional LENGTH argument is given, the string will be
           fetched and encoded to the length of characters specified.  If
@@ -3857,7 +3832,7 @@ using a subclass.
      By default, a GDB command is repeated when the user enters a blank
      line at the command prompt.  A command can suppress this behavior
      by invoking the `dont_repeat' method.  This is similar to the user
-     command `dont-repeat', see *Note dont-repeat: Define.
+     command `dont-repeat', see *note dont-repeat: Define.
 
  -- Method on Command: invoke argument from_tty
      This method is called by GDB when this command is invoked.
@@ -4357,9 +4332,9 @@ File: gdb.info,  Node: Blocks In Python,  Next: Symbols In Python,  Prev: Frames
 
 Within each frame, GDB maintains information on each block stored in
 that frame.  These blocks are organized hierarchically, and are
-represented individually in Python as a `gdb.Block'.  Please see *Note
+represented individually in Python as a `gdb.Block'.  Please see *note
 Frames In Python::, for a more in-depth discussion on frames.
-Furthermore, see *Note Examining the Stack: Stack, for more detailed
+Furthermore, see *note Examining the Stack: Stack, for more detailed
 technical information on GDB's book-keeping of the stack.
 
    The following block-related functions are available in the `gdb'
@@ -4545,7 +4520,7 @@ exposed to Python via two objects: `gdb.Symtab_and_line' and
 `gdb.Symtab'.  Symbol table and line data for a frame is returned from
 the `find_sal' method in `gdb.Frame' object.  *Note Frames In Python::.
 
-   For more information on GDB's symbol table management, see *Note
+   For more information on GDB's symbol table management, see *note
 Examining the Symbol Table: Symbols, for more information.
 
    A `gdb.Symtab_and_line' object has the following attributes:
@@ -4923,7 +4898,7 @@ include:
 `mi'
      The newest GDB/MI interface (currently `mi2').  Used primarily by
      programs wishing to use GDB as a backend for a debugger GUI or an
-     IDE.  For more information, see *Note The GDB/MI Interface: GDB/MI.
+     IDE.  For more information, see *note The GDB/MI Interface: GDB/MI.
 
 `mi2'
      The current GDB/MI interface.
@@ -7489,8 +7464,8 @@ Synopsis
 
    Starts execution of the inferior from the beginning.  The inferior
 executes until either a breakpoint is encountered or the program exits.
-In the latter case the output will include an exit code, if the
-program has exited exceptionally.
+In the latter case the output will include an exit code, if the program
+has exited exceptionally.
 
    When no option is specified, the current inferior is started.  If the
 `--thread-group' option is specified, it should refer to a thread group
@@ -8292,8 +8267,7 @@ Synopsis
 ........
 
       -var-list-children [PRINT-VALUES] NAME [FROM TO]
-
-   Return a list of the children of the specified variable object and
+Return a list of the children of the specified variable object and
 create variable objects for them, if they do not already exist.  With a
 single argument or if PRINT-VALUES has a value of 0 or `--no-values',
 print only the names of the variables; if PRINT-VALUES is 1 or

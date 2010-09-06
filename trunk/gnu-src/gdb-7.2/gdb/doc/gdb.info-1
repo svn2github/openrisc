@@ -1,4 +1,4 @@
-This is gdb.info, produced by makeinfo version 4.8 from ./gdb.texinfo.
+This is gdb.info, produced by makeinfo version 4.13 from ./gdb.texinfo.
 
 INFO-DIR-SECTION Software development
 START-INFO-DIR-ENTRY
@@ -23,7 +23,7 @@ developing GNU and promoting software freedom."
    This file documents the GNU debugger GDB.
 
    This is the Ninth Edition, of `Debugging with GDB: the GNU
-Source-Level Debugger' for GDB (GDB) Version 7.2.
+Source-Level Debugger' for GDB (GDB) Version 7.2-or32-1.0rc1.
 
    Copyright (C) 1988, 1989, 1990, 1991, 1992, 1993, 1994, 1995, 1996,
 1998, 1999, 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009,
@@ -48,7 +48,7 @@ Debugging with GDB
 
 This file describes GDB, the GNU symbolic debugger.
 
-   This is the Ninth Edition, for GDB (GDB) Version 7.2.
+   This is the Ninth Edition, for GDB (GDB) Version 7.2-or32-1.0rc1.
 
    Copyright (C) 1988-2010 Free Software Foundation, Inc.
 
@@ -135,13 +135,13 @@ these) to help you catch bugs in the act:
      correcting the effects of one bug and go on to learn about another.
 
    You can use GDB to debug programs written in C and C++.  For more
-information, see *Note Supported Languages: Supported Languages.  For
-more information, see *Note C and C++: C.
+information, see *note Supported Languages: Supported Languages.  For
+more information, see *note C and C++: C.
 
-   Support for D is partial.  For information on D, see *Note D: D.
+   Support for D is partial.  For information on D, see *note D: D.
 
    Support for Modula-2 is partial.  For information on Modula-2, see
-*Note Modula-2: Modula-2.
+*note Modula-2: Modula-2.
 
    Debugging Pascal programs which use sets, subranges, file variables,
 or nested functions does not currently work.  GDB does not support
@@ -437,6 +437,10 @@ John Newlin, and Scott Foehner.
    Michael Eager and staff of Xilinx, Inc., contributed support for the
 Xilinx MicroBlaze architecture.
 
+   The original port to the OpenRISC 1000 is believed to be due to
+Alessandro Forin and Per Bothner. More recent ports have been the work
+of Jeremy Bennett.
+
 
 File: gdb.info,  Node: Sample Session,  Next: Invocation,  Prev: Summary,  Up: Top
 
@@ -483,7 +487,7 @@ Let us use GDB to try to see what is going on.
      There is absolutely no warranty for GDB; type "show warranty"
       for details.
 
-     GDB 7.2, Copyright 1999 Free Software Foundation, Inc...
+     GDB 7.2-or32-1.0rc1, Copyright 1999 Free Software Foundation, Inc...
      (gdb)
 
 GDB reads only enough symbol data to know where to find the rest when
@@ -1160,7 +1164,7 @@ to the `help' command.
 previous command.  Certain commands (for example, `run') will not
 repeat this way; these are commands whose unintentional repetition
 might cause trouble and which you are unlikely to want to repeat.
-User-defined commands can disable this feature; see *Note dont-repeat:
+User-defined commands can disable this feature; see *note dont-repeat:
 Define.
 
    The `list' and `x' commands, when you repeat them with <RET>,
@@ -1273,9 +1277,9 @@ In general, GDB can tell that a quote is needed (and inserts it) if you
 have not yet started typing the argument list when you ask for
 completion on an overloaded symbol.
 
-   For more information about overloaded functions, see *Note C++
+   For more information about overloaded functions, see *note C++
 Expressions: C Plus Plus Expressions.  You can use the command `set
-overload-resolution off' to disable overload resolution; see *Note GDB
+overload-resolution off' to disable overload resolution; see *note GDB
 Features for C++: Debugging C Plus Plus.
 
    When completing in an expression which looks up a field in a
@@ -1511,7 +1515,7 @@ debugging information.
 making it possible to debug optimized code.  We recommend that you
 _always_ use `-g' whenever you compile a program.  You may think your
 program is correct, but there is no sense in pushing your luck.  For
-more information, see *Note Optimized Code::.
+more information, see *note Optimized Code::.
 
    Older versions of the GNU C compiler permitted a variant option
 `-gg' for debugging information.  GDB no longer supports this format;
@@ -1633,11 +1637,11 @@ breakpoints.
      `start' or `run'.
 
      It is sometimes necessary to debug the program during elaboration.
-     In these cases, using the `start' command would stop the
-     execution of your program too late, as the program would have
-     already completed the elaboration phase.  Under these
-     circumstances, insert breakpoints in your elaboration code before
-     running your program.
+     In these cases, using the `start' command would stop the execution
+     of your program too late, as the program would have already
+     completed the elaboration phase.  Under these circumstances,
+     insert breakpoints in your elaboration code before running your
+     program.
 
 `set exec-wrapper WRAPPER'
 `show exec-wrapper'
@@ -2694,7 +2698,7 @@ exception or the loading of a library.  As with watchpoints, you use a
 different command to set a catchpoint (*note Setting Catchpoints: Set
 Catchpoints.), but aside from that, you can manage a catchpoint like any
 other breakpoint.  (To stop when your program receives a signal, use the
-`handle' command; see *Note Signals: Signals.)
+`handle' command; see *note Signals: Signals.)
 
    GDB assigns a number to each breakpoint, watchpoint, or catchpoint
 when you create it; these numbers are successive integers starting with
@@ -2730,7 +2734,7 @@ File: gdb.info,  Node: Set Breaks,  Next: Set Watchpoints,  Up: Breakpoints
 
 Breakpoints are set with the `break' command (abbreviated `b').  The
 debugger convenience variable `$bpnum' records the number of the
-breakpoint you've set most recently; see *Note Convenience Variables:
+breakpoint you've set most recently; see *note Convenience Variables:
 Convenience Vars, for a discussion of what you can do with convenience
 variables.
 
@@ -2801,7 +2805,7 @@ variables.
      unused hardware breakpoints before setting new ones (*note
      Disabling Breakpoints: Disabling.).  *Note Break Conditions:
      Conditions.  For remote targets, you can restrict the number of
-     hardware breakpoints GDB will use, see *Note set remote
+     hardware breakpoints GDB will use, see *note set remote
      hardware-breakpoint-limit::.
 
 `thbreak ARGS'
@@ -2812,7 +2816,7 @@ variables.
      program stops there.  Also, like the `hbreak' command, the
      breakpoint requires hardware support and some target hardware may
      not have this support.  *Note Disabling Breakpoints: Disabling.
-     See also *Note Break Conditions: Conditions.
+     See also *note Break Conditions: Conditions.
 
 `rbreak REGEX'
      Set breakpoints on all functions matching the regular expression
@@ -2872,10 +2876,10 @@ variables.
 
     _Address_
           Where the breakpoint is in your program, as a memory address.
-          For a pending breakpoint whose address is not yet known,
-          this field will contain `<PENDING>'.  Such breakpoint won't
-          fire until a shared library that has the symbol or line
-          referred by breakpoint is loaded.  See below for details.  A
+          For a pending breakpoint whose address is not yet known, this
+          field will contain `<PENDING>'.  Such breakpoint won't fire
+          until a shared library that has the symbol or line referred
+          by breakpoint is loaded.  See below for details.  A
           breakpoint with several locations will have `<MULTIPLE>' in
           this field--see below for details.
 
@@ -3167,7 +3171,7 @@ use the hardware mechanism of watching expression values.)
      Show the current mode of using hardware watchpoints.
 
    For remote targets, you can restrict the number of hardware
-watchpoints GDB will use, see *Note set remote
+watchpoints GDB will use, see *note set remote
 hardware-breakpoint-limit::.
 
    When you issue the `watch' command, GDB reports
@@ -3575,7 +3579,7 @@ Breakpoints: Set Breaks.), breakpoints that you set are initially
 enabled; subsequently, they become disabled or enabled only when you
 use one of the commands above.  (The command `until' can set and delete
 a breakpoint of its own, but it does not change the state of your other
-breakpoints; see *Note Continuing and Stepping: Continuing and
+breakpoints; see *note Continuing and Stepping: Continuing and
 Stepping.)
 
 
@@ -4016,7 +4020,7 @@ interesting, until you see the problem happen.
 `u LOCATION'
      Continue running your program until either the specified location
      is reached, or the current stack frame returns.  LOCATION is any of
-     the forms described in *Note Specify Location::.  This form of the
+     the forms described in *note Specify Location::.  This form of the
      command uses temporary breakpoints, and hence is quicker than
      `until' without an argument.  The specified location is actually
      reached only if it is in the current frame.  This implies that
@@ -4037,7 +4041,7 @@ interesting, until you see the problem happen.
 `advance LOCATION'
      Continue running the program up to the given LOCATION.  An
      argument is required, which should be of one of the forms
-     described in *Note Specify Location::.  Execution will also stop
+     described in *note Specify Location::.  Execution will also stop
      upon exit from the current stack frame.  This command is similar
      to `until', but `advance' will not skip over recursive function
      calls, and the target location doesn't have to be in the same
@@ -4303,8 +4307,8 @@ run with the `set schedule-multiple' command.
      resumed when an execution command is issued.  When `on', all
      threads of all processes are allowed to run.  When `off', only the
      threads of the current process are resumed.  The default is `off'.
-     The `scheduler-locking' mode takes precedence when set to `on',
-     or while you are stepping and set to `step'.
+     The `scheduler-locking' mode takes precedence when set to `on', or
+     while you are stepping and set to `step'.
 
 `show schedule-multiple'
      Display the current mode for resuming the execution of threads of
@@ -4453,7 +4457,7 @@ are:
 
 
    Background execution is especially useful in conjunction with
-non-stop mode for debugging programs with multiple threads; see *Note
+non-stop mode for debugging programs with multiple threads; see *note
 Non-Stop Mode::.  However, you can also use these commands in the
 normal all-stop mode with the restriction that you cannot issue another
 execution command until the previous one finishes.  Examples of
@@ -5066,7 +5070,7 @@ for line `993' of `builtin.c'.
 The value of parameter `data' in frame 1 has been replaced by `...'.
 By default, GDB prints the value of a parameter only if it is a scalar
 (integer, pointer, enumeration, etc).  See command `set print
-frame-arguments' in *Note Print Settings:: for more details on how to
+frame-arguments' in *note Print Settings:: for more details on how to
 configure the way function parameter values are printed.
 
    If your program was compiled with optimizations, some compilers will
@@ -5293,7 +5297,7 @@ execution in that frame has stopped.  You can print other portions of
 source files by explicit command.
 
    If you use GDB through its GNU Emacs interface, you may prefer to
-use Emacs facilities to view source; see *Note Using GDB under GNU
+use Emacs facilities to view source; see *note Using GDB under GNU
 Emacs: Emacs.
 
 * Menu:
@@ -5313,7 +5317,7 @@ File: gdb.info,  Node: List,  Next: Specify Location,  Up: Source
 
 To print lines from a source file, use the `list' command (abbreviated
 `l').  By default, ten lines are printed.  There are several ways to
-specify what part of the file you want to print; see *Note Specify
+specify what part of the file you want to print; see *note Specify
 Location::, for the full list.
 
    Here are the forms of the `list' command most commonly used:
@@ -5582,7 +5586,7 @@ specifies how to rewrite source directories stored in the program's
 debug information in case the sources were moved to a different
 directory between compilation and debugging.  A rule is made of two
 strings, the first specifying what needs to be rewritten in the path,
-and the second specifying how it should be rewritten.  In *Note set
+and the second specifying how it should be rewritten.  In *note set
 substitute-path::, we name these two parts FROM and TO respectively.
 GDB does a simple string replacement of FROM with TO at the start of
 the directory part of the source file name, and uses that result
@@ -5726,7 +5730,7 @@ line' command causes the arrow to point to the line specified.  Also,
 `info line LINESPEC'
      Print the starting and ending addresses of the compiled code for
      source line LINESPEC.  You can specify source lines in any of the
-     ways documented in *Note Specify Location::.
+     ways documented in *note Specify Location::.
 
    For example, we can use `info line' to discover the location of the
 object code for the first line of function `m4_changequote':
@@ -5883,7 +5887,7 @@ may also print the expression using a Python-based pretty-printer
      EXPR is an expression (in the source language).  By default the
      value of EXPR is printed in a format appropriate to its data type;
      you can choose a different format by specifying `/F', where F is a
-     letter specifying the format; see *Note Output Formats: Output
+     letter specifying the format; see *note Output Formats: Output
      Formats.
 
 `print'
@@ -5937,7 +5941,7 @@ its value.  Any kind of constant, variable or operator defined by the
 programming language you are using is valid in an expression in GDB.
 This includes conditional expressions, function calls, casts, and
 string constants.  It also includes preprocessor macros, if you
-compiled your program to include this information; see *Note
+compiled your program to include this information; see *note
 Compilation::.
 
    GDB supports array constants in expressions input by the user.  The
@@ -6314,7 +6318,7 @@ expression.  For example, `p/x' reprints the last value in hex.
    ---------- Footnotes ----------
 
    (1) `b' cannot be used because these format letters are also used
-with the `x' command, where `b' stands for "byte"; see *Note Examining
+with the `x' command, where `b' stands for "byte"; see *note Examining
 Memory: Memory.
 
 
@@ -6405,7 +6409,7 @@ For convenience, especially when used with the `display' command, the
 `i' format also prints branch delay slot instructions, if any, beyond
 the count specified, which immediately follow the last instruction that
 is within the count.  The command `disassemble' gives an alternative
-way of inspecting machine instructions; see *Note Source and Machine
+way of inspecting machine instructions; see *note Source and Machine
 Code: Machine Code.
 
    All the defaults for the arguments to `x' are designed to make it

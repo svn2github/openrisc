@@ -1,4 +1,4 @@
-This is gdbint.info, produced by makeinfo version 4.8 from
+This is gdbint.info, produced by makeinfo version 4.13 from
 ./gdbint.texinfo.
 
 INFO-DIR-SECTION Software development
@@ -926,7 +926,7 @@ previously available.  This new interface needed to be strongly typed,
 easy to extend, and versatile enough to be used as the standard
 interface when adding new notifications.
 
-   See *Note GDB Observers:: for a brief description of the observers
+   See *note GDB Observers:: for a brief description of the observers
 currently implemented in GDB. The rationale for the current
 implementation is also briefly discussed.
 
@@ -2119,7 +2119,7 @@ The IBM RS/6000 running AIX uses an object file format called XCOFF.
 The COFF sections, symbols, and line numbers are used, but debugging
 symbols are `dbx'-style stabs whose strings are located in the `.debug'
 section (rather than the string table).  For more information, see
-*Note Top: (stabs)Top.
+*note Top: (stabs)Top.
 
    The shared library scheme has a clean interface for figuring out what
 shared libraries are in use, but the catch is that everything which
@@ -4259,7 +4259,7 @@ architecture.
 
 `I386_USE_GENERIC_WATCHPOINTS'
      An x86-based target can define this to use the generic x86
-     watchpoint support; see *Note I386_USE_GENERIC_WATCHPOINTS:
+     watchpoint support; see *note I386_USE_GENERIC_WATCHPOINTS:
      Algorithms.
 
 `gdbarch_in_function_epilogue_p (GDBARCH, ADDR)'
@@ -4626,7 +4626,7 @@ mechanism for the user to tell GDB more about what their target
 supports, or for the target to tell GDB directly.
 
    For details on writing, automatically supplying, and manually
-selecting target descriptions, see *Note Target Descriptions:
+selecting target descriptions, see *note Target Descriptions:
 (gdb)Target Descriptions.  This section will cover some related topics
 about the GDB internals.
 
@@ -4659,7 +4659,7 @@ architecture's gdbarch initialization routine is called to create the
 new architecture.  Then the initialization routine is called, and has a
 chance to adjust the constructed architecture based on the contents of
 the target description.  For instance, it can recognize any properties
-set by a `to_read_description' routine.  Also see *Note Adding Target
+set by a `to_read_description' routine.  Also see *note Adding Target
 Described Register Support::.
 
 
@@ -4931,7 +4931,7 @@ the same.  These macros should be defined (or left undefined) in
 
 `I386_USE_GENERIC_WATCHPOINTS'
      An x86-based machine can define this to use the generic x86
-     watchpoint support; see *Note I386_USE_GENERIC_WATCHPOINTS:
+     watchpoint support; see *note I386_USE_GENERIC_WATCHPOINTS:
      Algorithms.
 
 `SOLIB_ADD (FILENAME, FROM_TTY, TARG, READSYMS)'

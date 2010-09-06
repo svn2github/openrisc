@@ -1,4 +1,4 @@
-This is annotate.info, produced by makeinfo version 4.8 from
+This is annotate.info, produced by makeinfo version 4.13 from
 ./annotate.texinfo.
 
 INFO-DIR-SECTION Software development
@@ -1172,21 +1172,21 @@ permit their use in free software.
 
 
 Tag Table:
-Node: Top1282
-Node: Annotations Overview2452
-Node: Limitations4251
-Node: Migrating to GDB/MI6836
-Node: Server Prefix7219
-Node: Value Annotations7865
-Node: Frame Annotations11035
-Node: Displays14934
-Node: Prompting15965
-Node: Errors17468
-Node: Breakpoint Info18358
-Node: Invalidation19583
-Node: Annotations for Running20062
-Node: Source Annotations21575
-Node: Multi-threaded Apps22521
-Node: GNU Free Documentation License23130
+Node: Top1283
+Node: Annotations Overview2453
+Node: Limitations4252
+Node: Migrating to GDB/MI6837
+Node: Server Prefix7220
+Node: Value Annotations7866
+Node: Frame Annotations11036
+Node: Displays14935
+Node: Prompting15966
+Node: Errors17469
+Node: Breakpoint Info18359
+Node: Invalidation19584
+Node: Annotations for Running20063
+Node: Source Annotations21576
+Node: Multi-threaded Apps22522
+Node: GNU Free Documentation License23131
 
 End Tag Table

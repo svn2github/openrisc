@@ -1,4 +1,4 @@
-This is gdb.info, produced by makeinfo version 4.8 from ./gdb.texinfo.
+This is gdb.info, produced by makeinfo version 4.13 from ./gdb.texinfo.
 
 INFO-DIR-SECTION Software development
 START-INFO-DIR-ENTRY
@@ -23,7 +23,7 @@ developing GNU and promoting software freedom."
    This file documents the GNU debugger GDB.
 
    This is the Ninth Edition, of `Debugging with GDB: the GNU
-Source-Level Debugger' for GDB (GDB) Version 7.2.
+Source-Level Debugger' for GDB (GDB) Version 7.2-or32-1.0rc1.
 
    Copyright (C) 1988, 1989, 1990, 1991, 1992, 1993, 1994, 1995, 1996,
 1998, 1999, 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009,
@@ -199,7 +199,7 @@ Example
 .......
 
 In the following example, the numbers that precede the commands are the
-"tokens" described in *Note GDB/MI Command Syntax: GDB/MI Command
+"tokens" described in *note GDB/MI Command Syntax: GDB/MI Command
 Syntax.  Notice how GDB/MI returns the same tokens in its output.
 
      211-data-evaluate-expression A
@@ -493,7 +493,7 @@ File: gdb.info,  Node: GDB/MI Tracepoint Commands,  Next: GDB/MI Symbol Query,  
 ================================
 
 The commands defined in this section implement MI support for
-tracepoints.  For detailed introduction, see *Note Tracepoints::.
+tracepoints.  For detailed introduction, see *note Tracepoints::.
 
 The `-trace-find' Command
 -------------------------
@@ -505,7 +505,7 @@ Synopsis
 
    Find a trace frame using criteria defined by MODE and PARAMETERS.
 The following table lists permissible modes and their parameters.  For
-details of operation, see *Note tfind::.
+details of operation, see *note tfind::.
 
 `none'
      No parameters are required.  Stops examining trace frames.
@@ -1538,8 +1538,7 @@ Synopsis
 --------
 
      -interpreter-exec INTERPRETER COMMAND
-
-   Execute the specified COMMAND in the given INTERPRETER.
+Execute the specified COMMAND in the given INTERPRETER.
 
 GDB Command
 -----------
@@ -3717,18 +3716,19 @@ and TeX (or `texi2roff') to typeset the printed version.
 
    GDB includes an already formatted copy of the on-line Info version
 of this manual in the `gdb' subdirectory.  The main Info file is
-`gdb-7.2/gdb/gdb.info', and it refers to subordinate files matching
-`gdb.info*' in the same directory.  If necessary, you can print out
-these files, or read them with any editor; but they are easier to read
-using the `info' subsystem in GNU Emacs or the standalone `info'
-program, available as part of the GNU Texinfo distribution.
+`gdb-7.2-or32-1.0rc1/gdb/gdb.info', and it refers to subordinate files
+matching `gdb.info*' in the same directory.  If necessary, you can
+print out these files, or read them with any editor; but they are
+easier to read using the `info' subsystem in GNU Emacs or the
+standalone `info' program, available as part of the GNU Texinfo
+distribution.
 
    If you want to format these Info files yourself, you need one of the
 Info formatting programs, such as `texinfo-format-buffer' or `makeinfo'.
 
    If you have `makeinfo' installed, and are in the top level GDB
-source directory (`gdb-7.2', in the case of version 7.2), you can make
-the Info file by typing:
+source directory (`gdb-7.2-or32-1.0rc1', in the case of version
+7.2-or32-1.0rc1), you can make the Info file by typing:
 
      cd gdb
      make gdb.info
@@ -3753,7 +3753,8 @@ format.  On its own, TeX cannot either read or typeset a Texinfo file.
 
    If you have TeX and a DVI printer program installed, you can typeset
 and print this manual.  First switch to the `gdb' subdirectory of the
-main source directory (for example, to `gdb-7.2/gdb') and type:
+main source directory (for example, to `gdb-7.2-or32-1.0rc1/gdb') and
+type:
 
      make gdb.dvi
 
@@ -3761,7 +3762,8 @@ main source directory (for example, to `gdb-7.2/gdb') and type:
 
    ---------- Footnotes ----------
 
-   (1) In `gdb-7.2/gdb/refcard.ps' of the version 7.2 release.
+   (1) In `gdb-7.2-or32-1.0rc1/gdb/refcard.ps' of the version
+7.2-or32-1.0rc1 release.
 
 
 File: gdb.info,  Node: Installing GDB,  Next: Maintenance Commands,  Prev: Formatting Documentation,  Up: Top
@@ -3860,39 +3862,39 @@ preparing GDB for installation; you can then use `make' to build the
 in a single directory, whose name is usually composed by appending the
 version number to `gdb'.
 
-   For example, the GDB version 7.2 distribution is in the `gdb-7.2'
-directory.  That directory contains:
+   For example, the GDB version 7.2-or32-1.0rc1 distribution is in the
+`gdb-7.2-or32-1.0rc1' directory.  That directory contains:
 
-`gdb-7.2/configure (and supporting files)'
+`gdb-7.2-or32-1.0rc1/configure (and supporting files)'
      script for configuring GDB and all its supporting libraries
 
-`gdb-7.2/gdb'
+`gdb-7.2-or32-1.0rc1/gdb'
      the source specific to GDB itself
 
-`gdb-7.2/bfd'
+`gdb-7.2-or32-1.0rc1/bfd'
      source for the Binary File Descriptor library
 
-`gdb-7.2/include'
+`gdb-7.2-or32-1.0rc1/include'
      GNU include files
 
-`gdb-7.2/libiberty'
+`gdb-7.2-or32-1.0rc1/libiberty'
      source for the `-liberty' free software library
 
-`gdb-7.2/opcodes'
+`gdb-7.2-or32-1.0rc1/opcodes'
      source for the library of opcode tables and disassemblers
 
-`gdb-7.2/readline'
+`gdb-7.2-or32-1.0rc1/readline'
      source for the GNU command-line interface
 
-`gdb-7.2/glob'
+`gdb-7.2-or32-1.0rc1/glob'
      source for the GNU filename pattern-matching subroutine
 
-`gdb-7.2/mmalloc'
+`gdb-7.2-or32-1.0rc1/mmalloc'
      source for the GNU memory-mapped malloc package
 
    The simplest way to configure and build GDB is to run `configure'
 from the `gdb-VERSION-NUMBER' source directory, which in this example
-is the `gdb-7.2' directory.
+is the `gdb-7.2-or32-1.0rc1' directory.
 
    First switch to the `gdb-VERSION-NUMBER' source directory if you are
 not already in it; then run `configure'.  Pass the identifier for the
@@ -3900,7 +3902,7 @@ platform on which GDB will run as an argument.
 
    For example:
 
-     cd gdb-7.2
+     cd gdb-7.2-or32-1.0rc1
      ./configure HOST
      make
 
@@ -3921,10 +3923,10 @@ you may need to run `sh' on it explicitly:
      sh configure HOST
 
    If you run `configure' from a directory that contains source
-directories for multiple libraries or programs, such as the `gdb-7.2'
-source directory for version 7.2, `configure' creates configuration
-files for every directory level underneath (unless you tell it not to,
-with the `--norecursion' option).
+directories for multiple libraries or programs, such as the
+`gdb-7.2-or32-1.0rc1' source directory for version 7.2-or32-1.0rc1,
+`configure' creates configuration files for every directory level
+underneath (unless you tell it not to, with the `--norecursion' option).
 
    You should run the `configure' script from the top directory in the
 source tree, the `gdb-VERSION-NUMBER' directory.  If you run
@@ -3963,13 +3965,13 @@ directory.  If the path to `configure' would be the same as the
 argument to `--srcdir', you can leave out the `--srcdir' option; it is
 assumed.)
 
-   For example, with version 7.2, you can build GDB in a separate
-directory for a Sun 4 like this:
+   For example, with version 7.2-or32-1.0rc1, you can build GDB in a
+separate directory for a Sun 4 like this:
 
-     cd gdb-7.2
+     cd gdb-7.2-or32-1.0rc1
      mkdir ../gdb-sun4
      cd ../gdb-sun4
-     ../gdb-7.2/configure sun4
+     ../gdb-7.2-or32-1.0rc1/configure sun4
      make
 
    When `configure' builds a configuration using a remote source
@@ -3980,9 +3982,9 @@ directory `gdb-sun4/libiberty', and GDB itself in `gdb-sun4/gdb'.
 
    Make sure that your path to the `configure' script has just one
 instance of `gdb' in it.  If your path to `configure' looks like
-`../gdb-7.2/gdb/configure', you are configuring only one subdirectory
-of GDB, not the whole package.  This leads to build errors about
-missing include files such as `bfd/bfd.h'.
+`../gdb-7.2-or32-1.0rc1/gdb/configure', you are configuring only one
+subdirectory of GDB, not the whole package.  This leads to build errors
+about missing include files such as `bfd/bfd.h'.
 
    One popular reason to build several GDB configurations in separate
 directories is to configure GDB for cross-compiling (where GDB runs on
@@ -3996,9 +3998,9 @@ called `configure' (or one of its subdirectories).
 
    The `Makefile' that `configure' generates in each source directory
 also runs recursively.  If you type `make' in a source directory such
-as `gdb-7.2' (or in a separate configured directory configured with
-`--srcdir=DIRNAME/gdb-7.2'), you will build all the required libraries,
-and then build GDB.
+as `gdb-7.2-or32-1.0rc1' (or in a separate configured directory
+configured with `--srcdir=DIRNAME/gdb-7.2-or32-1.0rc1'), you will build
+all the required libraries, and then build GDB.
 
    When you have multiple hosts or targets configured in separate
 directories, you can run `make' on them in parallel (for example, if
@@ -4042,7 +4044,7 @@ you can use it to test your guesses on abbreviations--for example:
      Invalid configuration `i986v': machine `i986v' not recognized
 
 `config.sub' is also distributed in the GDB source directory
-(`gdb-7.2', for version 7.2).
+(`gdb-7.2-or32-1.0rc1', for version 7.2-or32-1.0rc1).
 
 
 File: gdb.info,  Node: Configure Options,  Next: System-wide configuration,  Prev: Config Names,  Up: Installing GDB
@@ -4150,7 +4152,7 @@ Appendix C Maintenance Commands
 In addition to commands intended for GDB users, GDB includes a number
 of commands intended for GDB developers, that are not documented
 elsewhere in this manual.  These commands are provided here for
-reference.  (For commands that turn on debugging messages, see *Note
+reference.  (For commands that turn on debugging messages, see *note
 Debugging Output::.)
 
 `maint agent EXPRESSION'
@@ -4545,7 +4547,7 @@ recognizes a packet meant for GDB.
 transmitted and received data, respectively.
 
    All GDB commands and responses (other than acknowledgments and
-notifications, see *Note Notification Packets::) are sent as a PACKET.
+notifications, see *note Notification Packets::) are sent as a PACKET.
 A PACKET is introduced with the character `$', the actual PACKET-DATA,
 and the terminating character `#' followed by a two-digit CHECKSUM:
 
@@ -4577,7 +4579,7 @@ incorporated in your program) sends a RESPONSE.  In the case of step
 and continue COMMANDs, the response is only sent when the operation has
 completed, and the target has again stopped all threads in all attached
 processes.  This is the default all-stop mode behavior, but the remote
-protocol also supports GDB's non-stop execution mode; see *Note Remote
+protocol also supports GDB's non-stop execution mode; see *note Remote
 Non-Stop::, for details.
 
    PACKET-DATA consists of a sequence of characters with the exception
@@ -4649,10 +4651,10 @@ remote protocol.
 syntax, followed by an explanation of the packet's meaning.  We include
 spaces in some of the templates for clarity; these are not part of the
 packet's syntax.  No GDB packet uses spaces to separate its components.
-For example, a template like `foo BAR BAZ' describes a packet
-beginning with the three ASCII bytes `foo', followed by a BAR, followed
-directly by a BAZ.  GDB does not transmit a space character between the
-`foo' and the BAR, or between the BAR and the BAZ.
+For example, a template like `foo BAR BAZ' describes a packet beginning
+with the three ASCII bytes `foo', followed by a BAR, followed directly
+by a BAZ.  GDB does not transmit a space character between the `foo'
+and the BAR, or between the BAR and the BAZ.
 
    Several packets and replies include a THREAD-ID field to identify a
 thread.  Normally these are positive numbers with a target-specific
@@ -4694,7 +4696,7 @@ letter, other than those described here, are reserved for future use.
 `?'
      Indicate the reason the target halted.  The reply is the same as
      for step and continue.  This packet has a special interpretation
-     when the target is in non-stop mode; see *Note Remote Non-Stop::.
+     when the target is in non-stop mode; see *note Remote Non-Stop::.
 
      Reply: *Note Stop Reply Packets::, for the reply specifications.
 
@@ -4816,7 +4818,7 @@ letter, other than those described here, are reserved for future use.
      C depends on the operation to be performed: it should be `c' for
      step and continue operations, `g' for other operations.  The
      thread designator THREAD-ID has the format and interpretation
-     described in *Note thread-id syntax::.
+     described in *note thread-id syntax::.
 
      Reply:
     `OK'
@@ -4904,7 +4906,7 @@ letter, other than those described here, are reserved for future use.
 `q NAME PARAMS...'
 `Q NAME PARAMS...'
      General query (`q') and set (`Q').  These packets are described
-     fully in *Note General Query Packets::.
+     fully in *note General Query Packets::.
 
 `r'
      Reset the entire system.
@@ -4979,7 +4981,7 @@ letter, other than those described here, are reserved for future use.
      stopped in all-stop mode and in their current state in non-stop
      mode.  Specifying multiple default actions is an error; specifying
      no actions is also an error.  Thread IDs are specified using the
-     syntax described in *Note thread-id syntax::.
+     syntax described in *note thread-id syntax::.
 
      Currently supported actions are:
 
@@ -5026,7 +5028,7 @@ letter, other than those described here, are reserved for future use.
 
 `vFile:OPERATION:PARAMETER...'
      Perform a file operation on the target system.  For details, see
-     *Note Host I/O Packets::.
+     *note Host I/O Packets::.
 
 `vFlashErase:ADDR,LENGTH'
      Direct the stub to erase LENGTH bytes of flash starting at ADDR.
@@ -5084,7 +5086,7 @@ letter, other than those described here, are reserved for future use.
      Kill the process with the specified process ID.  PID is a
      hexadecimal integer identifying the process.  This packet is used
      in preference to `k' when multiprocess protocol extensions are
-     supported; see *Note multiprocess extensions::.
+     supported; see *note multiprocess extensions::.
 
      Reply:
     `E NN'
@@ -5159,7 +5161,7 @@ letter, other than those described here, are reserved for future use.
      target-specific and typically indicates the size of the breakpoint
      in bytes that should be inserted.  E.g., the ARM and MIPS can
      insert either a 2 or 4 byte breakpoint.  Some architectures have
-     additional meanings for KIND; see *Note Architecture-Specific
+     additional meanings for KIND; see *note Architecture-Specific
      Protocol Details::.
 
      _Implementation note: It is possible for a target to copy or move
@@ -5280,7 +5282,7 @@ components.
           two-digit hex number.
 
         * If N is `thread', then R is the THREAD-ID of the stopped
-          thread, as specified in *Note thread-id syntax::.
+          thread, as specified in *note thread-id syntax::.
 
         * If N is `core', then R is the hexadecimal number of the core
           on which the stop event was detected.
@@ -5320,7 +5322,7 @@ components.
 
      The second form of the response, including the process ID of the
      exited process, can be used only when GDB has reported support for
-     multiprocess protocol extensions; see *Note multiprocess
+     multiprocess protocol extensions; see *note multiprocess
      extensions::.  The PID is formatted as a big-endian hex string.
 
 `X AA'
@@ -5329,7 +5331,7 @@ components.
 
      The second form of the response, including the process ID of the
      terminated process, can be used only when GDB has reported support
-     for multiprocess protocol extensions; see *Note multiprocess
+     for multiprocess protocol extensions; see *note multiprocess
      extensions::.  The PID is formatted as a big-endian hex string.
 
 `O XX...'
@@ -5412,7 +5414,7 @@ GDB packet uses spaces to separate its components.
 
      Reply:
     `QC THREAD-ID'
-          Where THREAD-ID is a thread ID as documented in *Note
+          Where THREAD-ID is a thread ID as documented in *note
           thread-id syntax::.
 
     `(anything else)'
@@ -5464,7 +5466,7 @@ GDB packet uses spaces to separate its components.
      one or more thread IDs, separated by commas.  GDB will respond to
      each reply with a request for more thread ids (using the `qs' form
      of the query), until the target responds with `l' (lower-case ell,
-     for "last").  Refer to *Note thread-id syntax::, for the format of
+     for "last").  Refer to *note thread-id syntax::, for the format of
      the THREAD-ID fields.
 
 `qGetTLSAddr:THREAD-ID,OFFSET,LM'
@@ -5964,7 +5966,7 @@ GDB packet uses spaces to separate its components.
 
 `qThreadExtraInfo,THREAD-ID'
      Obtain a printable string description of a thread's attributes from
-     the target OS.  THREAD-ID is a thread ID; see *Note thread-id
+     the target OS.  THREAD-ID is a thread ID; see *note thread-id
      syntax::.  This string may contain anything that the target OS
      thinks is interesting for GDB to tell the user about the thread.
      The string is displayed in GDB's `info threads' display.  Some
@@ -6214,7 +6216,7 @@ D.5 Architecture-Specific Protocol Details
 ==========================================
 
 This section describes how the remote protocol is applied to specific
-target architectures.  Also see *Note Standard Target Features::, for
+target architectures.  Also see *note Standard Target Features::, for
 details of XML target descriptions for each architecture.
 
 D.5.1 ARM
@@ -6328,7 +6330,7 @@ Tracepoints::).
 
     `X LEN,EXPR'
           Evaluate EXPR, whose length is LEN, and collect memory as it
-          directs.  EXPR is an agent expression, as described in *Note
+          directs.  EXPR is an agent expression, as described in *note
           Agent Expressions::.  Each byte of the expression is encoded
           as a two-digit hex number in the packet; LEN is the number of
           bytes in the expression (and thus one-half the number of hex
@@ -6339,10 +6341,10 @@ Tracepoints::).
      packet, as long as the packet does not exceed the maximum packet
      length (400 bytes, for many stubs).  There may be only one `R'
      action per tracepoint, and it must precede any `M' or `X' actions.
-     Any registers referred to by `M' and `X' actions must be
-     collected by a preceding `R' action.  (The "while-stepping"
-     actions are treated as if they were attached to a separate
-     tracepoint, as far as these restrictions are concerned.)
+     Any registers referred to by `M' and `X' actions must be collected
+     by a preceding `R' action.  (The "while-stepping" actions are
+     treated as if they were attached to a separate tracepoint, as far
+     as these restrictions are concerned.)
 
      Replies:
     `OK'
@@ -6738,11 +6740,11 @@ its arguments.  They have this format:
 
 `vFile:pwrite: FD, OFFSET, DATA'
      Write DATA (a binary buffer) to the open file corresponding to FD.
-     Start the write at OFFSET from the start of the file.  Unlike
-     many `write' system calls, there is no separate COUNT argument;
-     the length of DATA in the packet is used.  `vFile:write' returns
-     the number of bytes written, which may be shorter than the length
-     of DATA, or -1 if an error occurred.
+     Start the write at OFFSET from the start of the file.  Unlike many
+     `write' system calls, there is no separate COUNT argument; the
+     length of DATA in the packet is used.  `vFile:write' returns the
+     number of bytes written, which may be shorter than the length of
+     DATA, or -1 if an error occurred.
 
 `vFile:unlink: PATHNAME'
      Delete the file at PATHNAME on the target.  Return 0, or -1 if an
@@ -6832,8 +6834,8 @@ most older stubs would ignore them, as well.)
 
 `Stop: REPLY'
      Report an asynchronous stop event in non-stop mode.  The REPLY has
-     the form of a stop reply, as described in *Note Stop Reply
-     Packets::.  Refer to *Note Remote Non-Stop::, for information on
+     the form of a stop reply, as described in *note Stop Reply
+     Packets::.  Refer to *note Remote Non-Stop::, for information on
      how these notifications are acknowledged by GDB.
 
 
@@ -6843,7 +6845,7 @@ D.10 Remote Protocol Support for Non-Stop Mode
 ==============================================
 
 GDB's remote protocol supports non-stop debugging of multi-threaded
-programs, as described in *Note Non-Stop Mode::.  If the stub supports
+programs, as described in *note Non-Stop Mode::.  If the stub supports
 non-stop mode, it should report that to GDB by including `QNonStop+' in
 its `qSupported' response (*note qSupported::).
 
@@ -6933,7 +6935,7 @@ the `QStartNoAckMode' packet; *note QStartNoAckMode::.
 
    When in no-acknowledgment mode, neither the stub nor GDB shall send
 or expect `+'/`-' protocol acknowledgments.  The packet and response
-format still includes the normal checksum, as described in *Note
+format still includes the normal checksum, as described in *note
 Overview::, but the checksum may be ignored by the receiver.
 
    If the stub supports `QStartNoAckMode' and prefers to operate in
@@ -7827,7 +7829,7 @@ as follows:
      };
 
    The integral datatypes conform to the definitions given in the
-appropriate section (see *Note Integral Datatypes::, for details) so
+appropriate section (see *note Integral Datatypes::, for details) so
 this structure is of size 64 bytes.
 
    The values of several fields have a restricted meaning and/or range
@@ -7840,7 +7842,7 @@ of values.
      No valid meaning for the target.  Transmitted unchanged.
 
 `st_mode'
-     Valid mode bits are described in *Note Constants::.  Any other
+     Valid mode bits are described in *note Constants::.  Any other
      bits have currently no meaning for the target.
 
 `st_uid'
@@ -7878,7 +7880,7 @@ defined as follows:
      };
 
    The integral datatypes conform to the definitions given in the
-appropriate section (see *Note Integral Datatypes::, for details) so
+appropriate section (see *note Integral Datatypes::, for details) so
 this structure is of size 8 bytes.
 
 

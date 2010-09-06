@@ -1,4 +1,4 @@
-This is gdb.info, produced by makeinfo version 4.8 from ./gdb.texinfo.
+This is gdb.info, produced by makeinfo version 4.13 from ./gdb.texinfo.
 
 INFO-DIR-SECTION Software development
 START-INFO-DIR-ENTRY
@@ -23,7 +23,7 @@ developing GNU and promoting software freedom."
    This file documents the GNU debugger GDB.
 
    This is the Ninth Edition, of `Debugging with GDB: the GNU
-Source-Level Debugger' for GDB (GDB) Version 7.2.
+Source-Level Debugger' for GDB (GDB) Version 7.2-or32-1.0rc1.
 
    Copyright (C) 1988, 1989, 1990, 1991, 1992, 1993, 1994, 1995, 1996,
 1998, 1999, 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009,
@@ -153,7 +153,7 @@ where stacks grow downward in memory (most machines, nowadays).  This
 assumes that the innermost stack frame is selected; setting `$sp' is
 not allowed when other stack frames are selected.  To pop entire frames
 off the stack, regardless of machine architecture, use `return'; see
-*Note Returning from a Function: Returning.
+*note Returning from a Function: Returning.
 
 
 File: gdb.info,  Node: Floating Point Hardware,  Next: Vector Unit,  Prev: Registers,  Up: Data
@@ -213,7 +213,7 @@ identified by an integer tag; the meanings are well-known but
 system-specific.  Depending on the configuration and operating system
 facilities, GDB may be able to show you this information.  For remote
 targets, this functionality may further depend on the remote stub's
-support of the `qXfer:auxv:read' packet, see *Note qXfer auxiliary
+support of the `qXfer:auxv:read' packet, see *note qXfer auxiliary
 vector read::.
 
 `info auxv'
@@ -228,7 +228,7 @@ vector read::.
    On some targets, GDB can access operating-system-specific information
 and display it to user, without interpretation.  For remote targets,
 this functionality depends on the remote stub's support of the
-`qXfer:osdata:read' packet, see *Note qXfer osdata read::.
+`qXfer:osdata:read' packet, see *note qXfer osdata read::.
 
 `info os'
      List the types of OS information available for the target.  If the
@@ -751,9 +751,8 @@ N, maximum number of finds
      all finds.
 
    You can use strings as search values.  Quote them with double-quotes
-(`"').  The string value is copied into the search pattern byte by
-byte, regardless of the endianness of the target and the size
-specification.
+(`"').  The string value is copied into the search pattern byte by byte,
+regardless of the endianness of the target and the size specification.
 
    The address of each match found is printed as well as a count of the
 number of matches found.
@@ -912,7 +911,7 @@ different points in the program, a macro may have different
 definitions, or have no definition at all.  If there is a current stack
 frame, GDB uses the macros in scope at that frame's source code line.
 Otherwise, GDB uses the macros in scope at the current listing location;
-see *Note List::.
+see *note List::.
 
    Whenever GDB evaluates an expression, it always expands any macro
 invocations present in the expression.  GDB also provides the following
@@ -1122,7 +1121,7 @@ targets.  *Note Targets::.  In addition, your remote target must know
 how to collect trace data.  This functionality is implemented in the
 remote stub; however, none of the stubs distributed with GDB support
 tracepoints as of this writing.  The format of the remote packets used
-to implement tracepoints are described in *Note Tracepoint Packets::.
+to implement tracepoints are described in *note Tracepoint Packets::.
 
    It is also possible to get trace data from a file, in a manner
 reminiscent of corefiles; you specify the filename, and use `tfind' to
@@ -2224,7 +2223,7 @@ program:
      be relocated and its symbols defined as if the overlay were at its
      mapped address.  You can use GNU linker scripts to specify
      different load and relocation addresses for pieces of your
-     program; see *Note Overlay Description: (ld.info)Overlay
+     program; see *note Overlay Description: (ld.info)Overlay
      Description.
 
    * The procedure for loading executable files onto your system must
@@ -2301,7 +2300,7 @@ abbreviate this as `ov' or `ovly'.  The commands are:
 `overlay auto'
      Enable "automatic" overlay debugging.  In this mode, GDB consults
      a data structure the overlay manager maintains in the inferior to
-     see which overlays are mapped.  For details, see *Note Automatic
+     see which overlays are mapped.  For details, see *note Automatic
      Overlay Debugging::.
 
 `overlay load-target'
@@ -3117,7 +3116,7 @@ GDB expression handling can interpret most C++ expressions.
      explicit function signature to call an overloaded function, as in
           p 'foo(char,int)'('x', 13)
 
-     The GDB command-completion facility can simplify this; see *Note
+     The GDB command-completion facility can simplify this; see *note
      Command Completion: Completion.
 
   4. GDB understands variables declared as C++ references; you can use
@@ -3247,7 +3246,7 @@ designed specifically for use with C++.  Here is a summary:
      Enable overload resolution for C++ expression evaluation.  The
      default is on.  For overloaded functions, GDB evaluates the
      arguments and searches for a function whose signature matches the
-     argument types, using the standard C++ conversion rules (see *Note
+     argument types, using the standard C++ conversion rules (see *note
      C++ Expressions: C Plus Plus Expressions, for details).  If it
      cannot find a match, it emits a message.
 
@@ -3298,7 +3297,7 @@ underflow, overflow and divide by zero exceptions.
 
    In the PowerPC architecture, GDB provides a set of pseudo-registers
 to inspect `_Decimal128' values stored in floating point registers.
-See *Note PowerPC: PowerPC. for more details.
+See *note PowerPC: PowerPC. for more details.
 
 
 File: gdb.info,  Node: D,  Next: Objective-C,  Prev: C,  Up: Supported Languages
@@ -3317,8 +3316,8 @@ File: gdb.info,  Node: Objective-C,  Next: Fortran,  Prev: D,  Up: Supported Lan
 ------------------
 
 This section provides information about some commands and command
-options that are useful for debugging Objective-C code.  See also *Note
-info classes: Symbols, and *Note info selectors: Symbols, for a few
+options that are useful for debugging Objective-C code.  See also *note
+info classes: Symbols, and *note info selectors: Symbols, for a few
 more commands specific to Objective-C support.
 
 * Menu:
@@ -3451,7 +3450,7 @@ File: gdb.info,  Node: Fortran Defaults,  Next: Special Fortran Commands,  Prev:
 
 Fortran symbols are usually case-insensitive, so GDB by default uses
 case-insensitive matches for Fortran symbols.  You can change that with
-the `set case-insensitive' command, see *Note Symbols::, for the
+the `set case-insensitive' command, see *note Symbols::, for the
 details.
 
 
@@ -4423,7 +4422,7 @@ Threads::).  GDB provides the following task-related commands:
 `break LINESPEC task TASKNO if ...'
      These commands are like the `break ... thread ...' command (*note
      Thread Stops::).  LINESPEC specifies source lines, as described in
-     *Note Specify Location::.
+     *note Specify Location::.
 
      Use the qualifier `task TASKNO' with a breakpoint command to
      specify that you only want GDB to stop the program when a
@@ -4718,7 +4717,7 @@ looks up the value of `x' in the scope of the file `foo.c'.
           Symbol repeat is a local variable at frame offset -8, length 4.
 
      This command is especially useful for determining what data to
-     collect during a "trace experiment", see *Note collect: Tracepoint
+     collect during a "trace experiment", see *note collect: Tracepoint
      Actions.
 
 `info source'
@@ -5009,8 +5008,8 @@ an address of your own choosing, with the following commands:
 `jump LOCATION'
      Resume execution at line LINESPEC or at address given by LOCATION.
      Execution stops again immediately if there is a breakpoint there.
-     *Note Specify Location::, for a description of the different
-     forms of LINESPEC and LOCATION.  It is common practice to use the
+     *Note Specify Location::, for a description of the different forms
+     of LINESPEC and LOCATION.  It is common practice to use the
      `tbreak' command in conjunction with `jump'.  *Note Setting
      Breakpoints: Set Breaks.
 
@@ -5789,7 +5788,7 @@ need to debug a problem.
      supported only on some operating systems, notably those which use
      the ELF format for binary files and the GNU Binutils.)  For more
      details about this feature, see the description of the `--build-id'
-     command-line option in *Note Command Line Options:
+     command-line option in *note Command Line Options:
      (ld.info)Options.  The debug info file's name is not specified
      explicitly by the build ID, but can be computed from the build ID,
      see below.
@@ -6253,7 +6252,7 @@ configuration):
      device drivers, or even basic I/O is available, although some
      simulators do provide these.  For info about any
      processor-specific simulator details, see the appropriate section
-     in *Note Embedded Processors: Embedded Processors.
+     in *note Embedded Processors: Embedded Processors.
 
 
    Some configurations may include these targets as well:
@@ -6608,8 +6607,8 @@ from it, GDB stays connected to `gdbserver' even though no program is
 running.  The `run' and `attach' commands instruct `gdbserver' to run
 or attach to a new program.  The `run' command uses `set remote
 exec-file' (*note set remote exec-file::) to select the program to run.
-Command line arguments are supported, except for wildcard expansion
-and I/O redirection (*note Arguments::).
+Command line arguments are supported, except for wildcard expansion and
+I/O redirection (*note Arguments::).
 
    To start `gdbserver' without supplying an initial command to run or
 process ID to attach, use the `--multi' command line option.  Then you
@@ -6792,7 +6791,7 @@ File: gdb.info,  Node: Remote Configuration,  Next: Remote Stub,  Prev: Server, 
 
 This section documents the configuration options available when
 debugging remote programs.  For the options related to the File I/O
-extensions of the remote protocol, see *Note system-call-allowed:
+extensions of the remote protocol, see *note system-call-allowed:
 system.
 
 `set remoteaddresssize BITS'
@@ -6922,7 +6921,7 @@ these commands to enable or disable individual packets.  Each packet
 can be set to `on' (the remote target supports this packet), `off' (the
 remote target does not support this packet), or `auto' (detect remote
 target support for this packet).  They all default to `auto'.  For more
-information about each packet, see *Note Remote Protocol::.
+information about each packet, see *note Remote Protocol::.
 
    During normal use, you should not have to use any of these commands.
 If you do, that may be a bug in your remote debugging stub, or a bug in

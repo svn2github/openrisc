@@ -8,10 +8,11 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2010-09-02 23:45+0000\n"
+"POT-Creation-Date: 2010-09-06 11:53+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=CHARSET\n"
 "Content-Transfer-Encoding: 8bit\n"
@@ -519,8 +520,8 @@ msgstr ""
 #: ada-lang.c:9702
 #, possible-c-format
 msgid ""
-"Undefined name, ambiguous name, or renaming used in component association: %"
-"s."
+"Undefined name, ambiguous name, or renaming used in component association: "
+"%s."
 msgstr ""
 
 #: ada-lang.c:9705
@@ -689,39 +690,39 @@ msgid ""
 "this option to \"off\" unless necessary."
 msgstr ""
 
-#: ada-lex.l:129 ada-lex.l:133
+#: ../../gdb-7.2/gdb/ada-lex.l:129 ../../gdb-7.2/gdb/ada-lex.l:133
 msgid "Based real literals not implemented yet."
 msgstr ""
 
-#: ada-lex.l:156
+#: ../../gdb-7.2/gdb/ada-lex.l:156
 msgid "ill-formed or non-terminated string literal"
 msgstr ""
 
-#: ada-lex.l:288
+#: ../../gdb-7.2/gdb/ada-lex.l:288
 #, possible-c-format
 msgid "Invalid character '%s' in expression."
 msgstr ""
 
-#: ada-lex.l:342
+#: ../../gdb-7.2/gdb/ada-lex.l:343
 #, possible-c-format
 msgid "Invalid base: %d."
 msgstr ""
 
-#: ada-lex.l:353 ada-lex.l:360
+#: ../../gdb-7.2/gdb/ada-lex.l:354 ../../gdb-7.2/gdb/ada-lex.l:361
 msgid "Integer literal out of range"
 msgstr ""
 
-#: ada-lex.l:355
+#: ../../gdb-7.2/gdb/ada-lex.l:356
 #, possible-c-format
 msgid "Invalid digit `%c' in based literal"
 msgstr ""
 
-#: ada-lex.l:601
+#: ../../gdb-7.2/gdb/ada-lex.l:602
 #, possible-c-format
 msgid "ambiguous attribute name: `%s'"
 msgstr ""
 
-#: ada-lex.l:604
+#: ../../gdb-7.2/gdb/ada-lex.l:605
 #, possible-c-format
 msgid "unrecognized attribute: `%s'"
 msgstr ""
@@ -3393,12 +3394,6 @@ msgid ""
 "\n"
 msgstr ""
 
-#: breakpoint.c:11868 breakpoint.c:11880
-msgid ""
-"\n"
-"Do \"help tracepoints\" for info on other tracepoint commands."
-msgstr ""
-
 #: breakpoint.c:11877
 msgid ""
 "Set a fast tracepoint at specified line or function.\n"
@@ -3788,6 +3783,187 @@ msgstr ""
 
 #: c-lang.c:1024
 msgid "Could not convert character constant to target character set"
+msgstr ""
+
+#: cli/cli-decode.c:1291
+#, possible-c-format
+msgid "Undefined %scommand: \"%s\".  Try \"help%s%.*s\"."
+msgstr ""
+
+#: cli/cli-decode.c:1324
+#, possible-c-format
+msgid "Lack of needed %scommand"
+msgstr ""
+
+#: cli/cli-decode.c:1388
+#, possible-c-format
+msgid "Ambiguous %scommand \"%s\": %s."
+msgstr ""
+
+#: cli/cli-decode.c:1773
+msgid "Invalid command"
+msgstr ""
+
+#: cli/cli-setshow.c:60
+msgid "\"on\", \"off\" or \"auto\" expected."
+msgstr ""
+
+#: cli/cli-setshow.c:89
+msgid "\"on\" or \"off\" expected."
+msgstr ""
+
+#: cli/cli-setshow.c:193
+msgid "filename to set it to."
+msgstr ""
+
+#: cli/cli-setshow.c:214 cli/cli-setshow.c:224 cli/cli-setshow.c:236
+#: cli/cli-setshow.c:241
+msgid "integer to set it to."
+msgstr ""
+
+#: cli/cli-setshow.c:229
+#, possible-c-format
+msgid "integer %u out of range"
+msgstr ""
+
+#: cli/cli-setshow.c:271
+#, possible-c-format
+msgid "Requires an argument. Valid arguments are %s."
+msgstr ""
+
+#: cli/cli-setshow.c:299
+#, possible-c-format
+msgid "Undefined item: \"%s\"."
+msgstr ""
+
+#: cli/cli-setshow.c:302
+#, possible-c-format
+msgid "Ambiguous item \"%s\"."
+msgstr ""
+
+#: cli/cli-setshow.c:308 cli/cli-setshow.c:378
+msgid "gdb internal error: bad var_type in do_setshow_command"
+msgstr ""
+
+#: cli/cli-setshow.c:353
+msgid "do_setshow_command: invalid var_auto_boolean"
+msgstr ""
+
+#: cli/cli-setshow.c:402
+msgid "gdb internal error: bad cmd_type in do_setshow_command"
+msgstr ""
+
+#: cli/cli-logging.c:44
+#, possible-c-format
+msgid "The current logfile is \"%s\".\n"
+msgstr ""
+
+#: cli/cli-logging.c:53
+#, possible-c-format
+msgid "Whether logging overwrites or appends to the log file is %s.\n"
+msgstr ""
+
+#: cli/cli-logging.c:63
+#, possible-c-format
+msgid "The logging output mode is %s.\n"
+msgstr ""
+
+#: cli/cli-logging.c:101 cli/cli-logging.c:109
+msgid "set logging"
+msgstr ""
+
+#: cli/cli-logging.c:134
+msgid "Current output protocol does not support redirection"
+msgstr ""
+
+#: cli/cli-logging.c:166
+msgid ""
+"\"set logging\" lets you log output to a file.\n"
+"Usage: set logging on [FILENAME]\n"
+"       set logging off\n"
+"       set logging file FILENAME\n"
+"       set logging overwrite [on|off]\n"
+"       set logging redirect [on|off]\n"
+msgstr ""
+
+#: cli/cli-logging.c:179
+#, possible-c-format
+msgid "Currently logging to \"%s\".\n"
+msgstr ""
+
+#: cli/cli-logging.c:182
+#, possible-c-format
+msgid "Future logs will be written to %s.\n"
+msgstr ""
+
+#: cli/cli-logging.c:186
+msgid "Logs will overwrite the log file.\n"
+msgstr ""
+
+#: cli/cli-logging.c:188
+msgid "Logs will be appended to the log file.\n"
+msgstr ""
+
+#: cli/cli-logging.c:191
+msgid "Output will be sent only to the log file.\n"
+msgstr ""
+
+#: cli/cli-logging.c:193
+msgid "Output will be logged and displayed.\n"
+msgstr ""
+
+#: cli/cli-logging.c:205
+msgid "Set logging options"
+msgstr ""
+
+#: cli/cli-logging.c:208
+msgid "Show logging options"
+msgstr ""
+
+#: cli/cli-logging.c:210
+msgid "Set whether logging overwrites or appends to the log file."
+msgstr ""
+
+#: cli/cli-logging.c:211
+msgid "Show whether logging overwrites or appends to the log file."
+msgstr ""
+
+#: cli/cli-logging.c:212
+msgid "If set, logging overrides the log file."
+msgstr ""
+
+#: cli/cli-logging.c:217
+msgid "Set the logging output mode."
+msgstr ""
+
+#: cli/cli-logging.c:218
+msgid "Show the logging output mode."
+msgstr ""
+
+#: cli/cli-logging.c:219
+msgid ""
+"If redirect is off, output will go to both the screen and the log file.\n"
+"If redirect is on, output will go only to the log file."
+msgstr ""
+
+#: cli/cli-logging.c:225
+msgid "Set the current logfile."
+msgstr ""
+
+#: cli/cli-logging.c:226
+msgid "Show the current logfile."
+msgstr ""
+
+#: cli/cli-logging.c:227
+msgid "The logfile is used when directing GDB's output."
+msgstr ""
+
+#: cli/cli-logging.c:233
+msgid "Enable logging."
+msgstr ""
+
+#: cli/cli-logging.c:235
+msgid "Disable logging."
 msgstr ""
 
 #: cli/cli-cmds.c:214
@@ -4301,25 +4477,6 @@ msgstr ""
 msgid "When 'on', each command is displayed as it is executed."
 msgstr ""
 
-#: cli/cli-decode.c:1291
-#, possible-c-format
-msgid "Undefined %scommand: \"%s\".  Try \"help%s%.*s\"."
-msgstr ""
-
-#: cli/cli-decode.c:1324
-#, possible-c-format
-msgid "Lack of needed %scommand"
-msgstr ""
-
-#: cli/cli-decode.c:1388
-#, possible-c-format
-msgid "Ambiguous %scommand \"%s\": %s."
-msgstr ""
-
-#: cli/cli-decode.c:1773
-msgid "Invalid command"
-msgstr ""
-
 #: cli/cli-dump.c:85
 msgid "Missing filename."
 msgstr ""
@@ -4519,119 +4676,6 @@ msgid ""
 "(file relative) will be restored to target memory."
 msgstr ""
 
-#: cli/cli-logging.c:44
-#, possible-c-format
-msgid "The current logfile is \"%s\".\n"
-msgstr ""
-
-#: cli/cli-logging.c:53
-#, possible-c-format
-msgid "Whether logging overwrites or appends to the log file is %s.\n"
-msgstr ""
-
-#: cli/cli-logging.c:63
-#, possible-c-format
-msgid "The logging output mode is %s.\n"
-msgstr ""
-
-#: cli/cli-logging.c:101 cli/cli-logging.c:109
-msgid "set logging"
-msgstr ""
-
-#: cli/cli-logging.c:134
-msgid "Current output protocol does not support redirection"
-msgstr ""
-
-#: cli/cli-logging.c:166
-msgid ""
-"\"set logging\" lets you log output to a file.\n"
-"Usage: set logging on [FILENAME]\n"
-"       set logging off\n"
-"       set logging file FILENAME\n"
-"       set logging overwrite [on|off]\n"
-"       set logging redirect [on|off]\n"
-msgstr ""
-
-#: cli/cli-logging.c:179
-#, possible-c-format
-msgid "Currently logging to \"%s\".\n"
-msgstr ""
-
-#: cli/cli-logging.c:182
-#, possible-c-format
-msgid "Future logs will be written to %s.\n"
-msgstr ""
-
-#: cli/cli-logging.c:186
-msgid "Logs will overwrite the log file.\n"
-msgstr ""
-
-#: cli/cli-logging.c:188
-msgid "Logs will be appended to the log file.\n"
-msgstr ""
-
-#: cli/cli-logging.c:191
-msgid "Output will be sent only to the log file.\n"
-msgstr ""
-
-#: cli/cli-logging.c:193
-msgid "Output will be logged and displayed.\n"
-msgstr ""
-
-#: cli/cli-logging.c:205
-msgid "Set logging options"
-msgstr ""
-
-#: cli/cli-logging.c:208
-msgid "Show logging options"
-msgstr ""
-
-#: cli/cli-logging.c:210
-msgid "Set whether logging overwrites or appends to the log file."
-msgstr ""
-
-#: cli/cli-logging.c:211
-msgid "Show whether logging overwrites or appends to the log file."
-msgstr ""
-
-#: cli/cli-logging.c:212
-msgid "If set, logging overrides the log file."
-msgstr ""
-
-#: cli/cli-logging.c:217
-msgid "Set the logging output mode."
-msgstr ""
-
-#: cli/cli-logging.c:218
-msgid "Show the logging output mode."
-msgstr ""
-
-#: cli/cli-logging.c:219
-msgid ""
-"If redirect is off, output will go to both the screen and the log file.\n"
-"If redirect is on, output will go only to the log file."
-msgstr ""
-
-#: cli/cli-logging.c:225
-msgid "Set the current logfile."
-msgstr ""
-
-#: cli/cli-logging.c:226
-msgid "Show the current logfile."
-msgstr ""
-
-#: cli/cli-logging.c:227
-msgid "The logfile is used when directing GDB's output."
-msgstr ""
-
-#: cli/cli-logging.c:233
-msgid "Enable logging."
-msgstr ""
-
-#: cli/cli-logging.c:235
-msgid "Disable logging."
-msgstr ""
-
 #: cli/cli-script.c:90
 msgid "if/while commands require arguments."
 msgstr ""
@@ -4744,55 +4788,6 @@ msgstr ""
 
 #: cli/cli-script.c:1635
 msgid "bad reason"
-msgstr ""
-
-#: cli/cli-setshow.c:60
-msgid "\"on\", \"off\" or \"auto\" expected."
-msgstr ""
-
-#: cli/cli-setshow.c:89
-msgid "\"on\" or \"off\" expected."
-msgstr ""
-
-#: cli/cli-setshow.c:193
-msgid "filename to set it to."
-msgstr ""
-
-#: cli/cli-setshow.c:214 cli/cli-setshow.c:224 cli/cli-setshow.c:236
-#: cli/cli-setshow.c:241
-msgid "integer to set it to."
-msgstr ""
-
-#: cli/cli-setshow.c:229
-#, possible-c-format
-msgid "integer %u out of range"
-msgstr ""
-
-#: cli/cli-setshow.c:271
-#, possible-c-format
-msgid "Requires an argument. Valid arguments are %s."
-msgstr ""
-
-#: cli/cli-setshow.c:299
-#, possible-c-format
-msgid "Undefined item: \"%s\"."
-msgstr ""
-
-#: cli/cli-setshow.c:302
-#, possible-c-format
-msgid "Ambiguous item \"%s\"."
-msgstr ""
-
-#: cli/cli-setshow.c:308 cli/cli-setshow.c:378
-msgid "gdb internal error: bad var_type in do_setshow_command"
-msgstr ""
-
-#: cli/cli-setshow.c:353
-msgid "do_setshow_command: invalid var_auto_boolean"
-msgstr ""
-
-#: cli/cli-setshow.c:402
-msgid "gdb internal error: bad cmd_type in do_setshow_command"
 msgstr ""
 
 #: coffread.c:584
@@ -5585,8 +5580,8 @@ msgstr ""
 #: darwin-nat.c:1704
 #, possible-c-format
 msgid ""
-"darwin_read_write_inferior: mach_vm_region_recurse addr=%s, start=%s, len=%"
-"s\n"
+"darwin_read_write_inferior: mach_vm_region_recurse addr=%s, start=%s, len="
+"%s\n"
 msgstr ""
 
 #: darwin-nat.c:1713
@@ -7117,8 +7112,8 @@ msgstr ""
 #: dwarf2read.c:10940
 #, possible-c-format
 msgid ""
-"Dwarf Error: Cannot find DIE at 0x%x referenced from DIE at 0x%x [in module %"
-"s]"
+"Dwarf Error: Cannot find DIE at 0x%x referenced from DIE at 0x%x [in module "
+"%s]"
 msgstr ""
 
 #: dwarf2read.c:10961
@@ -7230,8 +7225,8 @@ msgstr ""
 #: dwarf2read.c:12145
 #, possible-c-format
 msgid ""
-"Dwarf Error: could not find partial DIE containing offset 0x%lx [in module %"
-"s]"
+"Dwarf Error: could not find partial DIE containing offset 0x%lx [in module "
+"%s]"
 msgstr ""
 
 #: dwarf2read.c:12157
@@ -13275,88 +13270,9 @@ msgstr ""
 msgid "mi_cmd_disassemble: No function contains specified address"
 msgstr ""
 
-#: mi/mi-cmd-env.c:73
-msgid "mi_cmd_env_pwd: No arguments required"
-msgstr ""
-
-#: mi/mi-cmd-env.c:84
+#: mi/mi-cmds.c:210
 #, possible-c-format
-msgid "mi_cmd_env_pwd: error finding name of working directory: %s"
-msgstr ""
-
-#: mi/mi-cmd-env.c:95
-msgid "mi_cmd_env_cd: Usage DIRECTORY"
-msgstr ""
-
-#: mi/mi-cmd-env.c:257
-msgid "mi_cmd_inferior_tty_show: Usage: No args"
-msgstr ""
-
-#: mi/mi-cmd-file.c:39
-msgid "mi_cmd_file_list_exec_source_file: Usage: No args"
-msgstr ""
-
-#: mi/mi-cmd-file.c:49
-msgid "mi_cmd_file_list_exec_source_file: No symtab"
-msgstr ""
-
-#: mi/mi-cmd-file.c:87
-msgid "mi_cmd_file_list_exec_source_files: Usage: No args"
-msgstr ""
-
-#: mi/mi-cmd-stack.c:56
-msgid "mi_cmd_stack_list_frames: Usage: [FRAME_LOW FRAME_HIGH]"
-msgstr ""
-
-#: mi/mi-cmd-stack.c:79
-msgid "mi_cmd_stack_list_frames: Not enough frames in stack."
-msgstr ""
-
-#: mi/mi-cmd-stack.c:106
-msgid "mi_cmd_stack_info_depth: Usage: [MAX_DEPTH]"
-msgstr ""
-
-#: mi/mi-cmd-stack.c:136
-#, possible-c-format
-msgid ""
-"Unknown value for PRINT_VALUES: must be: 0 or \"%s\", 1 or \"%s\", 2 or \"%s"
-"\""
-msgstr ""
-
-#: mi/mi-cmd-stack.c:150
-msgid "mi_cmd_stack_list_locals: Usage: PRINT_VALUES"
-msgstr ""
-
-#: mi/mi-cmd-stack.c:171
-msgid "mi_cmd_stack_list_args: Usage: PRINT_VALUES [FRAME_LOW FRAME_HIGH]"
-msgstr ""
-
-#: mi/mi-cmd-stack.c:196
-msgid "mi_cmd_stack_list_args: Not enough frames in stack."
-msgstr ""
-
-#: mi/mi-cmd-stack.c:228
-msgid "Usage: PRINT_VALUES"
-msgstr ""
-
-#: mi/mi-cmd-stack.c:380
-msgid "mi_cmd_stack_select_frame: Usage: FRAME_SPEC"
-msgstr ""
-
-#: mi/mi-cmd-stack.c:389
-msgid "mi_cmd_stack_info_frame: No arguments required"
-msgstr ""
-
-#: mi/mi-cmd-target.c:40
-msgid "mi_cmd_target_file_get: Usage: REMOTE_FILE LOCAL_FILE"
-msgstr ""
-
-#: mi/mi-cmd-target.c:64
-msgid "mi_cmd_target_file_put: Usage: LOCAL_FILE REMOTE_FILE"
-msgstr ""
-
-#: mi/mi-cmd-target.c:88
-msgid "mi_cmd_target_file_delete: Usage: REMOTE_FILE"
+msgid "command `%s' appears to be duplicated"
 msgstr ""
 
 #. mi_error_message = xstrprintf ("mi_cmd_var_create: Usage:
@@ -13479,13 +13395,21 @@ msgstr ""
 msgid "mi_cmd_var_set_update_range: Usage: VAROBJ FROM TO"
 msgstr ""
 
-#: mi/mi-cmds.c:210
-#, possible-c-format
-msgid "command `%s' appears to be duplicated"
+#: mi/mi-cmd-env.c:73
+msgid "mi_cmd_env_pwd: No arguments required"
 msgstr ""
 
-#: mi/mi-common.c:53
-msgid "async_reason_string_lookup is inconsistent"
+#: mi/mi-cmd-env.c:84
+#, possible-c-format
+msgid "mi_cmd_env_pwd: error finding name of working directory: %s"
+msgstr ""
+
+#: mi/mi-cmd-env.c:95
+msgid "mi_cmd_env_cd: Usage DIRECTORY"
+msgstr ""
+
+#: mi/mi-cmd-env.c:257
+msgid "mi_cmd_inferior_tty_show: Usage: No args"
 msgstr ""
 
 #: mi/mi-console.c:69
@@ -13498,6 +13422,63 @@ msgstr ""
 
 #: mi/mi-console.c:126
 msgid "mi_console_file_flush: bad magic number"
+msgstr ""
+
+#: mi/mi-common.c:53
+msgid "async_reason_string_lookup is inconsistent"
+msgstr ""
+
+#: mi/mi-parse.c:315
+msgid "Duplicate '--thread-group' option"
+msgstr ""
+
+#: mi/mi-parse.c:318
+msgid "Invalid thread group id"
+msgstr ""
+
+#: mi/mi-parse.c:325
+msgid "Duplicate '--thread' option"
+msgstr ""
+
+#: mi/mi-parse.c:332
+msgid "Duplicate '--frame' option"
+msgstr ""
+
+#: mi/mi-parse.c:340
+#, possible-c-format
+msgid "Invalid value for the '%s' option"
+msgstr ""
+
+#: mi/mi-cmd-file.c:39
+msgid "mi_cmd_file_list_exec_source_file: Usage: No args"
+msgstr ""
+
+#: mi/mi-cmd-file.c:49
+msgid "mi_cmd_file_list_exec_source_file: No symtab"
+msgstr ""
+
+#: mi/mi-cmd-file.c:87
+msgid "mi_cmd_file_list_exec_source_files: Usage: No args"
+msgstr ""
+
+#: mi/mi-symbol-cmds.c:41
+msgid "mi_cmd_symbol_list_lines: Usage: SOURCE_FILENAME"
+msgstr ""
+
+#: mi/mi-symbol-cmds.c:47
+msgid "mi_cmd_symbol_list_lines: Unknown source file name."
+msgstr ""
+
+#: mi/mi-cmd-target.c:40
+msgid "mi_cmd_target_file_get: Usage: REMOTE_FILE LOCAL_FILE"
+msgstr ""
+
+#: mi/mi-cmd-target.c:64
+msgid "mi_cmd_target_file_put: Usage: LOCAL_FILE REMOTE_FILE"
+msgstr ""
+
+#: mi/mi-cmd-target.c:88
+msgid "mi_cmd_target_file_delete: Usage: REMOTE_FILE"
 msgstr ""
 
 #: mi/mi-getopt.c:37
@@ -13629,33 +13610,47 @@ msgstr ""
 msgid "Invalid option: %s"
 msgstr ""
 
-#: mi/mi-parse.c:315
-msgid "Duplicate '--thread-group' option"
+#: mi/mi-cmd-stack.c:56
+msgid "mi_cmd_stack_list_frames: Usage: [FRAME_LOW FRAME_HIGH]"
 msgstr ""
 
-#: mi/mi-parse.c:318
-msgid "Invalid thread group id"
+#: mi/mi-cmd-stack.c:79
+msgid "mi_cmd_stack_list_frames: Not enough frames in stack."
 msgstr ""
 
-#: mi/mi-parse.c:325
-msgid "Duplicate '--thread' option"
+#: mi/mi-cmd-stack.c:106
+msgid "mi_cmd_stack_info_depth: Usage: [MAX_DEPTH]"
 msgstr ""
 
-#: mi/mi-parse.c:332
-msgid "Duplicate '--frame' option"
-msgstr ""
-
-#: mi/mi-parse.c:340
+#: mi/mi-cmd-stack.c:136
 #, possible-c-format
-msgid "Invalid value for the '%s' option"
+msgid ""
+"Unknown value for PRINT_VALUES: must be: 0 or \"%s\", 1 or \"%s\", 2 or \"%s"
+"\""
 msgstr ""
 
-#: mi/mi-symbol-cmds.c:41
-msgid "mi_cmd_symbol_list_lines: Usage: SOURCE_FILENAME"
+#: mi/mi-cmd-stack.c:150
+msgid "mi_cmd_stack_list_locals: Usage: PRINT_VALUES"
 msgstr ""
 
-#: mi/mi-symbol-cmds.c:47
-msgid "mi_cmd_symbol_list_lines: Unknown source file name."
+#: mi/mi-cmd-stack.c:171
+msgid "mi_cmd_stack_list_args: Usage: PRINT_VALUES [FRAME_LOW FRAME_HIGH]"
+msgstr ""
+
+#: mi/mi-cmd-stack.c:196
+msgid "mi_cmd_stack_list_args: Not enough frames in stack."
+msgstr ""
+
+#: mi/mi-cmd-stack.c:228
+msgid "Usage: PRINT_VALUES"
+msgstr ""
+
+#: mi/mi-cmd-stack.c:380
+msgid "mi_cmd_stack_select_frame: Usage: FRAME_SPEC"
+msgstr ""
+
+#: mi/mi-cmd-stack.c:389
+msgid "mi_cmd_stack_info_frame: No arguments required"
 msgstr ""
 
 #: microblaze-tdep.c:145
@@ -14254,6 +14249,11 @@ msgstr ""
 
 #: observer.c:211
 msgid "When non-zero, observer debugging is enabled."
+msgstr ""
+
+#: or32-tdep.c:644
+#, possible-c-format
+msgid "or32_register_type: illegal register number %d"
 msgstr ""
 
 #: osabi.c:140
@@ -15210,6 +15210,174 @@ msgstr ""
 msgid "Show printing of pascal static members."
 msgstr ""
 
+#. Require a valid frame.  This must be called inside a TRY_CATCH, or
+#. another context in which a gdb exception is allowed.
+#: python/py-frame.c:54
+msgid "Frame is invalid."
+msgstr ""
+
+#: python/py-frame.c:230 python/py-block.c:284
+msgid "Cannot locate object file for block."
+msgstr ""
+
+#: python/py-frame.c:277
+msgid "Could not allocate frame object."
+msgstr ""
+
+#: python/py-frame.c:421 python/py-type.c:532
+msgid "Second argument must be block."
+msgstr ""
+
+#: python/py-frame.c:439
+#, possible-c-format
+msgid "Variable '%s' not found."
+msgstr ""
+
+#: python/py-frame.c:450
+msgid "Argument must be a symbol or string."
+msgstr ""
+
+#: python/py-frame.c:465
+#, possible-c-format
+msgid "Variable cannot be found for symbol '%s'."
+msgstr ""
+
+#: python/py-frame.c:528
+msgid "Invalid frame stop reason."
+msgstr ""
+
+#. Require that INFERIOR be a valid inferior ID.
+#: python/py-infthread.c:34
+msgid "Thread no longer exists."
+msgstr ""
+
+#: python/py-lazy-string.c:103
+msgid "Cannot create a value from NULL."
+msgstr ""
+
+#: python/py-lazy-string.c:128
+msgid "Cannot create a lazy string with address 0x0, and a non-zero length."
+msgstr ""
+
+#: python/py-lazy-string.c:136
+msgid "A lazy string's type cannot be NULL."
+msgstr ""
+
+#: python/py-prettyprint.c:569 python/py-function.c:83 python/py-function.c:91
+#: python/python.c:161 python/python.c:182
+msgid "Error while executing Python code."
+msgstr ""
+
+#: python/py-prettyprint.c:737
+msgid "Argument must be a gdb.Value."
+msgstr ""
+
+#: python/py-objfile.c:101
+msgid "Cannot delete the pretty_printers attribute."
+msgstr ""
+
+#: python/py-objfile.c:108
+msgid "The pretty_printers attribute must be a list."
+msgstr ""
+
+#: python/py-function.c:48
+msgid "Could not convert value to Python object."
+msgstr ""
+
+#: python/py-function.c:73
+msgid "No method named 'invoke' in object."
+msgstr ""
+
+#: python/py-function.c:119
+msgid "This function is not documented."
+msgstr ""
+
+#: python/py-type.c:298
+msgid "This type does not have a range."
+msgstr ""
+
+#: python/py-type.c:371
+msgid "Type does not have a target."
+msgstr ""
+
+#: python/py-type.c:543
+msgid "Null type name."
+msgstr ""
+
+#: python/py-type.c:562
+msgid "Type is not a template."
+msgstr ""
+
+#: python/py-type.c:574
+#, possible-c-format
+msgid "No argument %d in template."
+msgstr ""
+
+#: python/py-type.c:737
+msgid "'block' argument must be a Block."
+msgstr ""
+
+#: python/py-value.c:125
+msgid "Value object creation takes only 1 argument"
+msgstr ""
+
+#: python/py-value.c:133
+msgid "Could not allocate memory to create Value object."
+msgstr ""
+
+#: python/py-value.c:313
+msgid "Argument must be a type."
+msgstr ""
+
+#: python/py-value.c:331 python/py-value.c:748 python/py-value.c:785
+msgid "Invalid operation on gdb.Value."
+msgstr ""
+
+#: python/py-value.c:375
+msgid "Cannot subscript requested type."
+msgstr ""
+
+#: python/py-value.c:392
+msgid "Setting of struct elements is not currently supported."
+msgstr ""
+
+#: python/py-value.c:668
+msgid "Attempted truth testing on invalid gdb.Value type."
+msgstr ""
+
+#: python/py-value.c:827
+msgid "Cannot convert value to int."
+msgstr ""
+
+#: python/py-value.c:859
+msgid "Cannot convert value to long."
+msgstr ""
+
+#: python/py-value.c:889
+msgid "Cannot convert value to float."
+msgstr ""
+
+#: python/py-value.c:1028
+#, possible-c-format
+msgid "Could not convert Python object: %s."
+msgstr ""
+
+#. Require a valid block.  All access to block_object->block should be
+#. gated by this call.
+#: python/py-block.c:64
+msgid "Block is invalid."
+msgstr ""
+
+#. Require a valid block.  This macro is called during block iterator
+#. creation, and at each next call.
+#: python/py-block.c:76
+msgid "Source block for iterator is invalid."
+msgstr ""
+
+#: python/py-block.c:251
+msgid "Symbol is null."
+msgstr ""
+
 #: python/py-auto-load.c:195
 #, possible-c-format
 msgid "Invalid entry in %s section"
@@ -15276,24 +15444,161 @@ msgstr ""
 msgid "Print dump of auto-loaded section scripts matching REGEXP."
 msgstr ""
 
-#. Require a valid block.  All access to block_object->block should be
+#. Require a valid symbol.  All access to symbol_object->symbol should be
 #. gated by this call.
-#: python/py-block.c:64
-msgid "Block is invalid."
+#: python/py-symbol.c:48
+msgid "Symbol is invalid."
 msgstr ""
 
-#. Require a valid block.  This macro is called during block iterator
-#. creation, and at each next call.
-#: python/py-block.c:76
-msgid "Source block for iterator is invalid."
+#: python/python.c:151
+msgid "Invalid \"python\" block structure."
 msgstr ""
 
-#: python/py-block.c:251
-msgid "Symbol is null."
+#: python/python.c:257
+msgid "Programmer error: unhandled type."
 msgstr ""
 
-#: python/py-block.c:284 python/py-frame.c:230
-msgid "Cannot locate object file for block."
+#: python/python.c:284
+#, possible-c-format
+msgid "Could not find parameter `%s'."
+msgstr ""
+
+#: python/python.c:288
+#, possible-c-format
+msgid "`%s' is not a parameter."
+msgstr ""
+
+#: python/python.c:579 python/python.c:593 python/python.c:600
+msgid "Python scripting is not supported in this copy of GDB."
+msgstr ""
+
+#: python/python.c:638
+msgid ""
+"Evaluate a Python command.\n"
+"\n"
+"The command can be given as an argument, for instance:\n"
+"\n"
+"    python print 23\n"
+"\n"
+"If no argument is given, the following lines are read and used\n"
+"as the Python commands.  Type a line containing \"end\" to indicate\n"
+"the end of the command."
+msgstr ""
+
+#: python/python.c:649
+msgid ""
+"Evaluate a Python command.\n"
+"\n"
+"Python scripting is not supported in this copy of GDB.\n"
+"This command is only a placeholder."
+msgstr ""
+
+#: python/python.c:658 python/python.c:662
+msgid "Prefix command for python maintenance settings."
+msgstr ""
+
+#: python/python.c:667
+msgid "Enable or disable printing of Python stack dump on error."
+msgstr ""
+
+#: python/python.c:668
+msgid "Show whether Python stack will be printed on error."
+msgstr ""
+
+#: python/python.c:669
+msgid "Enables or disables printing of Python stack traces."
+msgstr ""
+
+#: python/py-utils.c:79
+msgid "Expected a string or unicode object."
+msgstr ""
+
+#: python/py-utils.c:311
+msgid "Supplied address is negative."
+msgstr ""
+
+#: python/py-utils.c:318
+msgid "Invalid type for address."
+msgstr ""
+
+#: python/py-param.c:131
+msgid "String required for filename."
+msgstr ""
+
+#: python/py-param.c:156
+msgid "ENUM arguments must be a string."
+msgstr ""
+
+#: python/py-param.c:168
+msgid "The value must be member of an enumeration."
+msgstr ""
+
+#: python/py-param.c:179
+msgid "A boolean argument is required."
+msgstr ""
+
+#: python/py-param.c:192
+msgid "A boolean or None is required"
+msgstr ""
+
+#: python/py-param.c:221
+msgid "The value must be integer."
+msgstr ""
+
+#: python/py-param.c:244
+msgid "Range exceeded."
+msgstr ""
+
+#: python/py-param.c:254
+msgid "Unhandled type in parameter value."
+msgstr ""
+
+#: python/py-param.c:271
+msgid "Cannot delete a parameter's value."
+msgstr ""
+
+#: python/py-param.c:371
+msgid "An enumeration is required for PARAM_ENUM."
+msgstr ""
+
+#: python/py-param.c:378
+msgid "The enumeration is not a sequence."
+msgstr ""
+
+#: python/py-param.c:388
+msgid "The enumeration is empty."
+msgstr ""
+
+#: python/py-param.c:404
+msgid "The enumeration item not a string."
+msgstr ""
+
+#: python/py-param.c:428 python/py-cmd.c:472
+msgid "This command is not documented."
+msgstr ""
+
+#: python/py-param.c:477 python/py-cmd.c:420
+msgid "Invalid command class argument."
+msgstr ""
+
+#: python/py-param.c:488
+msgid "Invalid parameter class argument."
+msgstr ""
+
+#: python/py-param.c:495
+msgid "Only PARAM_ENUM accepts a fourth argument."
+msgstr ""
+
+#. Require a valid symbol table.  All access to symtab_object->symtab
+#. should be gated by this call.
+#: python/py-symtab.c:50
+msgid "Symbol Table is invalid."
+msgstr ""
+
+#. Require a valid symbol table and line object.  All access to
+#. sal_object->sal should be gated by this call.
+#: python/py-symtab.c:80
+msgid "Symbol Table and Line is invalid."
 msgstr ""
 
 #. Require that BREAKPOINT be a valid breakpoint ID; throw a Python
@@ -15373,6 +15678,40 @@ msgstr ""
 msgid "Do not understand breakpoint type to set."
 msgstr ""
 
+#. Require that INFERIOR be a valid inferior ID.
+#: python/py-inferior.c:71
+msgid "Inferior no longer exists."
+msgstr ""
+
+#: python/py-inferior.c:345
+msgid "Could not allocate memory buffer object."
+msgstr ""
+
+#: python/py-inferior.c:420
+#, possible-c-format
+msgid "Memory buffer for address %s, which is %s bytes long."
+msgstr ""
+
+#: python/py-inferior.c:434
+msgid "The memory buffer supports only one segment."
+msgstr ""
+
+#: python/py-inferior.c:500
+msgid "Search range is empty."
+msgstr ""
+
+#: python/py-inferior.c:508
+msgid "The search range is too large."
+msgstr ""
+
+#: python/py-inferior.c:516
+msgid "Cannot get search address/range from Python."
+msgstr ""
+
+#: python/py-inferior.c:524
+msgid "The pattern is not a Python buffer."
+msgstr ""
+
 #: python/py-cmd.c:126 python/py-cmd.c:211
 msgid "Invalid invocation of Python command object."
 msgstr ""
@@ -15424,347 +15763,8 @@ msgstr ""
 msgid "Command object already initialized."
 msgstr ""
 
-#: python/py-cmd.c:420 python/py-param.c:477
-msgid "Invalid command class argument."
-msgstr ""
-
 #: python/py-cmd.c:426
 msgid "Invalid completion type argument."
-msgstr ""
-
-#: python/py-cmd.c:472 python/py-param.c:428
-msgid "This command is not documented."
-msgstr ""
-
-#. Require a valid frame.  This must be called inside a TRY_CATCH, or
-#. another context in which a gdb exception is allowed.
-#: python/py-frame.c:54
-msgid "Frame is invalid."
-msgstr ""
-
-#: python/py-frame.c:277
-msgid "Could not allocate frame object."
-msgstr ""
-
-#: python/py-frame.c:421 python/py-type.c:532
-msgid "Second argument must be block."
-msgstr ""
-
-#: python/py-frame.c:439
-#, possible-c-format
-msgid "Variable '%s' not found."
-msgstr ""
-
-#: python/py-frame.c:450
-msgid "Argument must be a symbol or string."
-msgstr ""
-
-#: python/py-frame.c:465
-#, possible-c-format
-msgid "Variable cannot be found for symbol '%s'."
-msgstr ""
-
-#: python/py-frame.c:528
-msgid "Invalid frame stop reason."
-msgstr ""
-
-#: python/py-function.c:48
-msgid "Could not convert value to Python object."
-msgstr ""
-
-#: python/py-function.c:73
-msgid "No method named 'invoke' in object."
-msgstr ""
-
-#: python/py-function.c:83 python/py-function.c:91 python/py-prettyprint.c:569
-#: python/python.c:161 python/python.c:182
-msgid "Error while executing Python code."
-msgstr ""
-
-#: python/py-function.c:119
-msgid "This function is not documented."
-msgstr ""
-
-#. Require that INFERIOR be a valid inferior ID.
-#: python/py-inferior.c:71
-msgid "Inferior no longer exists."
-msgstr ""
-
-#: python/py-inferior.c:345
-msgid "Could not allocate memory buffer object."
-msgstr ""
-
-#: python/py-inferior.c:420
-#, possible-c-format
-msgid "Memory buffer for address %s, which is %s bytes long."
-msgstr ""
-
-#: python/py-inferior.c:434
-msgid "The memory buffer supports only one segment."
-msgstr ""
-
-#: python/py-inferior.c:500
-msgid "Search range is empty."
-msgstr ""
-
-#: python/py-inferior.c:508
-msgid "The search range is too large."
-msgstr ""
-
-#: python/py-inferior.c:516
-msgid "Cannot get search address/range from Python."
-msgstr ""
-
-#: python/py-inferior.c:524
-msgid "The pattern is not a Python buffer."
-msgstr ""
-
-#. Require that INFERIOR be a valid inferior ID.
-#: python/py-infthread.c:34
-msgid "Thread no longer exists."
-msgstr ""
-
-#: python/py-lazy-string.c:103
-msgid "Cannot create a value from NULL."
-msgstr ""
-
-#: python/py-lazy-string.c:128
-msgid "Cannot create a lazy string with address 0x0, and a non-zero length."
-msgstr ""
-
-#: python/py-lazy-string.c:136
-msgid "A lazy string's type cannot be NULL."
-msgstr ""
-
-#: python/py-objfile.c:101
-msgid "Cannot delete the pretty_printers attribute."
-msgstr ""
-
-#: python/py-objfile.c:108
-msgid "The pretty_printers attribute must be a list."
-msgstr ""
-
-#: python/py-param.c:131
-msgid "String required for filename."
-msgstr ""
-
-#: python/py-param.c:156
-msgid "ENUM arguments must be a string."
-msgstr ""
-
-#: python/py-param.c:168
-msgid "The value must be member of an enumeration."
-msgstr ""
-
-#: python/py-param.c:179
-msgid "A boolean argument is required."
-msgstr ""
-
-#: python/py-param.c:192
-msgid "A boolean or None is required"
-msgstr ""
-
-#: python/py-param.c:221
-msgid "The value must be integer."
-msgstr ""
-
-#: python/py-param.c:244
-msgid "Range exceeded."
-msgstr ""
-
-#: python/py-param.c:254
-msgid "Unhandled type in parameter value."
-msgstr ""
-
-#: python/py-param.c:271
-msgid "Cannot delete a parameter's value."
-msgstr ""
-
-#: python/py-param.c:371
-msgid "An enumeration is required for PARAM_ENUM."
-msgstr ""
-
-#: python/py-param.c:378
-msgid "The enumeration is not a sequence."
-msgstr ""
-
-#: python/py-param.c:388
-msgid "The enumeration is empty."
-msgstr ""
-
-#: python/py-param.c:404
-msgid "The enumeration item not a string."
-msgstr ""
-
-#: python/py-param.c:488
-msgid "Invalid parameter class argument."
-msgstr ""
-
-#: python/py-param.c:495
-msgid "Only PARAM_ENUM accepts a fourth argument."
-msgstr ""
-
-#: python/py-prettyprint.c:737
-msgid "Argument must be a gdb.Value."
-msgstr ""
-
-#. Require a valid symbol.  All access to symbol_object->symbol should be
-#. gated by this call.
-#: python/py-symbol.c:48
-msgid "Symbol is invalid."
-msgstr ""
-
-#. Require a valid symbol table.  All access to symtab_object->symtab
-#. should be gated by this call.
-#: python/py-symtab.c:50
-msgid "Symbol Table is invalid."
-msgstr ""
-
-#. Require a valid symbol table and line object.  All access to
-#. sal_object->sal should be gated by this call.
-#: python/py-symtab.c:80
-msgid "Symbol Table and Line is invalid."
-msgstr ""
-
-#: python/py-type.c:298
-msgid "This type does not have a range."
-msgstr ""
-
-#: python/py-type.c:371
-msgid "Type does not have a target."
-msgstr ""
-
-#: python/py-type.c:543
-msgid "Null type name."
-msgstr ""
-
-#: python/py-type.c:562
-msgid "Type is not a template."
-msgstr ""
-
-#: python/py-type.c:574
-#, possible-c-format
-msgid "No argument %d in template."
-msgstr ""
-
-#: python/py-type.c:737
-msgid "'block' argument must be a Block."
-msgstr ""
-
-#: python/py-utils.c:79
-msgid "Expected a string or unicode object."
-msgstr ""
-
-#: python/py-utils.c:311
-msgid "Supplied address is negative."
-msgstr ""
-
-#: python/py-utils.c:318
-msgid "Invalid type for address."
-msgstr ""
-
-#: python/py-value.c:125
-msgid "Value object creation takes only 1 argument"
-msgstr ""
-
-#: python/py-value.c:133
-msgid "Could not allocate memory to create Value object."
-msgstr ""
-
-#: python/py-value.c:313
-msgid "Argument must be a type."
-msgstr ""
-
-#: python/py-value.c:331 python/py-value.c:748 python/py-value.c:785
-msgid "Invalid operation on gdb.Value."
-msgstr ""
-
-#: python/py-value.c:375
-msgid "Cannot subscript requested type."
-msgstr ""
-
-#: python/py-value.c:392
-msgid "Setting of struct elements is not currently supported."
-msgstr ""
-
-#: python/py-value.c:668
-msgid "Attempted truth testing on invalid gdb.Value type."
-msgstr ""
-
-#: python/py-value.c:827
-msgid "Cannot convert value to int."
-msgstr ""
-
-#: python/py-value.c:859
-msgid "Cannot convert value to long."
-msgstr ""
-
-#: python/py-value.c:889
-msgid "Cannot convert value to float."
-msgstr ""
-
-#: python/py-value.c:1028
-#, possible-c-format
-msgid "Could not convert Python object: %s."
-msgstr ""
-
-#: python/python.c:151
-msgid "Invalid \"python\" block structure."
-msgstr ""
-
-#: python/python.c:257
-msgid "Programmer error: unhandled type."
-msgstr ""
-
-#: python/python.c:284
-#, possible-c-format
-msgid "Could not find parameter `%s'."
-msgstr ""
-
-#: python/python.c:288
-#, possible-c-format
-msgid "`%s' is not a parameter."
-msgstr ""
-
-#: python/python.c:579 python/python.c:593 python/python.c:600
-msgid "Python scripting is not supported in this copy of GDB."
-msgstr ""
-
-#: python/python.c:638
-msgid ""
-"Evaluate a Python command.\n"
-"\n"
-"The command can be given as an argument, for instance:\n"
-"\n"
-"    python print 23\n"
-"\n"
-"If no argument is given, the following lines are read and used\n"
-"as the Python commands.  Type a line containing \"end\" to indicate\n"
-"the end of the command."
-msgstr ""
-
-#: python/python.c:649
-msgid ""
-"Evaluate a Python command.\n"
-"\n"
-"Python scripting is not supported in this copy of GDB.\n"
-"This command is only a placeholder."
-msgstr ""
-
-#: python/python.c:658 python/python.c:662
-msgid "Prefix command for python maintenance settings."
-msgstr ""
-
-#: python/python.c:667
-msgid "Enable or disable printing of Python stack dump on error."
-msgstr ""
-
-#: python/python.c:668
-msgid "Show whether Python stack will be printed on error."
-msgstr ""
-
-#: python/python.c:669
-msgid "Enables or disables printing of Python stack traces."
 msgstr ""
 
 #: record.c:554
@@ -19547,13 +19547,6 @@ msgid ""
 "directory as the binary, then in the `"
 msgstr ""
 
-#: symfile.c:3752
-msgid ""
-"' subdirectory,\n"
-"and lastly at the path of the directory of the binary with\n"
-"each global debug-file-directory component prepended."
-msgstr ""
-
 #: symfile-mem.c:77
 msgid "add-symbol-file-from-memory not supported for this target"
 msgstr ""
@@ -21132,125 +21125,8 @@ msgid ""
 "up and stopping the trace run."
 msgstr ""
 
-#: tui/tui-file.c:81
-msgid "tui_file_delete: bad magic number"
-msgstr ""
-
-#: tui/tui-file.c:131
-msgid "tui_file_isatty: bad magic number"
-msgstr ""
-
-#: tui/tui-file.c:145
-msgid "tui_file_rewind: bad magic number"
-msgstr ""
-
-#: tui/tui-file.c:158
-msgid "tui_file_put: bad magic number"
-msgstr ""
-
-#: tui/tui-file.c:195
-msgid "tui_file_get_strbuf: bad magic number"
-msgstr ""
-
-#: tui/tui-file.c:210
-msgid "tui_file_adjust_strbuf: bad magic number"
-msgstr ""
-
-#: tui/tui-file.c:238
-msgid "tui_file_flush: bad magic number"
-msgstr ""
-
-#: tui/tui-hooks.c:81
-msgid "(y or n) "
-msgstr ""
-
-#: tui/tui-hooks.c:114
-msgid "Please answer y or n.\n"
-msgstr ""
-
-#: tui/tui-interp.c:131
-msgid "tui_exec called"
-msgstr ""
-
-#: tui/tui-layout.c:389
-msgid ""
-"Change the layout of windows.\n"
-"Usage: layout prev | next | <layout_name> \n"
-"Layout names are:\n"
-"   src   : Displays source and command windows.\n"
-"   asm   : Displays disassembly and command windows.\n"
-"   split : Displays source, disassembly and command windows.\n"
-"   regs  : Displays register window. If existing layout\n"
-"           is source/command or assembly/command, the \n"
-"           register window is displayed. If the\n"
-"           source/assembly/command (split) is displayed, \n"
-"           the register window is displayed with \n"
-"           the window that has current logical focus.\n"
-msgstr ""
-
-#: tui/tui-layout.c:404
-msgid "Toggle between Source/Command and Disassembly/Command layouts.\n"
-msgstr ""
-
-#: tui/tui-layout.c:406
-msgid ""
-"Toggle between Source/Command or Disassembly/Command and \n"
-"Source/Disassembly/Command layouts.\n"
-msgstr ""
-
-#: tui/tui-layout.c:441
-msgid "Ambiguous command input."
-msgstr ""
-
-#: tui/tui-layout.c:612
-#, possible-c-format
-msgid ""
-"Invalid layout specified.\n"
-"%s"
-msgstr ""
-
-#: tui/tui-regs.c:611
-msgid "\"tui reg\" must be followed by the name of a tui reg command.\n"
-msgstr ""
-
-#: tui/tui-regs.c:627
-msgid "TUI commands to control the register window."
-msgstr ""
-
-#: tui/tui-regs.c:632
-msgid "Display only floating point registers."
-msgstr ""
-
-#: tui/tui-regs.c:635
-msgid "Display only general registers."
-msgstr ""
-
-#: tui/tui-regs.c:638
-msgid "Display only system registers."
-msgstr ""
-
-#: tui/tui-regs.c:641
-msgid "Display next register group."
-msgstr ""
-
-#: tui/tui-regs.c:647
-msgid "Display only floating point registers\n"
-msgstr ""
-
-#: tui/tui-regs.c:649
-msgid "Display only general registers\n"
-msgstr ""
-
-#: tui/tui-regs.c:651
-msgid "Display only special registers\n"
-msgstr ""
-
-#: tui/tui-regs.c:653
-msgid "Scroll the registers window forward\n"
-msgstr ""
-
-#: tui/tui-regs.c:655
-msgid "Scroll the register window backward\n"
+#: tui/tui.c:369
+msgid "TUI mode not allowed"
 msgstr ""
 
 #: tui/tui-stack.c:438
@@ -21438,8 +21314,125 @@ msgid ""
 "%s"
 msgstr ""
 
-#: tui/tui.c:369
-msgid "TUI mode not allowed"
+#: tui/tui-hooks.c:81
+msgid "(y or n) "
+msgstr ""
+
+#: tui/tui-hooks.c:114
+msgid "Please answer y or n.\n"
+msgstr ""
+
+#: tui/tui-file.c:81
+msgid "tui_file_delete: bad magic number"
+msgstr ""
+
+#: tui/tui-file.c:131
+msgid "tui_file_isatty: bad magic number"
+msgstr ""
+
+#: tui/tui-file.c:145
+msgid "tui_file_rewind: bad magic number"
+msgstr ""
+
+#: tui/tui-file.c:158
+msgid "tui_file_put: bad magic number"
+msgstr ""
+
+#: tui/tui-file.c:195
+msgid "tui_file_get_strbuf: bad magic number"
+msgstr ""
+
+#: tui/tui-file.c:210
+msgid "tui_file_adjust_strbuf: bad magic number"
+msgstr ""
+
+#: tui/tui-file.c:238
+msgid "tui_file_flush: bad magic number"
+msgstr ""
+
+#: tui/tui-regs.c:611
+msgid "\"tui reg\" must be followed by the name of a tui reg command.\n"
+msgstr ""
+
+#: tui/tui-regs.c:627
+msgid "TUI commands to control the register window."
+msgstr ""
+
+#: tui/tui-regs.c:632
+msgid "Display only floating point registers."
+msgstr ""
+
+#: tui/tui-regs.c:635
+msgid "Display only general registers."
+msgstr ""
+
+#: tui/tui-regs.c:638
+msgid "Display only system registers."
+msgstr ""
+
+#: tui/tui-regs.c:641
+msgid "Display next register group."
+msgstr ""
+
+#: tui/tui-regs.c:647
+msgid "Display only floating point registers\n"
+msgstr ""
+
+#: tui/tui-regs.c:649
+msgid "Display only general registers\n"
+msgstr ""
+
+#: tui/tui-regs.c:651
+msgid "Display only special registers\n"
+msgstr ""
+
+#: tui/tui-regs.c:653
+msgid "Scroll the registers window forward\n"
+msgstr ""
+
+#: tui/tui-regs.c:655
+msgid "Scroll the register window backward\n"
+msgstr ""
+
+#: tui/tui-layout.c:389
+msgid ""
+"Change the layout of windows.\n"
+"Usage: layout prev | next | <layout_name> \n"
+"Layout names are:\n"
+"   src   : Displays source and command windows.\n"
+"   asm   : Displays disassembly and command windows.\n"
+"   split : Displays source, disassembly and command windows.\n"
+"   regs  : Displays register window. If existing layout\n"
+"           is source/command or assembly/command, the \n"
+"           register window is displayed. If the\n"
+"           source/assembly/command (split) is displayed, \n"
+"           the register window is displayed with \n"
+"           the window that has current logical focus.\n"
+msgstr ""
+
+#: tui/tui-layout.c:404
+msgid "Toggle between Source/Command and Disassembly/Command layouts.\n"
+msgstr ""
+
+#: tui/tui-layout.c:406
+msgid ""
+"Toggle between Source/Command or Disassembly/Command and \n"
+"Source/Disassembly/Command layouts.\n"
+msgstr ""
+
+#: tui/tui-layout.c:441
+msgid "Ambiguous command input."
+msgstr ""
+
+#: tui/tui-layout.c:612
+#, possible-c-format
+msgid ""
+"Invalid layout specified.\n"
+"%s"
+msgstr ""
+
+#: tui/tui-interp.c:131
+msgid "tui_exec called"
 msgstr ""
 
 #: typeprint.c:266
