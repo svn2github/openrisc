@@ -461,11 +461,13 @@ handle_rsp (void)
 	  
 	}	      
 	
-	if (rsp.client_waiting)
+
 #ifdef CYGWIN_COMPILE
-	  sleep(1);
+	//if (rsp.client_waiting)
+	//sleep(1);
 #else
-	usleep(10000);
+	if (rsp.client_waiting)
+	  usleep(10000);
 	sched_yield();
 #endif
 	

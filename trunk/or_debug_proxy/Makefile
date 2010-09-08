@@ -82,8 +82,7 @@ ifeq ($(OSTYPE),cygwin)
 	OR_DEBUG_PROXY_SRC = src/or_debug_proxy.c \
 			     src/gdb.c \
 			     src/usb_functions.c \
-			     src/win_usb_driver_calls.c \
-			     src/vpi_functions.c	
+			     src/win_usb_driver_calls.c
 	CXX                = gcc
 	CPPFLAGS           = $(COMMON_CPPFLAGS) -I./obj -DCYGWIN_COMPILE=1 $(DBGCPPFLAGS)
 	CXXFLAGS           = $(COMMON_CXXFLAGS)

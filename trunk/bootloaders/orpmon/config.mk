@@ -27,7 +27,8 @@ CFLAGS += -I$(TOPDIR)/include -DOR1K -Wall -Wstrict-prototypes
 CFLAGS += -Werror-implicit-function-declaration 
 #CFLAGS += -fno-omit-frame-pointer
 CFLAGS += -fno-strength-reduce -O2 -g -pipe -fno-builtin
-CFLAGS += -mhard-mul -mhard-div -msoft-float -nostdlib
+#CFLAGS += -mhard-mul -mhard-div -msoft-float 
+CFLAGS += -msoft-mul -msoft-div -msoft-float 
 CFLAGS += -nostdlib
 #CFLAGS += -DDEBUG
 

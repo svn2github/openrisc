@@ -51,7 +51,7 @@ SECTIONS
         .stack :
         {
         *(.stack)
-        src_addr = .;
+        _src_addr = .;
         } > ram
 /*
 	.monitor :

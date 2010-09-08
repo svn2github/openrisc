@@ -320,8 +320,8 @@ _start:
         l.and   r1,r1,r2
 /*	l.or 	r2, r1, r1 - remove this helped with odd UART output problem?!*/
 	
-        l.movhi r3,hi(main)
-        l.ori   r3,r3,lo(main)
+        l.movhi r3,hi(_main)
+        l.ori   r3,r3,lo(_main)
         l.jr    r3
 	l.nop
 
@@ -357,8 +357,8 @@ _tick:
         l.sw    0x70(r1), r30
         l.sw    0x74(r1), r31
 	
-        l.movhi r3,hi(tick_interrupt)
-        l.ori   r3,r3,lo(tick_interrupt)
+        l.movhi r3,hi(_tick_interrupt)
+        l.ori   r3,r3,lo(_tick_interrupt)
         l.jalr  r3
         l.nop
 
@@ -428,8 +428,8 @@ _int_wrapper:
         l.sw    0x70(r1), r30
         l.sw    0x74(r1), r31
 	
-        l.movhi r3,hi(int_main)
-        l.ori   r3,r3,lo(int_main)
+        l.movhi r3,hi(_int_main)
+        l.ori   r3,r3,lo(_int_main)
         l.jalr  r3
         l.nop
 
