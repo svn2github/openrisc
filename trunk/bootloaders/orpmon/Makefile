@@ -13,9 +13,10 @@ export	TOPDIR
 include $(TOPDIR)/config.mk
 
 # order is important here:
-SUBDIRS	= drivers common cmds services doc
+SUBDIRS	= drivers common cmds coremark services doc
 
-LIBS  =	common/common_o.o cmds/cmds.o services/services.o drivers/drivers.o
+LIBS  =	common/common_o.o cmds/cmds.o coremark/coremark.o services/services.o \
+	 drivers/drivers.o
 
 #########################################################################
 

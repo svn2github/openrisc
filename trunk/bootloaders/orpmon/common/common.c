@@ -315,6 +315,7 @@ void module_cpu_init (void);
 void module_memory_init (void);
 void module_eth_init (void);
 void module_dhry_init (void);
+void module_coremark_init (void);
 void module_camera_init (void);
 void module_load_init (void);
 void tick_init(void);
@@ -343,6 +344,7 @@ void mon_init (void)
 #define CPU_CMDS
 #define MEM_CMDS
 #define DHRY_CMDS
+#define COREMARK_CMDS
   //#define CAMERA_CMDS
 #define LOAD_CMDS
     //#define TOUCHSCREEN_CMDS
@@ -364,6 +366,9 @@ void mon_init (void)
 #endif
 #ifdef DHRY_CMDS
   module_dhry_init ();
+#endif
+#ifdef COREMARK_CMDS
+  module_coremark_init ();
 #endif
 #ifdef CAMERA_CMDS
   module_camera_init ();

@@ -19,7 +19,6 @@
 #include "common.h"
 #include "support.h"
 
-#define DLX_FREQ 200  /* in MHz */
 #define PROC_6 0
 
 #define DETECTNULL(X) (((X) - 0x01010101) & ~(X) & 0x80808080)
@@ -334,20 +333,19 @@ int dhry_main (int num_runs)
 
   User_Time = End_Time - Begin_Time;
 
-  printf("Timer ticks (%d - %d) =\t%d\n",End_Time,Begin_Time, User_Time);
+  printf("Timer ticks, %d/Sec, (%d - %d) =\t%d\n",TICKS_PER_SEC, 
+	 End_Time, Begin_Time, User_Time);
 
-
-
-  // This is in ticks, convert to mS
-  User_Time = User_Time * (MS_PER_SEC / TICKS_PER_SEC);
-  
  /* microseconds */
   
   printf ("\nNumber of Runs %i", num_runs);
-  printf ("\nElapsed time %i ms\n", User_Time);
+  printf ("\nElapsed time %d.%d%ds\n", 
+	  (User_Time/TICKS_PER_SEC),
+	  (User_Time/(TICKS_PER_SEC/10))%10,
+	  (User_Time/( TICKS_PER_SEC/100))%10);
 
   
-  if (User_Time < MS_PER_SEC)
+  if (User_Time < (5*TICKS_PER_SEC))
   {
     printf ("Measured time too small to obtain meaningful results\n");
     printf ("Please increase number of runs\n");
@@ -357,11 +355,15 @@ int dhry_main (int num_runs)
   {
     printf("Processor at %d MHz\n",(IN_CLK/1000000));
 
-//    Microseconds = User_Time / Number_Of_Runs;
-//    Dhrystones_Per_Second = Number_Of_Runs * 1000 / User_Time;
-    Dhrystones_Per_Second = (Number_Of_Runs * MS_PER_SEC) / User_Time;
+
+    // User_Time is ticks in resolution TICKS_PER_SEC, so to convert to uS
+    Microseconds = (User_Time * (1000000/TICKS_PER_SEC));
+    
+    Dhrystones_Per_Second = Number_Of_Runs / (User_Time/TICKS_PER_SEC);
+
     printf ("Microseconds for one run through Dhrystone: ");
-    printf ("%d ms / %d runs\n", User_Time,Number_Of_Runs);
+    printf ("( %d uS / %dk ) = %d uS\n", Microseconds,(Number_Of_Runs/1000),
+	    Microseconds / Number_Of_Runs);
     printf ("Dhrystones per Second:                      ");
     printf ("%d \n", Dhrystones_Per_Second);
   }

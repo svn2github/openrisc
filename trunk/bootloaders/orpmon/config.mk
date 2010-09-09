@@ -23,15 +23,19 @@ OBJCOPY = $(CROSS_COMPILE)objcopy
 OBJDUMP = $(CROSS_COMPILE)objdump
 RANLIB	= $(CROSS_COMPILE)ranlib
 
-CFLAGS += -I$(TOPDIR)/include -DOR1K -Wall -Wstrict-prototypes
-CFLAGS += -Werror-implicit-function-declaration 
-#CFLAGS += -fno-omit-frame-pointer
-CFLAGS += -fno-strength-reduce -O2 -g -pipe -fno-builtin
-#CFLAGS += -mhard-mul -mhard-div -msoft-float 
-CFLAGS += -msoft-mul -msoft-div -msoft-float 
-CFLAGS += -nostdlib
-#CFLAGS += -DDEBUG
+XCFLAGS += -I$(TOPDIR)/include -DOR1K -Wall -Wstrict-prototypes
+XCFLAGS += -Werror-implicit-function-declaration 
+#XCFLAGS += -fno-omit-frame-pointer -g
+XCFLAGS += -fno-strength-reduce -O2 -pipe -fno-builtin -fomit-frame-pointer
+#XCFLAGS += -mhard-mul -mhard-div -msoft-float 
+XCFLAGS += -msoft-mul -msoft-div -msoft-float 
+XCFLAGS += -nostdlib
+#XCFLAGS += -DDEBUG
 
+# For CoreMark:
+FLAGS_STR ="$(XCFLAGS)"
+# Add back to CFLAGS
+CFLAGS += $(XCFLAGS) -DFLAGS_STR=\"$(FLAGS_STR)\"
 
 LIBGCC := $(shell $(CC) $(CFLAGS) -print-libgcc-file-name)
 LDFLAGS+= $(LIBGCC)

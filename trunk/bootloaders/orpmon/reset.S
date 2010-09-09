@@ -103,7 +103,27 @@ _buserr:
 .else
         .org (0x500 - 0x100 + _reset)
 .endif
-_tickint:	
+_tickint:
+#define TIMER_RELOAD_VALUE (SPR_TTMR_IE | SPR_TTMR_RT | ((IN_CLK/TICKS_PER_SEC) & SPR_TTMR_PERIOD))
+	//UNHANDLED_EXCEPTION
+	/* Simply load timer_ticks variable and increment */
+	.extern _timer_ticks
+	l.addi 	r1, r1, -8
+	l.sw 	0(r1), r25	
+	l.sw 	4(r1), r26
+	l.movhi r25, hi(_timestamp)
+	l.ori 	r25, r25, lo(_timestamp)
+	l.lwz 	r26, 0(r25)			/* Load variable addr.*/
+	l.addi 	r26, r26, 1			/* Increment variable */
+	l.sw 	0(r25), r26			/* Store variable */
+	l.movhi	r25, hi(TIMER_RELOAD_VALUE) 	/* Load timer value */
+	l.ori 	r25, r25, lo(TIMER_RELOAD_VALUE)
+	l.mtspr r0, r25, SPR_TTMR 		/* Reset timer */
+	l.lwz 	r25, 0(r1)
+	l.lwz	r26, 4(r1)
+	l.addi 	r1, r1, 8
+	l.rfe
+/*
         l.addi  r1,r1,-128
 	l.sw 	0(r1), r2
 	l.addi 	r2, r1, 128
@@ -112,7 +132,7 @@ _tickint:
         l.ori   r3,r3,lo(_tick)
         l.jr    r3
         l.nop
-
+*/
 .if IN_FLASH
         .section .vectors, "ax"
         .org 0x600

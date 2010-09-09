@@ -10,11 +10,12 @@ void tick_init(void)
   mtspr(SPR_TTMR, SPR_TTMR_IE | SPR_TTMR_RT | ((IN_CLK/TICKS_PER_SEC) & SPR_TTMR_PERIOD));
 }
 
+// No longer called - timpstamp variable incremented in vector code in reset.S
 void tick_interrupt(void)
 {
   timestamp++;
   mtspr(SPR_TTMR, SPR_TTMR_IE | SPR_TTMR_RT | ((IN_CLK/TICKS_PER_SEC) & SPR_TTMR_PERIOD));
-  spincursor(); // Check if we want to spin the cursor...
+  //spincursor(); // Check if we want to spin the cursor...
 }
 
 /* 

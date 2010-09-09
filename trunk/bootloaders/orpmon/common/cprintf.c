@@ -175,9 +175,9 @@ static char *rcsid = "$Id: cprintf.c,v 1.2 2002-04-19 11:08:25 markom Exp $";
 #include <stdarg.h>
 
 #ifdef FLOATING_POINT
-#include <locale.h>
-#include <math.h>
-#include "floatio.h"
+//#include <locale.h>
+//#include <math.h>
+//#include "floatio.h"
 
 #define	BUF		(MAXEXP+MAXFRACT+1)	/* + decimal point */
 #define	DEFPREC		6
