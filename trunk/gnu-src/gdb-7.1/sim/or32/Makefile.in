@@ -28,7 +28,7 @@ SIM_EXTRA_LIBS   = @SIM_LDFLAGS@ -lsim
 SIM_OBJS         = sim-load.o \
 	   	   wrapper.o
 
-## This selects the ATDSP newlib/libgloss syscall definitions.
+## This selects the OR32 newlib/libgloss syscall definitions.
 NL_TARGET = -DNL_TARGET_or32
 
 ## COMMON_POST_CONFIG_FRAG
