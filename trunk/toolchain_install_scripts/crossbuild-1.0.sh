@@ -39,7 +39,7 @@ releasever="or32-1.0rc1"
 
 binutilsver="2.20.1"
 binutils="binutils-$binutilsver.tar.bz2"
-binutils_url="http://mirrors.kernel.org/sources.redhat.com/binutils/snapshots"
+binutils_url="http://mirrors.kernel.org/sources.redhat.com/binutils/releases"
 binutils_patch="binutils-$binutilsver-$releasever.patch.bz2"
 binutils_patch_url="ftp://ocuser:oc@orsoc.se/toolchain"
 
