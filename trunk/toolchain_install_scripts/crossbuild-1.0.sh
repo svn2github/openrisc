@@ -82,7 +82,7 @@ uclibc_patch_url="ftp://ocuser:oc@orsoc.se/toolchain"
 uclibc_config="extra/Configs/defconfigs/or32"
 
 # These are the tools this script requires and depends upon.
-reqtools="gcc bzip2 make patch"
+reqtools="gcc bzip2 make patch file"
 
 ##############################################################################
 # Functions:
@@ -319,7 +319,7 @@ install_linux_headers() {
 
 build_uclibc () {
     file="$uclibc"
-    file_url="$uclibc"
+    file_url="$uclibc_url"
     patch="$uclibc_patch"
     patch_url="$uclibc_patch_url"
     toolname="uClibc"
@@ -409,7 +409,7 @@ echo "CROSSBUILD: Install dir : $prefix"
 
 ### start the builds
 
-build_gnu_tool "or1ksim" "$simver" "$sim" "$sim_url" "" "" "$prefix/or1ksim" "--enable-ethphy"
+#build_gnu_tool "or1ksim" "$simver" "$sim" "$sim_url" "" "" "$prefix/or1ksim" "--enable-ethphy"
 
 build_gnu_tool "binutils" "$binutilsver" "$binutils" "$binutils_url" "$binutils_patch" "$binutils_patch_url" "$prefix" "$or32configure"
 
