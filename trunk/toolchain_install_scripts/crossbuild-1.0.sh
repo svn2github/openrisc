@@ -409,7 +409,7 @@ echo "CROSSBUILD: Install dir : $prefix"
 
 ### start the builds
 
-#build_gnu_tool "or1ksim" "$simver" "$sim" "$sim_url" "" "" "$prefix/or1ksim" "--enable-ethphy"
+build_gnu_tool "or1ksim" "$simver" "$sim" "$sim_url" "" "" "$prefix/or1ksim" "--enable-ethphy"
 
 build_gnu_tool "binutils" "$binutilsver" "$binutils" "$binutils_url" "$binutils_patch" "$binutils_patch_url" "$prefix" "$or32configure"
 
