@@ -27,6 +27,7 @@ XCFLAGS += -I$(TOPDIR)/include -DOR1K -Wall -Wstrict-prototypes
 XCFLAGS += -Werror-implicit-function-declaration 
 #XCFLAGS += -fno-omit-frame-pointer -g
 XCFLAGS += -fno-strength-reduce -O2 -pipe -fno-builtin -fomit-frame-pointer
+# Use all software flags, so is compatible with minimal implementation
 #XCFLAGS += -mhard-mul -mhard-div -msoft-float 
 XCFLAGS += -msoft-mul -msoft-div -msoft-float 
 XCFLAGS += -nostdlib

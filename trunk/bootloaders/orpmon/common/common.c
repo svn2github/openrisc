@@ -12,7 +12,7 @@
 #define MAX_COMMANDS  100
 
 // Value from linker script
-extern unsigned long src_addr;
+extern unsigned long _src_addr;
 
 bd_t bd;
 
@@ -216,6 +216,10 @@ void mon_command(void)
   while(1)
     {
       c=getc();
+
+      if (c == 0x7f) // Backspace on picocom is showing up as 0x7f
+	c = '\b';
+
       if (c == '\r' || c == '\f' || c == '\n')
 	{
 	  // Mark end of string
@@ -290,7 +294,7 @@ void mon_command(void)
 }
 
 #if HELP_ENABLED
-extern unsigned long src_addr; // Stack section ends here, will print it out
+extern unsigned long _src_addr; // Stack section ends here, will print it out
 /* Displays help screen */
 int help_cmd (int argc, char *argv[])
 {
@@ -304,7 +308,7 @@ int help_cmd (int argc, char *argv[])
   printf("Frequency\t\t%dMHz\n", IN_CLK/1000000);
   print_or1k_cache_info();
   printf("\n");
-  printf("Info: Stack section addr 0x%x\n",(unsigned long) &src_addr);
+  printf("Info: Stack section addr 0x%x\n",(unsigned long) &_src_addr);
   printf("Build tag: %s", BUILD_VERSION);
 
   return 0;
@@ -329,7 +333,7 @@ void mon_init (void)
 {
   /* Set defaults */
   global.erase_method = 2; /* as needed */
-  global.src_addr = (unsigned long)&src_addr;
+  global.src_addr = (unsigned long)&_src_addr;
   global.dst_addr = FLASH_BASE_ADDR;
   global.eth_add[0] = ETH_MACADDR0;
   global.eth_add[1] = ETH_MACADDR1;

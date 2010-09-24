@@ -143,10 +143,10 @@
 
 #elif IPCONFIG==3 // ORSoC LAN
 
-#define BOARD_DEF_IP    	0xc0a80003 // 192.168.0.3
+#define BOARD_DEF_IP    	0xc0a80103 // 192.168.1.3
 #define BOARD_DEF_MASK  	0xffffff00 // 255.255.255.0
-#define BOARD_DEF_GW    	0xc0a80002 // 192.168.0.2
-#define BOARD_DEF_TBOOT_SRVR 	0xc0a80108 // 192.168.1.8
+#define BOARD_DEF_GW    	0xc0a80101 // 192.168.1.1
+#define BOARD_DEF_TBOOT_SRVR 	0xc0a80101 // 192.168.1.1
 #define BOARD_DEF_IMAGE_NAME    "boot.img"
 #define BOARD_DEF_LOAD_SPACE    0xa00000
 #define ETH_MDIOPHYADDR      	0x00
