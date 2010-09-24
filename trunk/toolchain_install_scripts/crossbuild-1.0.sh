@@ -323,7 +323,7 @@ build_uclibc () {
     patch="$uclibc_patch"
     patch_url="$uclibc_patch_url"
     toolname="uClibc"
-    version=$uclibcver
+    version="$uclibcver"
 
     download_extract_patch "$toolname" "$version" "$file" "$file_url" "$patch" \
 	"$patch_url"
