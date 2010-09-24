@@ -38,7 +38,6 @@ target="or32-elf"
 releasever="or32-1.0rc1"
 
 binutilsver="2.20.1"
-#binutils="binutils-$binutilsver-$releasever.tar.bz2"
 binutils="binutils-$binutilsver.tar.bz2"
 binutils_url="http://mirrors.kernel.org/sources.redhat.com/binutils/snapshots"
 binutils_patch="binutils-$binutilsver-$releasever.patch.bz2"
@@ -79,8 +78,7 @@ uclibcver="0.9.31"
 uclibc="uClibc-$uclibcver.tar.bz2"
 uclibc_url="http://www.uclibc.org/downloads"
 uclibc_patch="uClibc-$uclibcver-or32.patch.bz2"
-#uclibc_patch_url="ftp://ocuser:oc@orsoc.se/toolchain"
-uclibc_patch_url="/tmp"
+uclibc_patch_url="ftp://ocuser:oc@orsoc.se/toolchain"
 uclibc_config="extra/Configs/defconfigs/or32"
 
 # These are the tools this script requires and depends upon.
