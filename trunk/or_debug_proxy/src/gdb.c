@@ -63,6 +63,9 @@
 //                      in or1k                                         jb
 // 090828               Fixed byte/non-aligned accesses. Removed legacy
 //                      "remote JTAG" protocol.                         jb
+// 100924               Added RSP query handlers for things new to with
+//                      gdb-7.2                                         jb
+
 #ifdef CYGWIN_COMPILE
 
 #else
@@ -122,12 +125,12 @@
 #define OR1K_TRAP_INSTR  0x21000001
 
 /*! The maximum number of characters in inbound/outbound buffers.  The largest
-    packets are the 'G' packet, which must hold the 'G' and all the registers
-    with two hex digits per byte and the 'g' reply, which must hold all the
-    registers, and (in our implementation) an end-of-string (0)
-    character. Adding the EOS allows us to print out the packet as a
-    string. So at least NUMREGBYTES*2 + 1 (for the 'G' or the EOS) are needed
-    for register packets */
+  packets are the 'G' packet, which must hold the 'G' and all the registers
+  with two hex digits per byte and the 'g' reply, which must hold all the
+  registers, and (in our implementation) an end-of-string (0)
+  character. Adding the EOS allows us to print out the packet as a
+  string. So at least NUMREGBYTES*2 + 1 (for the 'G' or the EOS) are needed
+  for register packets */
 //#define GDB_BUF_MAX  ((NUM_REGS) * 8 + 1)
 #define GDB_BUF_MAX  4096
 #define GDB_BUF_MAX_TIMES_TWO (GDB_BUF_MAX*2)
@@ -180,10 +183,10 @@
 
 
 /*! Definition of GDB target signals. Data taken from the GDB 6.8
-    source. Only those we use defined here. The exact meaning of 
-    signal number is defined by the header `include/gdb/signals.h'
-    in the GDB source code. For an explanation of what each signal
-    means, see target_signal_to_string.*/
+  source. Only those we use defined here. The exact meaning of 
+  signal number is defined by the header `include/gdb/signals.h'
+  in the GDB source code. For an explanation of what each signal
+  means, see target_signal_to_string.*/
 enum target_signal {
   TARGET_SIGNAL_NONE =  0,
   TARGET_SIGNAL_INT  =  2,
@@ -246,7 +249,7 @@ int gdb_fd = 0;
 static int tcp_level = 0;
 
 /* global to store what chain the debug unit is currently connected to 
-(not the JTAG TAP, but the onchip debug module has selected) */
+   (not the JTAG TAP, but the onchip debug module has selected) */
 int gdb_chain = -1;
 
 /*! Data structure for RSP buffers. Can't be null terminated, since it may
@@ -258,7 +261,7 @@ struct rsp_buf
 };
 
 /*! Enumeration of different types of matchpoint. These have explicit values
-    matching the second digit of 'z' and 'Z' packets. */
+  matching the second digit of 'z' and 'Z' packets. */
 enum mp_type {
   BP_MEMORY   = 0,		// software-breakpoint Z0  break 
   BP_HARDWARE = 1,		// hardware-breakpoint Z1  hbreak 
@@ -280,7 +283,7 @@ struct mp_entry
 static struct
 {
   int            		client_waiting;	/*!< Is client waiting a response? */
-// Not used  int                proto_num;		/*!< Number of the protocol used */
+  // Not used  int                proto_num;		/*!< Number of the protocol used */
   int                client_fd;		/*!< FD for talking to GDB */
   int               sigval;			/*!< GDB signal for any exception */
   uint32_t start_addr;	/*!< Start of last run */
@@ -366,7 +369,7 @@ char *printTime(void)
 /*---------------------------------------------------------------------------*/
 /*!Initialize the Remote Serial Protocol connection
 
-   Set up the central data structures.                                       */
+  Set up the central data structures.                                       */
 /*---------------------------------------------------------------------------*/
 void
 rsp_init (void)
@@ -394,17 +397,17 @@ rsp_init (void)
 /*---------------------------------------------------------------------------*/
 /*!Look for action on RSP
 
-   This function is called when the processor has stalled, which, except for
-   initialization, must be due to an interrupt.
+  This function is called when the processor has stalled, which, except for
+  initialization, must be due to an interrupt.
 
-   If we have no RSP client, we get one. We can make no progress until the
-   client is available.
+  If we have no RSP client, we get one. We can make no progress until the
+  client is available.
 
-   Then if the cause is an exception following a step or continue command, and
-   the exception not been notified to GDB, a packet reporting the cause of the
-   exception is sent.
+  Then if the cause is an exception following a step or continue command, and
+  the exception not been notified to GDB, a packet reporting the cause of the
+  exception is sent.
 
-   The next client request is then processed.                                */
+  The next client request is then processed.                                */
 /*---------------------------------------------------------------------------*/
 void
 handle_rsp (void)
@@ -567,12 +570,12 @@ static void rsp_check_for_exception()
 /*---------------------------------------------------------------------------*/
 /*!Check if PPC is in an exception vector that halts program flow
 
-Compare the provided PPC with known exception vectors that are fatal
-to a program's execution. Call rsp_exception(ppc) to set the appropriate
-sigval and return.
+  Compare the provided PPC with known exception vectors that are fatal
+  to a program's execution. Call rsp_exception(ppc) to set the appropriate
+  sigval and return.
 
-@param[in] ppc  Value of current PPC, as read from debug unit
-@return: 1 if we set a sigval and should return control to GDB, else 0       */
+  @param[in] ppc  Value of current PPC, as read from debug unit
+  @return: 1 if we set a sigval and should return control to GDB, else 0       */
 /*---------------------------------------------------------------------------*/
 static int 
 check_for_exception_vector(uint32_t ppc)
@@ -584,9 +587,9 @@ check_for_exception_vector(uint32_t ppc)
     case EXCEPT_ALIGN:    
     case EXCEPT_ILLEGAL:  
     case EXCEPT_TRAP:     if(DEBUG_GDB) 
-	                    printf("PPC at exception address\n");
-                          rsp_exception(ppc); 
-			  return 1;
+	printf("PPC at exception address\n");
+      rsp_exception(ppc); 
+      return 1;
       
     default:
       return 0;
@@ -597,14 +600,14 @@ check_for_exception_vector(uint32_t ppc)
 /*---------------------------------------------------------------------------*/
 /*!Note an exception for future processing
 
-   The simulator has encountered an exception. Record it here, so that a
-   future call to handle_exception will report it back to the client. The
-   signal is supplied in Or1ksim form and recorded in GDB form.
+  The simulator has encountered an exception. Record it here, so that a
+  future call to handle_exception will report it back to the client. The
+  signal is supplied in Or1ksim form and recorded in GDB form.
 
-   We flag up a warning if an exception is already pending, and ignore the
-   earlier exception.
+  We flag up a warning if an exception is already pending, and ignore the
+  earlier exception.
 
-   @param[in] except  The exception (Or1ksim form)                           */
+  @param[in] except  The exception (Or1ksim form)                           */
 /*---------------------------------------------------------------------------*/
 void
 rsp_exception (uint32_t  except)
@@ -647,19 +650,19 @@ rsp_exception (uint32_t  except)
 /*---------------------------------------------------------------------------*/
 /*!Get a new client connection.
 
-   Blocks until the client connection is available.
+  Blocks until the client connection is available.
 
-   A lot of this code is copied from remote_open in gdbserver remote-utils.c.
+  A lot of this code is copied from remote_open in gdbserver remote-utils.c.
 
-   This involves setting up a socket to listen on a socket for attempted
-   connections from a single GDB instance (we couldn't be talking to multiple
-   GDBs at once!).
+  This involves setting up a socket to listen on a socket for attempted
+  connections from a single GDB instance (we couldn't be talking to multiple
+  GDBs at once!).
 
-   The service is specified either as a port number in the Or1ksim configuration
-   (parameter rsp_port in section debug, default 51000) or as a service name
-   in the constant OR1KSIM_RSP_SERVICE.
+  The service is specified either as a port number in the Or1ksim configuration
+  (parameter rsp_port in section debug, default 51000) or as a service name
+  in the constant OR1KSIM_RSP_SERVICE.
 
-   The protocol used for communication is specified in OR1KSIM_RSP_PROTOCOL. */
+  The protocol used for communication is specified in OR1KSIM_RSP_PROTOCOL. */
 /*---------------------------------------------------------------------------*/
 static void
 rsp_get_client (void)
@@ -672,16 +675,16 @@ rsp_get_client (void)
   /* 0 is used as the RSP port number to indicate that we should use the
      service name instead. */
   if (0 == serverPort)
-  {
-    struct servent *service = getservbyname (OR1KSIM_RSP_SERVICE, "tcp");
-    if (NULL == service)
-      {
-	fprintf (stderr, "Warning: RSP unable to find service \"%s\": %s\n",
-		 OR1KSIM_RSP_SERVICE, strerror (errno));
-	return;
-      }
-    serverPort = ntohs (service->s_port);
-  }
+    {
+      struct servent *service = getservbyname (OR1KSIM_RSP_SERVICE, "tcp");
+      if (NULL == service)
+	{
+	  fprintf (stderr, "Warning: RSP unable to find service \"%s\": %s\n",
+		   OR1KSIM_RSP_SERVICE, strerror (errno));
+	  return;
+	}
+      serverPort = ntohs (service->s_port);
+    }
 
   /* Open a socket on which we'll listen for clients */
   tmp_fd = socket (PF_INET, SOCK_STREAM, IPPROTO_TCP);
@@ -724,10 +727,10 @@ rsp_get_client (void)
   rsp.client_fd = accept (tmp_fd, (struct sockaddr *)&sock_addr, &len);
 
   if (-1 == rsp.client_fd)
-  {
-    fprintf (stderr, "Warning: Failed to accept RSP client\n");
-    return;
-  }
+    {
+      fprintf (stderr, "Warning: Failed to accept RSP client\n");
+      return;
+    }
 
   /* Enable TCP keep alive process */
   optval = 1;
@@ -794,8 +797,8 @@ rsp_get_client (void)
 /*---------------------------------------------------------------------------*/
 /*!Deal with a request from the GDB client session
 
-   In general, apart from the simplest requests, this function replies on
-   other functions to implement the functionality.                           */
+  In general, apart from the simplest requests, this function replies on
+  other functions to implement the functionality.                           */
 /*---------------------------------------------------------------------------*/
 static void rsp_client_request (void)
 {
@@ -888,7 +891,7 @@ static void rsp_client_request (void)
       
     case 'H':
       /* Set the thread number of subsequent operations. For now ignore
-	    silently and just reply "OK" */
+	 silently and just reply "OK" */
       put_str_packet ("OK");
       return;
 
@@ -953,25 +956,25 @@ static void rsp_client_request (void)
 
     case 's':
       /* Single step (one high level instruction). This could be hard without
-			DWARF2 info */
+	 DWARF2 info */
       rsp_step (p_buf);
       return;
 
     case 'S':
       /* Single step (one high level instruction) with signal. This could be
-			hard without DWARF2 info */
+	 hard without DWARF2 info */
       rsp_step_with_signal (p_buf);
       return;
 
     case 't':
       /* Search. This is not well defined in the manual and for now we don't
-	 		support it. No response is defined. */
+	 support it. No response is defined. */
       fprintf (stderr, "Warning: RSP 't' packet not supported: ignored\n");
       return;
 
     case 'T':
       /* Is the thread alive. We are bare metal, so don't have a thread
-	 		context. The answer is always "OK". */
+	 context. The answer is always "OK". */
       put_str_packet ("OK");
       return;
 
@@ -1020,12 +1023,12 @@ rsp_client_close (void)
 /*---------------------------------------------------------------------------*/
 /*!Send a packet to the GDB client
 
-   Modeled on the stub version supplied with GDB. Put out the data preceded by
-   a '$', followed by a '#' and a one byte checksum. '$', '#', '*' and '}' are
-   escaped by preceding them with '}' and then XORing the character with
-   0x20.
+  Modeled on the stub version supplied with GDB. Put out the data preceded by
+  a '$', followed by a '#' and a one byte checksum. '$', '#', '*' and '}' are
+  escaped by preceding them with '}' and then XORing the character with
+  0x20.
 
-   @param[in] p_buf  The data to send                                          */
+  @param[in] p_buf  The data to send                                          */
 /*---------------------------------------------------------------------------*/
 static void
 put_packet (struct rsp_buf *p_buf)
@@ -1037,50 +1040,50 @@ put_packet (struct rsp_buf *p_buf)
   /* Construct $<packet info>#<checksum>. Repeat until the GDB client
      acknowledges satisfactory receipt. */
   do
-  {
-    unsigned char checksum = 0;	/* Computed checksum */
-    int           count    = 0;	/* Index into the buffer */
+    {
+      unsigned char checksum = 0;	/* Computed checksum */
+      int           count    = 0;	/* Index into the buffer */
 
-    if (DEBUG_GDB_DUMP_DATA){
-      printf ("Putting %s\n\n", p_buf->data);
-      fflush (stdout);
+      if (DEBUG_GDB_DUMP_DATA){
+	printf ("Putting %s\n\n", p_buf->data);
+	fflush (stdout);
+      }
+
+      len = 0;
+      data[len++] =  '$';			/* Start char */
+
+      /* Body of the packet */
+      for (count = 0; count < p_buf->len; count++)
+	{
+	  unsigned char  ch = p_buf->data[count];
+
+	  /* Check for escaped chars */
+	  if (('$' == ch) || ('#' == ch) || ('*' == ch) || ('}' == ch))
+	    {
+	      ch       ^= 0x20;
+	      checksum += (unsigned char)'}';
+	      data[len++] =  '}';
+	    }
+
+	  checksum += ch;
+	  data[len++] =  ch;
+	}
+
+      data[len++] =  '#';			/* End char */
+
+      /* Computed checksum */
+      data[len++] =	(hexchars[checksum >> 4]);
+      data[len++] =	(hexchars[checksum % 16]);
+
+      send_rsp_str ((unsigned char *) &data, len);
+
+      /* Check for ack of connection failure */
+      ch = get_rsp_char ();
+      if (0 > ch)
+	{
+	  return;			/* Fail the put silently. */
+	}
     }
-
-    len = 0;
-    data[len++] =  '$';			/* Start char */
-
-    /* Body of the packet */
-    for (count = 0; count < p_buf->len; count++)
-		{
-		  unsigned char  ch = p_buf->data[count];
-
-		  /* Check for escaped chars */
-		  if (('$' == ch) || ('#' == ch) || ('*' == ch) || ('}' == ch))
-		    {
-		      ch       ^= 0x20;
-		      checksum += (unsigned char)'}';
-					data[len++] =  '}';
-		    }
-
-		  checksum += ch;
-			data[len++] =  ch;
-		}
-
-		data[len++] =  '#';			/* End char */
-
-    /* Computed checksum */
-    data[len++] =	(hexchars[checksum >> 4]);
-		data[len++] =	(hexchars[checksum % 16]);
-
-		send_rsp_str ((unsigned char *) &data, len);
-
-    /* Check for ack of connection failure */
-    ch = get_rsp_char ();
-    if (0 > ch)
-		{
-		  return;			/* Fail the put silently. */
-		}
-  }
   while ('+' != ch);
   
 }	/* put_packet () */
@@ -1089,7 +1092,7 @@ put_packet (struct rsp_buf *p_buf)
 /*---------------------------------------------------------------------------*/
 /*!Convenience to put a constant string packet
 
-   param[in] str  The text of the packet                                     */
+  param[in] str  The text of the packet                                     */
 /*---------------------------------------------------------------------------*/
 static void
 put_str_packet (const char *str)
@@ -1119,16 +1122,16 @@ put_str_packet (const char *str)
 /*---------------------------------------------------------------------------*/
 /*!Get a packet from the GDB client
   
-   Modeled on the stub version supplied with GDB. The data is in a static
-   buffer. The data should be copied elsewhere if it is to be preserved across
-   a subsequent call to get_packet().
+  Modeled on the stub version supplied with GDB. The data is in a static
+  buffer. The data should be copied elsewhere if it is to be preserved across
+  a subsequent call to get_packet().
 
-   Unlike the reference implementation, we don't deal with sequence
-   numbers. GDB has never used them, and this implementation is only intended
-   for use with GDB 6.8 or later. Sequence numbers were removed from the RSP
-   standard at GDB 5.0.
+  Unlike the reference implementation, we don't deal with sequence
+  numbers. GDB has never used them, and this implementation is only intended
+  for use with GDB 6.8 or later. Sequence numbers were removed from the RSP
+  standard at GDB 5.0.
 
-   @return  A pointer to the static buffer containing the data                */
+  @return  A pointer to the static buffer containing the data                */
 /*---------------------------------------------------------------------------*/
 static struct rsp_buf *
 get_packet (void)
@@ -1137,115 +1140,115 @@ get_packet (void)
 
   /* Keep getting packets, until one is found with a valid checksum */
   while (1)
+    {
+      unsigned char checksum;		/* The checksum we have computed */
+      int           count;			/* Index into the buffer */
+      int 	     		ch;					/* Current character */
+
+      /* Wait around for the start character ('$'). Ignore all other
+	 characters */
+      ch = get_rsp_char ();
+
+      while (ch != '$')
 	{
-		unsigned char checksum;		/* The checksum we have computed */
-		int           count;			/* Index into the buffer */
-		int 	     		ch;					/* Current character */
+	  if (-1 == ch)
+	    {
+	      return  NULL;		/* Connection failed */
+	    }
 
-    /* Wait around for the start character ('$'). Ignore all other
-	  characters */
-    ch = get_rsp_char ();
+	  ch = get_rsp_char ();
 
-    while (ch != '$')
-		{
-		  if (-1 == ch)
-		    {
-		      return  NULL;		/* Connection failed */
-		    }
+	  // Potentially handle an interrupt character (0x03) here		  
+	}
 
-		  ch = get_rsp_char ();
-
-		  // Potentially handle an interrupt character (0x03) here		  
-		}
-
-    /* Read until a '#' or end of buffer is found */
-    checksum =  0;
-    count    =  0;
-    while (count < GDB_BUF_MAX - 1)
-		{
-		  ch = get_rsp_char ();
+      /* Read until a '#' or end of buffer is found */
+      checksum =  0;
+      count    =  0;
+      while (count < GDB_BUF_MAX - 1)
+	{
+	  ch = get_rsp_char ();
 		  
-		  if(rsp.client_waiting && DEBUG_GDB)
-		    {
-		      printf("%x\n",ch);
-		    }
+	  if(rsp.client_waiting && DEBUG_GDB)
+	    {
+	      printf("%x\n",ch);
+	    }
 
 
-		  /* Check for connection failure */
-		  if (0 > ch)
-		    {
-		      return  NULL;
-		    }
+	  /* Check for connection failure */
+	  if (0 > ch)
+	    {
+	      return  NULL;
+	    }
 
-		  /* If we hit a start of line char begin all over again */
-		  if ('$' == ch)
-		    {
-		      checksum =  0;
-		      count    =  0;
+	  /* If we hit a start of line char begin all over again */
+	  if ('$' == ch)
+	    {
+	      checksum =  0;
+	      count    =  0;
 
-		      continue;
-		    }
+	      continue;
+	    }
 
-		  /* Break out if we get the end of line char */
-		  if ('#' == ch)
-		    {
-		      break;
-		    }
+	  /* Break out if we get the end of line char */
+	  if ('#' == ch)
+	    {
+	      break;
+	    }
 
-		  /* Update the checksum and add the char to the buffer */
+	  /* Update the checksum and add the char to the buffer */
 
-		  checksum        = checksum + (unsigned char)ch;
-		  buf.data[count] = (char)ch;
-		  count           = count + 1;
-		}
+	  checksum        = checksum + (unsigned char)ch;
+	  buf.data[count] = (char)ch;
+	  count           = count + 1;
+	}
 
-    /* Mark the end of the buffer with EOS - it's convenient for non-binary
-	  data to be valid strings. */
-    buf.data[count] = 0;
-    buf.len         = count;
+      /* Mark the end of the buffer with EOS - it's convenient for non-binary
+	 data to be valid strings. */
+      buf.data[count] = 0;
+      buf.len         = count;
 
-    /* If we have a valid end of packet char, validate the checksum */
-    if ('#' == ch)
-		{
-		  unsigned char  xmitcsum;	/* The checksum in the packet */
+      /* If we have a valid end of packet char, validate the checksum */
+      if ('#' == ch)
+	{
+	  unsigned char  xmitcsum;	/* The checksum in the packet */
 
-		  ch = get_rsp_char ();
-		  if (0 > ch)
-		    {
-		      return  NULL;		/* Connection failed */
-		    }
-		  xmitcsum = hex (ch) << 4;
+	  ch = get_rsp_char ();
+	  if (0 > ch)
+	    {
+	      return  NULL;		/* Connection failed */
+	    }
+	  xmitcsum = hex (ch) << 4;
 
-		  ch = get_rsp_char ();
-		  if (0 > ch)
-		    {
-		      return  NULL;		/* Connection failed */
-		    }
+	  ch = get_rsp_char ();
+	  if (0 > ch)
+	    {
+	      return  NULL;		/* Connection failed */
+	    }
 
-		  xmitcsum += hex (ch);
+	  xmitcsum += hex (ch);
 
-		  /* If the checksums don't match print a warning, and put the
-		     negative ack back to the client. Otherwise put a positive ack. */
-		  if (checksum != xmitcsum)
-		    {
-		      fprintf (stderr, "Warning: Bad RSP checksum: Computed "
-			       "0x%02x, received 0x%02x\n", checksum, xmitcsum);
+	  /* If the checksums don't match print a warning, and put the
+	     negative ack back to the client. Otherwise put a positive ack. */
+	  if (checksum != xmitcsum)
+	    {
+	      fprintf (stderr, "Warning: Bad RSP checksum: Computed "
+		       "0x%02x, received 0x%02x\n", checksum, xmitcsum);
 
-					ch = '-';
-		      send_rsp_str ((unsigned char *) &ch, 1);	/* Failed checksum */
-		    }
-		  else
-		    {
-					ch = '+';
-		      send_rsp_str ((unsigned char *) &ch, 1);	/* successful transfer */
-		      break;
-		    }
-		}
-    else
-		{
-		  fprintf (stderr, "Warning: RSP packet overran buffer\n");
-		}
-  }
+	      ch = '-';
+	      send_rsp_str ((unsigned char *) &ch, 1);	/* Failed checksum */
+	    }
+	  else
+	    {
+	      ch = '+';
+	      send_rsp_str ((unsigned char *) &ch, 1);	/* successful transfer */
+	      break;
+	    }
+	}
+      else
+	{
+	  fprintf (stderr, "Warning: RSP packet overran buffer\n");
+	}
+    }
   return &buf;				/* Success */
 }	/* get_packet () */
 
@@ -1253,9 +1256,9 @@ get_packet (void)
 /*---------------------------------------------------------------------------*/
 /*!Put a single character out onto the client socket
 
-   This should only be called if the client is open, but we check for safety.
+  This should only be called if the client is open, but we check for safety.
 
-   @param[in] c  The character to put out                                    */
+  @param[in] c  The character to put out                                    */
 /*---------------------------------------------------------------------------*/
 static void
 send_rsp_str (unsigned char *data, int len)
@@ -1272,26 +1275,26 @@ send_rsp_str (unsigned char *data, int len)
   while (1)
     {
       switch (write (rsp.client_fd, data, len))
-			{
-			case -1:
-			  /* Error: only allow interrupts or would block */
-			  if ((EAGAIN != errno) && (EINTR != errno))
-			    {
-			      fprintf (stderr, "Warning: Failed to write to RSP client: "
-				       "Closing client connection: %s\n",
-				       strerror (errno));
-			      rsp_client_close ();
-			      return;
-			    }
+	{
+	case -1:
+	  /* Error: only allow interrupts or would block */
+	  if ((EAGAIN != errno) && (EINTR != errno))
+	    {
+	      fprintf (stderr, "Warning: Failed to write to RSP client: "
+		       "Closing client connection: %s\n",
+		       strerror (errno));
+	      rsp_client_close ();
+	      return;
+	    }
 		      
-			  break;
+	  break;
 
-			case 0:
-			  break;		/* Nothing written! Try again */
+	case 0:
+	  break;		/* Nothing written! Try again */
 
-			default:
-			  return;		/* Success, we can return */
-			}
+	default:
+	  return;		/* Success, we can return */
+	}
     }
 }	/* send_rsp_str () */
 
@@ -1299,9 +1302,9 @@ send_rsp_str (unsigned char *data, int len)
 /*---------------------------------------------------------------------------*/
 /*!Get a single character from the client socket
 
-   This should only be called if the client is open, but we check for safety.
+  This should only be called if the client is open, but we check for safety.
 
-   @return  The character read, or -1 on failure                             */
+  @return  The character read, or -1 on failure                             */
 /*---------------------------------------------------------------------------*/
 static int
 get_rsp_char ()
@@ -1357,11 +1360,11 @@ static char
 rsp_peek()
 {
   /*
-  if (-1 == rsp.client_fd)
+    if (-1 == rsp.client_fd)
     {
-      fprintf (stderr, "Warning: Attempt to read from unopened RSP "
-	       "client: Ignored\n");
-      return  -1;
+    fprintf (stderr, "Warning: Attempt to read from unopened RSP "
+    "client: Ignored\n");
+    return  -1;
     }
   */
   char  c;
@@ -1388,7 +1391,7 @@ rsp_peek()
 /*---------------------------------------------------------------------------*/
 /*!Handle an interrupt from GDB
 
- Detect an interrupt from GDB and stall the processor                        */
+  Detect an interrupt from GDB and stall the processor                        */
 /*---------------------------------------------------------------------------*/
 static void 
 rsp_interrupt()
@@ -1430,14 +1433,14 @@ rsp_interrupt()
 /*---------------------------------------------------------------------------*/
 /*!"Unescape" RSP binary data
 
-   '#', '$' and '}' are escaped by preceding them by '}' and oring with 0x20.
+  '#', '$' and '}' are escaped by preceding them by '}' and oring with 0x20.
 
-   This function reverses that, modifying the data in place.
+  This function reverses that, modifying the data in place.
 
-   @param[in] data  The array of bytes to convert
-   @para[in]  len   The number of bytes to be converted
+  @param[in] data  The array of bytes to convert
+  @para[in]  len   The number of bytes to be converted
 
-   @return  The number of bytes AFTER conversion                             */
+  @return  The number of bytes AFTER conversion                             */
 /*---------------------------------------------------------------------------*/
 static int
 rsp_unescape (char *data,
@@ -1450,14 +1453,14 @@ rsp_unescape (char *data,
     {
       /* Is it escaped */
       if ( '}' == data[from_off])
-			{
-			  from_off++;
-			  data[to_off] = data[from_off] ^ 0x20;
-			}
-		  else
-			{
-			  data[to_off] = data[from_off];
-			}
+	{
+	  from_off++;
+	  data[to_off] = data[from_off] ^ 0x20;
+	}
+      else
+	{
+	  data[to_off] = data[from_off];
+	}
 
       from_off++;
       to_off++;
@@ -1471,8 +1474,8 @@ rsp_unescape (char *data,
 /*---------------------------------------------------------------------------*/
 /*!Initialize the matchpoint hash table
 
-   This is an open hash table, so this function clears all the links to
-   NULL.                                                                     */
+  This is an open hash table, so this function clears all the links to
+  NULL.                                                                     */
 /*---------------------------------------------------------------------------*/
 static void
 mp_hash_init (void)
@@ -1489,14 +1492,14 @@ mp_hash_init (void)
 /*---------------------------------------------------------------------------*/
 /*!Add an entry to the matchpoint hash table
 
-   Add the entry if it wasn't already there. If it was there do nothing. The
-   match just be on type and addr. The instr need not match, since if this is
-   a duplicate insertion (perhaps due to a lost packet) they will be
-   different.
+  Add the entry if it wasn't already there. If it was there do nothing. The
+  match just be on type and addr. The instr need not match, since if this is
+  a duplicate insertion (perhaps due to a lost packet) they will be
+  different.
 
-   @param[in] type   The type of matchpoint
-   @param[in] addr   The address of the matchpoint
-   @para[in]  instr  The instruction to associate with the address           */
+  @param[in] type   The type of matchpoint
+  @param[in] addr   The address of the matchpoint
+  @para[in]  instr  The instruction to associate with the address           */
 /*---------------------------------------------------------------------------*/
 static void
 mp_hash_add (enum mp_type type,
@@ -1508,12 +1511,12 @@ mp_hash_add (enum mp_type type,
 
   /* See if we already have the entry */
   for(curr = rsp.mp_hash[hv]; NULL != curr; curr = curr->next)
-  {
-    if ((type == curr->type) && (addr == curr->addr))
-		{
-		  return;		/* We already have the entry */
-		}
-  }
+    {
+      if ((type == curr->type) && (addr == curr->addr))
+	{
+	  return;		/* We already have the entry */
+	}
+    }
 
   /* Insert the new entry at the head of the chain */
   curr = (struct mp_entry*) malloc (sizeof (*curr));
@@ -1531,12 +1534,12 @@ mp_hash_add (enum mp_type type,
 /*---------------------------------------------------------------------------*/
 /*!Look up an entry in the matchpoint hash table
 
-   The match must be on type AND addr.
+  The match must be on type AND addr.
 
-   @param[in] type   The type of matchpoint
-   @param[in] addr   The address of the matchpoint
+  @param[in] type   The type of matchpoint
+  @param[in] addr   The address of the matchpoint
 
-   @return  The entry deleted, or NULL if the entry was not found            */
+  @return  The entry deleted, or NULL if the entry was not found            */
 /*---------------------------------------------------------------------------*/
 static struct mp_entry * mp_hash_lookup (enum mp_type type,	uint32_t addr)
 {
@@ -1545,12 +1548,12 @@ static struct mp_entry * mp_hash_lookup (enum mp_type type,	uint32_t addr)
 
   /* Search */
   for (curr = rsp.mp_hash[hv]; NULL != curr; curr = curr->next)
-  {
-    if ((type == curr->type) && (addr == curr->addr))
-		{
-		  return  curr;		/* The entry found */
-		}
-  }
+    {
+      if ((type == curr->type) && (addr == curr->addr))
+	{
+	  return  curr;		/* The entry found */
+	}
+    }
 
   /* Not found */
   return  NULL;
@@ -1561,20 +1564,20 @@ static struct mp_entry * mp_hash_lookup (enum mp_type type,	uint32_t addr)
 /*---------------------------------------------------------------------------*/
 /*!Delete an entry from the matchpoint hash table
 
-   If it is there the entry is deleted from the hash table. If it is not
-   there, no action is taken. The match must be on type AND addr.
+  If it is there the entry is deleted from the hash table. If it is not
+  there, no action is taken. The match must be on type AND addr.
 
-   The usual fun and games tracking the previous entry, so we can delete
-   things.
+  The usual fun and games tracking the previous entry, so we can delete
+  things.
 
-   @note  The deletion DOES NOT free the memory associated with the entry,
-          since that is returned. The caller should free the memory when they
-          have used the information.
+  @note  The deletion DOES NOT free the memory associated with the entry,
+  since that is returned. The caller should free the memory when they
+  have used the information.
 
-   @param[in] type   The type of matchpoint
-   @param[in] addr   The address of the matchpoint
+  @param[in] type   The type of matchpoint
+  @param[in] addr   The address of the matchpoint
 
-   @return  The entry deleted, or NULL if the entry was not found            */
+  @return  The entry deleted, or NULL if the entry was not found            */
 /*---------------------------------------------------------------------------*/
 static struct mp_entry *
 mp_hash_delete (enum mp_type       type,
@@ -1615,18 +1618,18 @@ mp_hash_delete (enum mp_type       type,
 /*---------------------------------------------------------------------------*/
 /*!Utility to give the value of a hex char
 
-   @param[in] ch  A character representing a hexadecimal digit. Done as -1,
-                  for consistency with other character routines, which can use
-                  -1 as EOF.
+  @param[in] ch  A character representing a hexadecimal digit. Done as -1,
+  for consistency with other character routines, which can use
+  -1 as EOF.
 
-   @return  The value of the hex character, or -1 if the character is
-            invalid.                                                         */
+  @return  The value of the hex character, or -1 if the character is
+  invalid.                                                         */
 /*---------------------------------------------------------------------------*/
 static int hex (int  c)
 {
   return  ((c >= 'a') && (c <= 'f')) ? c - 'a' + 10 :
-          ((c >= '0') && (c <= '9')) ? c - '0' :
-          ((c >= 'A') && (c <= 'F')) ? c - 'A' + 10 : -1;
+    ((c >= '0') && (c <= '9')) ? c - '0' :
+    ((c >= 'A') && (c <= 'F')) ? c - 'A' + 10 : -1;
 
 }	/* hex () */
 
@@ -1634,27 +1637,27 @@ static int hex (int  c)
 /*---------------------------------------------------------------------------*/
 /*!Convert a register to a hex digit string
 
-   The supplied 32-bit value is converted to an 8 digit hex string according
-   the target endianism. It is null terminated for convenient printing.
+  The supplied 32-bit value is converted to an 8 digit hex string according
+  the target endianism. It is null terminated for convenient printing.
 
-   @param[in]  val  The value to convert
-   @param[out] p_buf  The buffer for the text string                           */
+  @param[in]  val  The value to convert
+  @param[out] p_buf  The buffer for the text string                           */
 /*---------------------------------------------------------------------------*/
 static void
 reg2hex (uint32_t  val, char *p_buf)
 {
   int  n;			/* Counter for digits */
-	int  nyb_shift;
+  int  nyb_shift;
 
   for (n = 0; n < 8; n++)
     {
 #ifdef WORDSBIGENDIAN
       if(n%2==0){
       	nyb_shift = n * 4 + 4;
-			}
-			else{
-				nyb_shift = n * 4 - 4;
-			}
+      }
+      else{
+	nyb_shift = n * 4 - 4;
+      }
 #else
       nyb_shift = 28 - (n * 4);
 #endif
@@ -1669,12 +1672,12 @@ reg2hex (uint32_t  val, char *p_buf)
 /*---------------------------------------------------------------------------*/
 /*!Convert a hex digit string to a register value
 
-   The supplied 8 digit hex string is converted to a 32-bit value according
-   the target endianism
+  The supplied 8 digit hex string is converted to a 32-bit value according
+  the target endianism
 
-   @param[in] p_buf  The buffer with the hex string
+  @param[in] p_buf  The buffer with the hex string
 
-   @return  The value to convert                                             */
+  @return  The value to convert                                             */
 /*---------------------------------------------------------------------------*/
 static uint32_t
 hex2reg (char *p_buf)
@@ -1700,10 +1703,10 @@ hex2reg (char *p_buf)
 /*---------------------------------------------------------------------------*/
 /*!Convert an ASCII character string to pairs of hex digits
 
-   Both source and destination are null terminated.
+  Both source and destination are null terminated.
 
-   @param[out] dest  Buffer to store the hex digit pairs (null terminated)
-   @param[in]  src   The ASCII string (null terminated)                      */
+  @param[out] dest  Buffer to store the hex digit pairs (null terminated)
+  @param[in]  src   The ASCII string (null terminated)                      */
 /*---------------------------------------------------------------------------*/
 static void  ascii2hex (char *dest,
 			char *src)
@@ -1727,10 +1730,10 @@ static void  ascii2hex (char *dest,
 /*---------------------------------------------------------------------------*/
 /*!Convert pairs of hex digits to an ASCII character string
 
-   Both source and destination are null terminated.
+  Both source and destination are null terminated.
 
-   @param[out] dest  The ASCII string (null terminated)
-   @param[in]  src   Buffer holding the hex digit pairs (null terminated)    */
+  @param[out] dest  The ASCII string (null terminated)
+  @param[in]  src   Buffer holding the hex digit pairs (null terminated)    */
 /*---------------------------------------------------------------------------*/
 static void  hex2ascii (char *dest,
 			char *src)
@@ -1751,14 +1754,14 @@ static void  hex2ascii (char *dest,
 /*---------------------------------------------------------------------------*/
 /*!Set the program counter
 
-   This sets the value in the NPC SPR. Not completely trivial, since this is
-   actually cached in cpu_state.pc. Any reset of the NPC also involves
-   clearing the delay state and setting the pcnext global.
+  This sets the value in the NPC SPR. Not completely trivial, since this is
+  actually cached in cpu_state.pc. Any reset of the NPC also involves
+  clearing the delay state and setting the pcnext global.
 
-   Only actually do this if the requested address is different to the current
-   NPC (avoids clearing the delay pipe).
+  Only actually do this if the requested address is different to the current
+  NPC (avoids clearing the delay pipe).
 
-   @param[in] addr  The address to use                                       */
+  @param[in] addr  The address to use                                       */
 /*---------------------------------------------------------------------------*/
 static void
 set_npc (uint32_t  addr)
@@ -1769,24 +1772,24 @@ set_npc (uint32_t  addr)
 
 
   if (addr != get_npc())
-  {
+    {
 
-    gdb_write_reg(NPC_CPU_REG_ADD, addr);
+      gdb_write_reg(NPC_CPU_REG_ADD, addr);
     
-    if (STALLED == stallState)
-      {
-	if (DEBUG_GDB) printf("set_npc(): New NPC value (0x%08x) written and locally cached \n", addr);
-	npcCachedValue = addr;
-	npcIsCached = 1;
-      }
-    else
-      {
-	if (DEBUG_GDB) printf("set_npc(): New NPC value (0x%08x) written \n", addr);
-	npcIsCached = 0;
-      }
+      if (STALLED == stallState)
+	{
+	  if (DEBUG_GDB) printf("set_npc(): New NPC value (0x%08x) written and locally cached \n", addr);
+	  npcCachedValue = addr;
+	  npcIsCached = 1;
+	}
+      else
+	{
+	  if (DEBUG_GDB) printf("set_npc(): New NPC value (0x%08x) written \n", addr);
+	  npcIsCached = 0;
+	}
     
 
-  }
+    }
   else
     return;
 
@@ -1850,7 +1853,7 @@ static uint32_t get_npc ()
 /*---------------------------------------------------------------------------*/
 /*!Send a packet acknowledging an exception has occurred
 
-   This is only called if there is a client FD to talk to                    */
+  This is only called if there is a client FD to talk to                    */
 /*---------------------------------------------------------------------------*/
 static void
 rsp_report_exception (void)
@@ -1872,10 +1875,10 @@ rsp_report_exception (void)
 /*---------------------------------------------------------------------------*/
 /*!Handle a RSP continue request
 
-   Parse the command to see if there is an address. Uses the underlying
-   generic continue function, with EXCEPT_NONE.
+  Parse the command to see if there is an address. Uses the underlying
+  generic continue function, with EXCEPT_NONE.
 
-   @param[in] p_buf  The full continue packet                                  */
+  @param[in] p_buf  The full continue packet                                  */
 /*---------------------------------------------------------------------------*/
 static void
 rsp_continue (struct rsp_buf *p_buf)
@@ -1895,21 +1898,21 @@ rsp_continue (struct rsp_buf *p_buf)
   }
 
   if (0 == strcmp ("c", p_buf->data))
-  {
-    // Arc Sim Code -->   addr = cpu_state.pc;	/* Default uses current NPC */
-    /* ---------- NPC ---------- */
-    addr = get_npc();
-  }
+    {
+      // Arc Sim Code -->   addr = cpu_state.pc;	/* Default uses current NPC */
+      /* ---------- NPC ---------- */
+      addr = get_npc();
+    }
   else if (1 != sscanf (p_buf->data, "c%x", &addr))
-  {
-    fprintf (stderr,
-       "Warning: RSP continue address %s not recognized: ignored\n",
-       p_buf->data);
+    {
+      fprintf (stderr,
+	       "Warning: RSP continue address %s not recognized: ignored\n",
+	       p_buf->data);
 
-    // Arc Sim Code -->   addr = cpu_state.pc;	/* Default uses current NPC */
-    /* ---------- NPC ---------- */
-    addr = get_npc();
-  }
+      // Arc Sim Code -->   addr = cpu_state.pc;	/* Default uses current NPC */
+      /* ---------- NPC ---------- */
+      addr = get_npc();
+    }
 
   if (DEBUG_GDB) printf("rsp_continue() --> Read NPC = 0x%08x\n", addr);
 
@@ -1921,9 +1924,9 @@ rsp_continue (struct rsp_buf *p_buf)
 /*---------------------------------------------------------------------------*/
 /*!Handle a RSP continue with signal request
 
-   Currently null. Will use the underlying generic continue function.
+  Currently null. Will use the underlying generic continue function.
 
-   @param[in] p_buf  The full continue with signal packet                      */
+  @param[in] p_buf  The full continue with signal packet                      */
 /*---------------------------------------------------------------------------*/
 static void
 rsp_continue_with_signal (struct rsp_buf *p_buf)
@@ -1937,14 +1940,14 @@ rsp_continue_with_signal (struct rsp_buf *p_buf)
 /*---------------------------------------------------------------------------*/
 /*!Generic processing of a continue request
 
-   The signal may be EXCEPT_NONE if there is no exception to be
-   handled. Currently the exception is ignored.
+  The signal may be EXCEPT_NONE if there is no exception to be
+  handled. Currently the exception is ignored.
 
-   The single step flag is cleared in the debug registers and then the
-   processor is unstalled.
+  The single step flag is cleared in the debug registers and then the
+  processor is unstalled.
 
-   @param[in] addr    Address from which to step
-   @param[in] except  The exception to use (if any)                          */
+  @param[in] addr    Address from which to step
+  @param[in] except  The exception to use (if any)                          */
 /*---------------------------------------------------------------------------*/
 static void
 rsp_continue_generic (uint32_t  addr,
@@ -1989,11 +1992,11 @@ rsp_continue_generic (uint32_t  addr,
 /*---------------------------------------------------------------------------*/
 /*!Handle a RSP read all registers request
 
-   The registers follow the GDB sequence for OR1K: GPR0 through GPR31, PPC
-   (i.e. SPR PPC), NPC (i.e. SPR NPC) and SR (i.e. SPR SR). Each register is
-   returned as a sequence of bytes in target endian order.
+  The registers follow the GDB sequence for OR1K: GPR0 through GPR31, PPC
+  (i.e. SPR PPC), NPC (i.e. SPR NPC) and SR (i.e. SPR SR). Each register is
+  returned as a sequence of bytes in target endian order.
 
-   Each byte is packed as a pair of hex digits.                              */
+  Each byte is packed as a pair of hex digits.                              */
 /*---------------------------------------------------------------------------*/
 static void
 rsp_read_all_regs (void)
@@ -2042,57 +2045,57 @@ rsp_read_all_regs (void)
   /* ---------- PPC ---------- */
   err = gdb_read_reg(PPC_CPU_REG_ADD, &temp_uint32);
   if(err > 0){
-  	if (DEBUG_GDB) printf("Error %d in gdb_read_reg read --> PPC\n", err);
-  	put_str_packet ("E01");
-  	return;
+    if (DEBUG_GDB) printf("Error %d in gdb_read_reg read --> PPC\n", err);
+    put_str_packet ("E01");
+    return;
   }
   reg2hex (temp_uint32, &(buffer.data[PPC_REGNUM * 8]));
   if (DEBUG_GDB_DUMP_DATA)	printf("PPC     0x%08x\n", temp_uint32);
   /* ---------- NPC ---------- */
   temp_uint32 = get_npc();
   /*
-  err = gdb_read_reg(NPC_CPU_REG_ADD, &temp_uint32);
-  if(err > 0){
-  	if (DEBUG_GDB) printf("Error %d in gdb_read_reg read --> NPC\n", err);
-  	put_str_packet ("E01");
-  	return;
-  }
+    err = gdb_read_reg(NPC_CPU_REG_ADD, &temp_uint32);
+    if(err > 0){
+    if (DEBUG_GDB) printf("Error %d in gdb_read_reg read --> NPC\n", err);
+    put_str_packet ("E01");
+    return;
+    }
   */
   reg2hex (temp_uint32, &(buffer.data[NPC_REGNUM * 8]));
   if (DEBUG_GDB_DUMP_DATA)	printf("NPC     0x%08x\n", temp_uint32);
   /* ---------- SR ---------- */
   err = gdb_read_reg(SR_CPU_REG_ADD, &temp_uint32);
   if(err > 0){
-  	if (DEBUG_GDB) printf("Error %d in gdb_read_reg read --> SP\n", err);
-  	put_str_packet ("E01");
-  	return;
+    if (DEBUG_GDB) printf("Error %d in gdb_read_reg read --> SP\n", err);
+    put_str_packet ("E01");
+    return;
   }
   reg2hex (temp_uint32, &(buffer.data[SR_REGNUM * 8]));
-	if (DEBUG_GDB_DUMP_DATA)	printf("SR      0x%08x\n", temp_uint32);
+  if (DEBUG_GDB_DUMP_DATA)	printf("SR      0x%08x\n", temp_uint32);
 
   /* Finalize the packet and send it */
   buffer.data[NUM_REGS * 8] = 0;
   buffer.len                = NUM_REGS * 8;
 
   put_packet (&buffer);
-	return;
+  return;
 }	/* rsp_read_all_regs () */
 
 
 /*---------------------------------------------------------------------------*/
 /*!Handle a RSP write all registers request
 
-   The registers follow the GDB sequence for OR1K: GPR0 through GPR31, PPC
-   (i.e. SPR PPC), NPC (i.e. SPR NPC) and SR (i.e. SPR SR). Each register is
-   supplied as a sequence of bytes in target endian order.
+  The registers follow the GDB sequence for OR1K: GPR0 through GPR31, PPC
+  (i.e. SPR PPC), NPC (i.e. SPR NPC) and SR (i.e. SPR SR). Each register is
+  supplied as a sequence of bytes in target endian order.
 
-   Each byte is packed as a pair of hex digits.
+  Each byte is packed as a pair of hex digits.
 
-   @todo There is no error checking at present. Non-hex chars will generate a
-         warning message, but there is no other check that the right amount
-         of data is present. The result is always "OK".
+  @todo There is no error checking at present. Non-hex chars will generate a
+  warning message, but there is no other check that the right amount
+  of data is present. The result is always "OK".
 
-   @param[in] p_buf  The original packet request.                              */
+  @param[in] p_buf  The original packet request.                              */
 /*---------------------------------------------------------------------------*/
 static void
 rsp_write_all_regs (struct rsp_buf *p_buf)
@@ -2115,45 +2118,45 @@ rsp_write_all_regs (struct rsp_buf *p_buf)
   // First set the chain 
   err = gdb_set_chain(SC_RISC_DEBUG);	/* 1 RISC Debug Interface chain */
   if(err > 0){
-  	if (DEBUG_GDB) printf("Error %d in gdb_set_chain\n", err);
+    if (DEBUG_GDB) printf("Error %d in gdb_set_chain\n", err);
     put_str_packet ("E01");
-  	return;
-	}
+    return;
+  }
 
   /* ---------- GPRS ---------- */
   for (regnum = 0; regnum < MAX_GPRS; regnum++)
-  {
-    err = gdb_write_reg(0x400 + regnum, hex2reg (&p_buf->data[regnum * 8 + 1]));
-	  if(err > 0){
-	  	if (DEBUG_GDB) printf("Error %d in rsp_write_reg write --> GPRS\n", err);
-	    put_str_packet ("E01");
-	  	return;
-	  }
-  }																	 
+    {
+      err = gdb_write_reg(0x400 + regnum, hex2reg (&p_buf->data[regnum * 8 + 1]));
+      if(err > 0){
+	if (DEBUG_GDB) printf("Error %d in rsp_write_reg write --> GPRS\n", err);
+	put_str_packet ("E01");
+	return;
+      }
+    }																	 
   
   /* ---------- PPC ---------- */
   err = gdb_write_reg(PPC_CPU_REG_ADD, hex2reg (&p_buf->data[PPC_REGNUM * 8 + 1]));
   if(err > 0){
-  	if (DEBUG_GDB) printf("Error %d in rsp_write_reg write --> PPC\n", err);
+    if (DEBUG_GDB) printf("Error %d in rsp_write_reg write --> PPC\n", err);
     put_str_packet ("E01");
-  	return;
+    return;
   }
   /* ---------- SR ---------- */
   err = gdb_write_reg(SR_CPU_REG_ADD, hex2reg (&p_buf->data[SR_REGNUM * 8 + 1]));
   if(err > 0){
-  	if (DEBUG_GDB) printf("Error %d in rsp_write_reg write --> SR\n", err);
+    if (DEBUG_GDB) printf("Error %d in rsp_write_reg write --> SR\n", err);
     put_str_packet ("E01");
-  	return;
+    return;
   }
   /* ---------- NPC ---------- */
   set_npc(hex2reg (&p_buf->data[NPC_REGNUM * 8 + 1]));
   /*
-  err = gdb_write_reg(NPC_CPU_REG_ADD, hex2reg (&p_buf->data[NPC_REGNUM * 8 + 1]));
-  if(err > 0){
-  	if (DEBUG_GDB) printf("Error %d in rsp_write_reg write --> NPC\n", err);
+    err = gdb_write_reg(NPC_CPU_REG_ADD, hex2reg (&p_buf->data[NPC_REGNUM * 8 + 1]));
+    if(err > 0){
+    if (DEBUG_GDB) printf("Error %d in rsp_write_reg write --> NPC\n", err);
     put_str_packet ("E01");
-  	return;
-  }
+    return;
+    }
   */
   /* Acknowledge. TODO: We always succeed at present, even if the data was
      defective. */
@@ -2166,7 +2169,7 @@ rsp_write_all_regs (struct rsp_buf *p_buf)
 
    Syntax is:
 
-     m<addr>,<length>:
+   m<addr>,<length>:
 
    The response is the bytes, lowest address first, encoded as pairs of hex
    digits.
@@ -2195,20 +2198,20 @@ static void rsp_read_mem (struct rsp_buf *p_buf)
 
 
   if (2 != sscanf (p_buf->data, "m%x,%x:", &addr, &len))
-  {
-    fprintf (stderr, "Warning: Failed to recognize RSP read memory "
-       "command: %s\n", p_buf->data);
-    put_str_packet ("E01");
-    return;
-  }
+    {
+      fprintf (stderr, "Warning: Failed to recognize RSP read memory "
+	       "command: %s\n", p_buf->data);
+      put_str_packet ("E01");
+      return;
+    }
 
   /* Make sure we won't overflow the buffer (2 chars per byte) */
   if ((len * 2) >= GDB_BUF_MAX_TIMES_TWO)
-  {
-    fprintf (stderr, "Warning: Memory read %s too large for RSP packet: "
-       "truncated\n", p_buf->data);
-    len = (GDB_BUF_MAX - 1) / 2;
-	}
+    {
+      fprintf (stderr, "Warning: Memory read %s too large for RSP packet: "
+	       "truncated\n", p_buf->data);
+      len = (GDB_BUF_MAX - 1) / 2;
+    }
 
   if(!(rec_buf = (char*)malloc(len))) {
     put_str_packet ("E01");
@@ -2291,7 +2294,7 @@ static void rsp_read_mem (struct rsp_buf *p_buf)
   }
 
   if (DEBUG_GDB && (err > 0)) printf("\nError %x\n", err);fflush (stdout);
-	free(rec_buf);
+  free(rec_buf);
   p_buf->data[off * 2] = 0;			/* End of string */
   p_buf->len           = strlen (p_buf->data);
   if (DEBUG_GDB_BLOCK_DATA){
@@ -2309,24 +2312,24 @@ static void rsp_read_mem (struct rsp_buf *p_buf)
 /*---------------------------------------------------------------------------*/
 /*!Handle a RSP write memory (symbolic) request	 ("M")
 
-   Syntax is:
+  Syntax is:
 
-     M<addr>,<length>:<data>
+  M<addr>,<length>:<data>
 
-  	Example: M4015cc,2:c320# 
-	  (Write the value 0xc320 to address 0x4015cc.) 
+  Example: M4015cc,2:c320# 
+  (Write the value 0xc320 to address 0x4015cc.) 
 
-		An example target response: 
-		+ $OK# 
+  An example target response: 
+  + $OK# 
 
-   The data is the bytes, lowest address first, encoded as pairs of hex
-   digits.
+  The data is the bytes, lowest address first, encoded as pairs of hex
+  digits.
 
-   The length given is the number of bytes to be written.
+  The length given is the number of bytes to be written.
 
-   @note This function reuses p_buf, so trashes the original command.
+  @note This function reuses p_buf, so trashes the original command.
 
-   @param[in] p_buf  The command received                                      */
+  @param[in] p_buf  The command received                                      */
 /*---------------------------------------------------------------------------*/
 static void
 rsp_write_mem (struct rsp_buf *p_buf)
@@ -2337,15 +2340,15 @@ rsp_write_mem (struct rsp_buf *p_buf)
   int             datlen;		/* Number of digits in symbolic data */
   int             off;			/* Offset into the memory */
   int             nibc;			/* Nibbel counter */
-	uint32_t   val;
+  uint32_t   val;
   
   if (2 != sscanf (p_buf->data, "M%x,%x:", &addr, &len))
-  {
-    fprintf (stderr, "Warning: Failed to recognize RSP write memory "
-       "command: %s\n", p_buf->data);
-    put_str_packet ("E01");
-    return;
-  }
+    {
+      fprintf (stderr, "Warning: Failed to recognize RSP write memory "
+	       "command: %s\n", p_buf->data);
+      put_str_packet ("E01");
+      return;
+    }
 
   /* Find the start of the data and check there is the amount we expect. */
   symdat = (char*) memchr ((const void *)p_buf->data, ':', GDB_BUF_MAX) + 1;
@@ -2353,12 +2356,12 @@ rsp_write_mem (struct rsp_buf *p_buf)
 
   /* Sanity check */
   if (len * 2 != datlen)
-  {
-    fprintf (stderr, "Warning: Write of %d digits requested, but %d digits "
-       "supplied: packet ignored\n", len * 2, datlen );
-    put_str_packet ("E01");
-    return;
-  }
+    {
+      fprintf (stderr, "Warning: Write of %d digits requested, but %d digits "
+	       "supplied: packet ignored\n", len * 2, datlen );
+      put_str_packet ("E01");
+      return;
+    }
 
   // Make sure the processor is stalled
   gdb_ensure_or1k_stalled();
@@ -2366,29 +2369,29 @@ rsp_write_mem (struct rsp_buf *p_buf)
 
   // Set chain 5 --> Wishbone Memory chain
   err = gdb_set_chain(SC_WISHBONE);
-	if(err){
+  if(err){
     put_str_packet ("E01");
     return;
-	}
+  }
 		
-	val = 0;
-	off = 0;
+  val = 0;
+  off = 0;
   /* Write the bytes to memory */
   for (nibc = 0; nibc < datlen; nibc++)
-  {
-		val |= 0x0000000f & hex (symdat[nibc]);
-		if(nibc % 8 == 7){
-			err = gdb_write_block(addr + off, &val, 4);
-			if (DEBUG_GDB) printf("Error %x\n", err);fflush (stdout);
-			if(err){
-				put_str_packet ("E01");
-				return;
-			}
-		  val = 0;
-			off += 4;
-		}	  
-	  val <<= 4;
-  }
+    {
+      val |= 0x0000000f & hex (symdat[nibc]);
+      if(nibc % 8 == 7){
+	err = gdb_write_block(addr + off, &val, 4);
+	if (DEBUG_GDB) printf("Error %x\n", err);fflush (stdout);
+	if(err){
+	  put_str_packet ("E01");
+	  return;
+	}
+	val = 0;
+	off += 4;
+      }	  
+      val <<= 4;
+    }
   put_str_packet ("OK");
 }	/* rsp_write_mem () */
 
@@ -2396,19 +2399,19 @@ rsp_write_mem (struct rsp_buf *p_buf)
 /*---------------------------------------------------------------------------*/
 /*!Read a single register
 
-   The registers follow the GDB sequence for OR1K: GPR0 through GPR31, PC
-   (i.e. SPR NPC) and SR (i.e. SPR SR). The register is returned as a
-   sequence of bytes in target endian order.
+  The registers follow the GDB sequence for OR1K: GPR0 through GPR31, PC
+  (i.e. SPR NPC) and SR (i.e. SPR SR). The register is returned as a
+  sequence of bytes in target endian order.
 
-   Each byte is packed as a pair of hex digits.
+  Each byte is packed as a pair of hex digits.
 
-   @param[in] p_buf  The original packet request. Reused for the reply.        */
+  @param[in] p_buf  The original packet request. Reused for the reply.        */
 /*---------------------------------------------------------------------------*/
 static void
 rsp_read_reg (struct rsp_buf *p_buf)
 {
   unsigned int  	regnum;
-	uint32_t 	temp_uint32;
+  uint32_t 	temp_uint32;
 
   /* Break out the fields from the data */
   if (1 != sscanf (p_buf->data, "p%x", &regnum))
@@ -2425,10 +2428,10 @@ rsp_read_reg (struct rsp_buf *p_buf)
   // First set the chain 
   err = gdb_set_chain(SC_RISC_DEBUG);	/* 1 RISC Debug Interface chain */
   if(err > 0){
-  	if (DEBUG_GDB) printf("Error %d in gdb_set_chain\n", err);
+    if (DEBUG_GDB) printf("Error %d in gdb_set_chain\n", err);
     put_str_packet ("E01");
-  	return;
-	}
+    return;
+  }
   
   /* Get the relevant register */
   if (regnum < MAX_GPRS)
@@ -2492,20 +2495,20 @@ rsp_read_reg (struct rsp_buf *p_buf)
 /*---------------------------------------------------------------------------*/
 /*!Write a single register
 
-   The registers follow the GDB sequence for OR1K: GPR0 through GPR31, PC
-   (i.e. SPR NPC) and SR (i.e. SPR SR). The register is specified as a
-   sequence of bytes in target endian order.
+  The registers follow the GDB sequence for OR1K: GPR0 through GPR31, PC
+  (i.e. SPR NPC) and SR (i.e. SPR SR). The register is specified as a
+  sequence of bytes in target endian order.
 
-   Each byte is packed as a pair of hex digits.
+  Each byte is packed as a pair of hex digits.
 
-   @param[in] p_buf  The original packet request.                              */
+  @param[in] p_buf  The original packet request.                              */
 /*---------------------------------------------------------------------------*/
 static void
 rsp_write_reg (struct rsp_buf *p_buf)
 {
   unsigned int  regnum;
   char          valstr[9];		/* Allow for EOS on the string */
-	// int           err = 0;
+  // int           err = 0;
 
   /* Break out the fields from the data */
   if (2 != sscanf (p_buf->data, "P%x=%8s", &regnum, valstr))
@@ -2522,10 +2525,10 @@ rsp_write_reg (struct rsp_buf *p_buf)
   // First set the chain 
   err = gdb_set_chain(SC_RISC_DEBUG);	/* 1 RISC Debug Interface chain */
   if(err > 0){
-  	if (DEBUG_GDB) printf("Error %d in gdb_set_chain\n", err);
+    if (DEBUG_GDB) printf("Error %d in gdb_set_chain\n", err);
     put_str_packet ("E01");
-  	return;
-	}
+    return;
+  }
 
   /* Set the relevant register */
   if (regnum < MAX_GPRS)				 /* ---------- GPRS ---------- */
@@ -2550,12 +2553,12 @@ rsp_write_reg (struct rsp_buf *p_buf)
     {
       set_npc(hex2reg (valstr));
       /*
-      err = gdb_write_reg(NPC_CPU_REG_ADD, hex2reg (valstr));
-      if(err > 0){
-      if (DEBUG_GDB) printf("Error %d in rsp_write_reg write --> NPC\n", err);
-      put_str_packet ("E01");
-      return;
-      }
+	err = gdb_write_reg(NPC_CPU_REG_ADD, hex2reg (valstr));
+	if(err > 0){
+	if (DEBUG_GDB) printf("Error %d in rsp_write_reg write --> NPC\n", err);
+	put_str_packet ("E01");
+	return;
+	}
       */
     }
   else if (SR_REGNUM == regnum)	 /* ---------- SR ---------- */
@@ -2565,7 +2568,7 @@ rsp_write_reg (struct rsp_buf *p_buf)
 	if (DEBUG_GDB) printf("Error %d in rsp_write_reg write --> SR\n", err);
 	put_str_packet ("E01");
 	return;
-		  }
+      }
     }
   else
     {
@@ -2584,7 +2587,7 @@ rsp_write_reg (struct rsp_buf *p_buf)
 /*---------------------------------------------------------------------------*/
 /*!Handle a RSP query request
 
-   @param[in] p_buf  The request                                               */
+  @param[in] p_buf  The request                                               */
 /*---------------------------------------------------------------------------*/
 static void
 rsp_query (struct rsp_buf *p_buf)
@@ -2595,6 +2598,14 @@ rsp_query (struct rsp_buf *p_buf)
 	 indicates to use the previously selected thread. Since we do not
 	 support a thread concept, this is the appropriate response. */
       put_str_packet ("");
+    }
+  if (0 == strncmp ("qAttached", p_buf->data, strlen ("qAttached")))
+    {
+      /* Return an indication of whether the remote server attached to an 
+	 existing process or created a new process.
+	 Reply: '1' - The remote server attached to an existing process. 
+                '0' - The remote server created a new process. */
+      put_str_packet ("1");
     }
   else if (0 == strncmp ("qCRC", p_buf->data, strlen ("qCRC")))
     {
@@ -2643,10 +2654,10 @@ rsp_query (struct rsp_buf *p_buf)
   else if (0 == strncmp ("qSupported", p_buf->data, strlen ("qSupported")))
     {
       /* Report a list of the features we support. For now we just ignore any
-				 supplied specific feature queries, but in the future these may be
-				 supported as well. Note that the packet size allows for 'G' + all the
-				 registers sent to us, or a reply to 'g' with all the registers and an
-				 EOS so the buffer is a well formed string. */
+	 supplied specific feature queries, but in the future these may be
+	 supported as well. Note that the packet size allows for 'G' + all the
+	 registers sent to us, or a reply to 'g' with all the registers and an
+	 EOS so the buffer is a well formed string. */
       setup_or32();	// setup cpu
       char  reply[GDB_BUF_MAX];
       sprintf (reply, "PacketSize=%x", GDB_BUF_MAX);
@@ -2676,6 +2687,39 @@ rsp_query (struct rsp_buf *p_buf)
       fprintf (stderr, "Warning: RSP 'qXfer' not supported: ignored\n");
       put_str_packet ("");
     }
+  else if (0 == strncmp ("qTStatus", p_buf->data, strlen ("qTStatus")))  
+    {
+      /* Ask the stub if there is a trace experiment running right now.
+	 The reply has the form:
+	 `Trunning[;field]...'
+	  running is a single digit 1 if the trace is presently running, or 0 
+	  if not. It is followed by semicolon-separated optional fields that an 
+	  agent may use to report additional status.
+      */
+      put_str_packet ("T0");
+    }
+  else if ((0 == strncmp ("qTfV", p_buf->data, strlen ("qTfV"))) ||
+	   (0 == strncmp ("qTsV", p_buf->data, strlen ("qTsV"))))
+    {
+      /*
+	These packets request data about trace state variables that are on the 
+	target. gdb sends qTfV to get the first vari of data, and multiple qTsV
+	to get additional variables. Replies to these packets follow the syntax
+	of the QTDV packets that define trace state variables. 
+      */
+      put_str_packet ("");
+    }
+  else if (0 == strncmp ("qTfP", p_buf->data, strlen ("qTfP")))  
+    {
+      /*
+	These packets request data about tracepoints that are being used by the
+	target. gdb sends qTfP to get the first piece of data, and multiple 
+	qTsP to get additional pieces. Replies to these packets generally take 
+	the form of the QTDP packets that define tracepoints. (FIXME add 
+	detailed syntax) 
+      */
+      put_str_packet ("");
+    }
   else
     {
       fprintf (stderr, "Unrecognized RSP query: ignored\n");
@@ -2688,7 +2732,7 @@ rsp_query (struct rsp_buf *p_buf)
 
   The actual command follows the "qRcmd," in ASCII encoded to hex
 
-   @param[in] p_buf  The request in full                                       */
+  @param[in] p_buf  The request in full                                       */
 /*---------------------------------------------------------------------------*/
 static void
 rsp_command (struct rsp_buf *p_buf)
@@ -2701,53 +2745,53 @@ rsp_command (struct rsp_buf *p_buf)
 
   /* Work out which command it is */
   if (0 == strncmp ("readspr ", cmd, strlen ("readspr")))
-  {
-    /* Parse and return error if we fail */
-    if( 1 != sscanf (cmd, "readspr %4x", &regno))
-      {
-	fprintf (stderr, "Warning: qRcmd %s not recognized: ignored\n", cmd);
-	put_str_packet ("E01");
-	return;
-      }
-    
-    /* SPR out of range */
-    if (regno > MAX_SPRS)
-      {
-	fprintf (stderr, "Warning: qRcmd readspr %x too large: ignored\n",
-		 regno);
-	put_str_packet ("E01");
-	return;
-      }
-    
-    /* Construct the reply */										
-    
-    // Make sure the processor is stalled
-    gdb_ensure_or1k_stalled();
-
-    // First set the chain 
-    gdb_set_chain(SC_RISC_DEBUG);	/* 1 RISC Debug Interface chain */
-    
-    // special case for NPC
-    if(regno == NPC_CPU_REG_ADD)
-      temp_uint32 = get_npc();
-    else
-      {
-	err = gdb_read_reg(regno, &temp_uint32);
-	if(err > 0){
-	  if (DEBUG_GDB) printf("Error %d in rsp_command at reg. %x \n", err, regno);
-	}										
-	else{
-	  reg2hex (temp_uint32, cmd);
-	  if (DEBUG_GDB) printf("Error %d Command readspr Read reg. %x = 0x%08x\n", err, regno, temp_uint32);
+    {
+      /* Parse and return error if we fail */
+      if( 1 != sscanf (cmd, "readspr %4x", &regno))
+	{
+	  fprintf (stderr, "Warning: qRcmd %s not recognized: ignored\n", cmd);
+	  put_str_packet ("E01");
+	  return;
 	}
-      }
     
-    // pack the result into the buffer to send back
-    sprintf (cmd, "%8x", (unsigned int)temp_uint32);
-    ascii2hex (p_buf->data, cmd);
-    p_buf->len = strlen (p_buf->data);
-    put_packet (p_buf);
-  }
+      /* SPR out of range */
+      if (regno > MAX_SPRS)
+	{
+	  fprintf (stderr, "Warning: qRcmd readspr %x too large: ignored\n",
+		   regno);
+	  put_str_packet ("E01");
+	  return;
+	}
+    
+      /* Construct the reply */										
+    
+      // Make sure the processor is stalled
+      gdb_ensure_or1k_stalled();
+
+      // First set the chain 
+      gdb_set_chain(SC_RISC_DEBUG);	/* 1 RISC Debug Interface chain */
+    
+      // special case for NPC
+      if(regno == NPC_CPU_REG_ADD)
+	temp_uint32 = get_npc();
+      else
+	{
+	  err = gdb_read_reg(regno, &temp_uint32);
+	  if(err > 0){
+	    if (DEBUG_GDB) printf("Error %d in rsp_command at reg. %x \n", err, regno);
+	  }										
+	  else{
+	    reg2hex (temp_uint32, cmd);
+	    if (DEBUG_GDB) printf("Error %d Command readspr Read reg. %x = 0x%08x\n", err, regno, temp_uint32);
+	  }
+	}
+    
+      // pack the result into the buffer to send back
+      sprintf (cmd, "%8x", (unsigned int)temp_uint32);
+      ascii2hex (p_buf->data, cmd);
+      p_buf->len = strlen (p_buf->data);
+      put_packet (p_buf);
+    }
   else if (0 == strncmp ("writespr ", cmd, strlen ("writespr")))
     {
       unsigned int       regno;
@@ -2802,7 +2846,7 @@ rsp_command (struct rsp_buf *p_buf)
 /*---------------------------------------------------------------------------*/
 /*!Handle a RSP set request
 
-   @param[in] p_buf  The request                                               */
+  @param[in] p_buf  The request                                               */
 /*---------------------------------------------------------------------------*/
 static void
 rsp_set (struct rsp_buf *p_buf)
@@ -2834,9 +2878,9 @@ rsp_set (struct rsp_buf *p_buf)
 /*---------------------------------------------------------------------------*/
 /*!Handle a RSP restart request
 
-   For now we just put the program counter back to the one used with the last
-   vRun request. There is no point in unstalling the processor, since we'll
-   never get control back.                                                   */
+  For now we just put the program counter back to the one used with the last
+  vRun request. There is no point in unstalling the processor, since we'll
+  never get control back.                                                   */
 /*---------------------------------------------------------------------------*/
 static void
 rsp_restart (void)
@@ -2847,24 +2891,24 @@ rsp_restart (void)
   // First set the chain 
   err = gdb_set_chain(SC_RISC_DEBUG);	/* 1 RISC Debug Interface chain */
   if(err > 0){
-  	if (DEBUG_GDB) printf("Error %d in gdb_set_chain\n", err);
+    if (DEBUG_GDB) printf("Error %d in gdb_set_chain\n", err);
     put_str_packet ("E01");
-  	return;
-	}
-	// OR32 Arc sim equivalent --> set_npc (rsp.start_addr);
+    return;
+  }
+  // OR32 Arc sim equivalent --> set_npc (rsp.start_addr);
   /* Set NPC to reset vector 0x100 */
   set_npc(rsp.start_addr);
   /*
-  err = gdb_write_reg(NPC_CPU_REG_ADD, rsp.start_addr);
-  if(err > 0){
-  	if (DEBUG_GDB) printf("Error %d in rsp_restart write Reg. %x = 0x%08x\n", err, NPC_CPU_REG_ADD, rsp.start_addr);
+    err = gdb_write_reg(NPC_CPU_REG_ADD, rsp.start_addr);
+    if(err > 0){
+    if (DEBUG_GDB) printf("Error %d in rsp_restart write Reg. %x = 0x%08x\n", err, NPC_CPU_REG_ADD, rsp.start_addr);
     put_str_packet ("E01");
-  	return;
-  }
+    return;
+    }
   
-  else{
-  if (DEBUG_GDB) printf("Error %d Command Reset. Set NPC to Start vector %x = 0x%08x\n", err, NPC_CPU_REG_ADD, rsp.start_addr);
-  }
+    else{
+    if (DEBUG_GDB) printf("Error %d Command Reset. Set NPC to Start vector %x = 0x%08x\n", err, NPC_CPU_REG_ADD, rsp.start_addr);
+    }
   */
 }	/* rsp_restart () */
 
@@ -2872,10 +2916,10 @@ rsp_restart (void)
 /*---------------------------------------------------------------------------*/
 /*!Handle a RSP step request
 
-   Parse the command to see if there is an address. Uses the underlying
-   generic step function, with EXCEPT_NONE.
+  Parse the command to see if there is an address. Uses the underlying
+  generic step function, with EXCEPT_NONE.
 
-   @param[in] p_buf  The full step packet                          */
+  @param[in] p_buf  The full step packet                          */
 /*---------------------------------------------------------------------------*/
 static void
 rsp_step (struct rsp_buf *p_buf)
@@ -2888,43 +2932,43 @@ rsp_step (struct rsp_buf *p_buf)
   // First set the chain 
   err = gdb_set_chain(SC_RISC_DEBUG);	/* 1 RISC Debug Interface chain */
   if(err > 0){
-  	printf("Error %d to set RISC Debug Interface chain in the STEP command 's'\n", err);
+    printf("Error %d to set RISC Debug Interface chain in the STEP command 's'\n", err);
     rsp_client_close ();
     return;
-	}
+  }
 
   if (0 == strcmp ("s", p_buf->data))
-  {
-    // Arc Sim Code -->   addr = cpu_state.pc;	/* Default uses current NPC */
-    /* ---------- Npc ---------- */
-    addr = get_npc();
-    /*
-    err = gdb_read_reg(NPC_CPU_REG_ADD, &addr);
-    if(err > 0){
-      printf("Error %d to read NPC in the STEP command 's'\n", err);
-      rsp_client_close ();
-      return;
+    {
+      // Arc Sim Code -->   addr = cpu_state.pc;	/* Default uses current NPC */
+      /* ---------- Npc ---------- */
+      addr = get_npc();
+      /*
+	err = gdb_read_reg(NPC_CPU_REG_ADD, &addr);
+	if(err > 0){
+	printf("Error %d to read NPC in the STEP command 's'\n", err);
+	rsp_client_close ();
+	return;
+	}
+      */
     }
-    */
-  }
   else if (1 != sscanf (p_buf->data, "s%x", &addr))
-  {
-    fprintf (stderr,
-	     "Warning: RSP step address %s not recognized: ignored\n",
-	     p_buf->data);
+    {
+      fprintf (stderr,
+	       "Warning: RSP step address %s not recognized: ignored\n",
+	       p_buf->data);
 
-    // Arc Sim Code -->   addr = cpu_state.pc;	/* Default uses current NPC */
-    /* ---------- NPC ---------- */
-    addr = get_npc();
-    /*
-    err = gdb_read_reg(NPC_CPU_REG_ADD, &addr);
-    if(err > 0){
-      printf("Error %d to read NPC in the STEP command 's'\n", err);
-      rsp_client_close ();
-      return;
+      // Arc Sim Code -->   addr = cpu_state.pc;	/* Default uses current NPC */
+      /* ---------- NPC ---------- */
+      addr = get_npc();
+      /*
+	err = gdb_read_reg(NPC_CPU_REG_ADD, &addr);
+	if(err > 0){
+	printf("Error %d to read NPC in the STEP command 's'\n", err);
+	rsp_client_close ();
+	return;
+	}
+      */
     }
-    */
-  }
 
   //if (DEBUG_GDB) printf("rsp_step() --> Read NPC = 0x%08x\n", addr);
   rsp_step_generic (addr, EXCEPT_NONE);
@@ -2935,9 +2979,9 @@ rsp_step (struct rsp_buf *p_buf)
 /*---------------------------------------------------------------------------*/
 /*!Handle a RSP step with signal request
 
-   Currently null. Will use the underlying generic step function.
+  Currently null. Will use the underlying generic step function.
 
-   @param[in] p_buf  The full step with signal packet              */
+  @param[in] p_buf  The full step with signal packet              */
 /*---------------------------------------------------------------------------*/
 static void
 rsp_step_with_signal (struct rsp_buf *p_buf)
@@ -2950,14 +2994,14 @@ rsp_step_with_signal (struct rsp_buf *p_buf)
 /*---------------------------------------------------------------------------*/
 /*!Generic processing of a step request
 
-   The signal may be EXCEPT_NONE if there is no exception to be
-   handled. Currently the exception is ignored.
+  The signal may be EXCEPT_NONE if there is no exception to be
+  handled. Currently the exception is ignored.
 
-   The single step flag is set in the debug registers and then the processor
-   is unstalled.
+  The single step flag is set in the debug registers and then the processor
+  is unstalled.
 
-   @param[in] addr    Address from which to step
-   @param[in] except  The exception to use (if any)                          */
+  @param[in] addr    Address from which to step
+  @param[in] except  The exception to use (if any)                          */
 /*---------------------------------------------------------------------------*/
 static void
 rsp_step_generic (uint32_t  addr,
@@ -3003,9 +3047,9 @@ rsp_step_generic (uint32_t  addr,
 /*---------------------------------------------------------------------------*/
 /*!Handle a RSP 'v' packet
 
-   These are commands associated with executing the code on the target
+  These are commands associated with executing the code on the target
 
-   @param[in] p_buf  The request                                               */
+  @param[in] p_buf  The request                                               */
 /*---------------------------------------------------------------------------*/
 static void
 rsp_vpkt (struct rsp_buf *p_buf)
@@ -3086,18 +3130,18 @@ rsp_vpkt (struct rsp_buf *p_buf)
 /*---------------------------------------------------------------------------*/
 /*!Handle a RSP write memory (binary) request
 
-   Syntax is:
+  Syntax is:
 
-     X<addr>,<length>:
+  X<addr>,<length>:
 
-   Followed by the specified number of bytes as raw binary. Response should be
-   "OK" if all copied OK, E<nn> if error <nn> has occurred.
+  Followed by the specified number of bytes as raw binary. Response should be
+  "OK" if all copied OK, E<nn> if error <nn> has occurred.
 
-   The length given is the number of bytes to be written. However the number
-   of data bytes may be greater, since '#', '$' and '}' are escaped by
-   preceding them by '}' and oring with 0x20.
+  The length given is the number of bytes to be written. However the number
+  of data bytes may be greater, since '#', '$' and '}' are escaped by
+  preceding them by '}' and oring with 0x20.
 
-   @param[in] p_buf  The command received                                      */
+  @param[in] p_buf  The command received                                      */
 /*---------------------------------------------------------------------------*/
 static void
 rsp_write_mem_bin (struct rsp_buf *p_buf)
@@ -3121,29 +3165,29 @@ rsp_write_mem_bin (struct rsp_buf *p_buf)
   /* Find the start of the data and "unescape" it */
   bindat = p_buf->data;
   while(off < GDB_BUF_MAX){
-  	if(bindat[off] == ':'){
-			bindat = bindat + off + 1;
-			off++;
-			break;
-		}
-		off++;
+    if(bindat[off] == ':'){
+      bindat = bindat + off + 1;
+      off++;
+      break;
+    }
+    off++;
   }
-	if(off >= GDB_BUF_MAX){
-	  put_str_packet ("E01");
-		return;
-	}
+  if(off >= GDB_BUF_MAX){
+    put_str_packet ("E01");
+    return;
+  }
   
   newlen = rsp_unescape (bindat, p_buf->len - off);
 
   /* Sanity check */
   if (newlen != len)
-  {
-    int  minlen = len < newlen ? len : newlen;
+    {
+      int  minlen = len < newlen ? len : newlen;
 
-    fprintf (stderr, "Warning: Write of %d bytes requested, but %d bytes "
-       "supplied. %d will be written\n", len, newlen, minlen);
-    len = minlen;
-  }
+      fprintf (stderr, "Warning: Write of %d bytes requested, but %d bytes "
+	       "supplied. %d will be written\n", len, newlen, minlen);
+      len = minlen;
+    }
 
   // Make sure the processor is stalled
   gdb_ensure_or1k_stalled();
@@ -3249,13 +3293,13 @@ rsp_write_mem_bin (struct rsp_buf *p_buf)
 /*---------------------------------------------------------------------------*/
 /*!Handle a RSP remove breakpoint or matchpoint request
 
-   For now only memory breakpoints are implemented, which are implemented by
-   substituting a breakpoint at the specified address. The implementation must
-   cope with the possibility of duplicate packets.
+  For now only memory breakpoints are implemented, which are implemented by
+  substituting a breakpoint at the specified address. The implementation must
+  cope with the possibility of duplicate packets.
 
-   @todo This doesn't work with icache/immu yet
+  @todo This doesn't work with icache/immu yet
 
-   @param[in] p_buf  The command received                                      */
+  @param[in] p_buf  The command received                                      */
 /*---------------------------------------------------------------------------*/
 static void
 rsp_remove_matchpoint (struct rsp_buf *p_buf)
@@ -3290,26 +3334,26 @@ rsp_remove_matchpoint (struct rsp_buf *p_buf)
       mpe = mp_hash_delete (type, addr);
 
       /* If the BP hasn't yet been deleted, put the original instruction
-			 back. Don't forget to free the hash table entry afterwards. */
-			if (NULL != mpe)
-			{
-			  // Arc Sim Code -->   set_program32 (addr, mpe->instr);
-			  // Make sure the processor is stalled
-			  gdb_ensure_or1k_stalled();
+	 back. Don't forget to free the hash table entry afterwards. */
+      if (NULL != mpe)
+	{
+	  // Arc Sim Code -->   set_program32 (addr, mpe->instr);
+	  // Make sure the processor is stalled
+	  gdb_ensure_or1k_stalled();
 
-			  // Set chain 5 --> Wishbone Memory chain
-			  err = gdb_set_chain(SC_WISHBONE);
-				if(err){
-					put_str_packet ("E01");
-				  return;
-				}
-				err = gdb_write_block(addr, &mpe->instr, 4);
-				if(err){
-					put_str_packet ("E01");
-				  return;
-				}
-			  free (mpe);
-			}
+	  // Set chain 5 --> Wishbone Memory chain
+	  err = gdb_set_chain(SC_WISHBONE);
+	  if(err){
+	    put_str_packet ("E01");
+	    return;
+	  }
+	  err = gdb_write_block(addr, &mpe->instr, 4);
+	  if(err){
+	    put_str_packet ("E01");
+	    return;
+	  }
+	  free (mpe);
+	}
 
       put_str_packet ("OK");
       return;
@@ -3343,13 +3387,13 @@ rsp_remove_matchpoint (struct rsp_buf *p_buf)
 /*---------------------------------------------------------------------------*/
 /*!Handle a RSP insert breakpoint or matchpoint request
 
-   For now only memory breakpoints are implemented, which are implemented by
-   substituting a breakpoint at the specified address. The implementation must
-   cope with the possibility of duplicate packets.
+  For now only memory breakpoints are implemented, which are implemented by
+  substituting a breakpoint at the specified address. The implementation must
+  cope with the possibility of duplicate packets.
 
-   @todo This doesn't work with icache/immu yet
+  @todo This doesn't work with icache/immu yet
 
-   @param[in] p_buf  The command received                                      */
+  @param[in] p_buf  The command received                                      */
 /*---------------------------------------------------------------------------*/
 static void
 rsp_insert_matchpoint (struct rsp_buf *p_buf)
@@ -3357,7 +3401,7 @@ rsp_insert_matchpoint (struct rsp_buf *p_buf)
   enum mp_type       type;		/* What sort of matchpoint */
   uint32_t  addr;		/* Address specified */
   int                len;		/* Matchpoint length (not used) */
-	uint32_t      instr;
+  uint32_t      instr;
 
   /* Break out the instruction */
   if (3 != sscanf (p_buf->data, "Z%1d,%x,%1d", (int *)&type, &addr, &len))
@@ -3429,9 +3473,9 @@ rsp_insert_matchpoint (struct rsp_buf *p_buf)
 
 
 /*---------------------------------------------------------------------------
-Setup the or32 to init state
+  Setup the or32 to init state
 
----------------------------------------------------------------------------*/
+  ---------------------------------------------------------------------------*/
 void setup_or32(void)
 {
   uint32_t		temp_uint32;
@@ -3584,8 +3628,8 @@ int gdb_set_chain(int chain) {
 }
 
 /*****************************************************************************
-* Close the connection to the client if it is open
-******************************************************************************/
+ * Close the connection to the client if it is open
+ ******************************************************************************/
 static void client_close (char err)
 {
   if(gdb_fd) {
@@ -3604,31 +3648,31 @@ static void client_close (char err)
 /*---------------------------------------------------------------------------*/
 static void swap_buf(char* p_buf, int len) 
 {
-	int temp;
-	int n = 0;
+  int temp;
+  int n = 0;
 
   if (len > 2)
-  {
-    while(n < len){
+    {
+      while(n < len){
     	// swap 0 and 3
     	temp = p_buf[n];
-			p_buf[n] = p_buf[n + 3];
-			p_buf[n + 3] = temp;
+	p_buf[n] = p_buf[n + 3];
+	p_buf[n + 3] = temp;
     	// swap 1 and 2
     	temp = p_buf[n + 1];
-			p_buf[n + 1] = p_buf[n + 2];
-			p_buf[n + 2] = temp;
+	p_buf[n + 1] = p_buf[n + 2];
+	p_buf[n + 2] = temp;
 			
-			n += 4;
+	n += 4;
+      }
     }
-	}
 }
 
 
 /*---------------------------------------------------------------------------*/
 /*!Set the stall state of the processor
 
-   @param[in] state  If non-zero stall the processor.                        */
+  @param[in] state  If non-zero stall the processor.                        */
 /*---------------------------------------------------------------------------*/
 static void
 set_stall_state (int state)

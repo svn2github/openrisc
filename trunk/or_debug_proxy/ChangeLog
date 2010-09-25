@@ -1,0 +1,7 @@
+2010-09-24  Julius Baxter  <julius@opencores.org>
+
+	* ChangeLog: Created.
+	* src/or_debug_proxy.c: Removed all VPI endpoint options.
+	* src/gdb.c: Added rsp_query handlers for various new packets seen 
+	             with gdb-7.2.
+
