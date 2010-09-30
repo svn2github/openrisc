@@ -1,4 +1,4 @@
-ssh o/* Subroutines for insn-output.c for GNU compiler.  OpenRISC 1000 version.
+/* Subroutines for insn-output.c for GNU compiler.  OpenRISC 1000 version.
    Copyright (C) 1987, 1992, 1997, 1999, 2000, 2001, 2002, 2003, 2004,
    2005, 2006, 2007, 2008, 2009, 2010  Free Software Foundation, Inc
    Copyright (C) 2010 Embecosm Limited
@@ -134,7 +134,6 @@ or32_save_reg_p (int regno)
   return false;
 
 }	/* or32_save_reg_p () */
-
 
 /* -------------------------------------------------------------------------- */
 /*!Compute full frame size and layout.
@@ -1756,7 +1755,7 @@ or32_promote_function_mode (const_tree         type ATTRIBUTE_UNUSED,
             otherwise.                                                        */
 /* -------------------------------------------------------------------------- */
 static bool
-or32_legitimate_address_p (enum machine_mode  mode,
+or32_legitimate_address_p (enum machine_mode  mode ATTRIBUTE_UNUSED,
 			   rtx                x,
 			   bool               strict)
 {
@@ -1794,15 +1793,13 @@ or32_legitimate_address_p (enum machine_mode  mode,
   /* Addresses consisting of just a register are OK. They can be built into
      addresses using an offset of zero (and an offset of four if double
      word). */
-  if (GET_CODE(x) == REG && or32_regnum_ok_for_base_p( REGNO (x), strict))
-    {
+  if (GET_CODE(x) == REG
+    && or32_regnum_ok_for_base_p(REGNO(x),strict)) {
       return 1;
-    }
+  }
  
   return 0;
-
-}	/* or32_legitimate_address_p () */
-
+}
 
 /* -------------------------------------------------------------------------- */
 /*!Initialize a trampoline for nested functions.
