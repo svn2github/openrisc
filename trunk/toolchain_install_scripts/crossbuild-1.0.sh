@@ -36,6 +36,7 @@ fi
 target="or32-elf"
 
 releasever="or32-1.0rc1"
+releasever_gcc="or32-1.0rc2"
 
 binutilsver="2.20.1"
 binutils="binutils-$binutilsver.tar.bz2"
@@ -52,7 +53,7 @@ newlib_patch_url="ftp://ocuser:oc@orsoc.se/toolchain"
 gccver="4.5.1"
 gcc="gcc-$gccver.tar.bz2"
 gcc_url="http://mirrors.kernel.org/gnu/gcc/gcc-$gccver";
-gcc_patch="gcc-$gccver-$releasever.patch.bz2"
+gcc_patch="gcc-$gccver-$releasever_gcc.patch.bz2"
 gcc_patch_url="ftp://ocuser:oc@orsoc.se/toolchain"
 
 gdbver="7.2"
@@ -68,7 +69,7 @@ simver="0.5.0rc1"
 sim="or1ksim-$simver.tar.bz2"
 sim_url="ftp://ocuser:oc@orsoc.se/toolchain"
 
-linuxver="2.6.34"
+linuxver="2.6.35"
 linux="linux-$linuxver.tar.bz2"
 linux_url="http://www.kernel.org/pub/linux/kernel/v2.6"
 linux_patch="linux-$linuxver-or32.patch.bz2"
