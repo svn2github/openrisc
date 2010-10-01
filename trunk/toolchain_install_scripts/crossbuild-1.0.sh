@@ -83,7 +83,7 @@ uclibc_patch_url="ftp://ocuser:oc@orsoc.se/toolchain"
 uclibc_config="extra/Configs/defconfigs/or32"
 
 # These are the tools this script requires and depends upon.
-reqtools="gcc bzip2 make patch file"
+reqtools="gcc bzip2 make patch file makeinfo"
 
 ##############################################################################
 # Functions:
