@@ -1,8 +1,9 @@
-#include "common.h"
+#include "common.h" 
 #include "support.h"
 #include "flash.h"
 #include "net.h"
 #include "uart.h"
+#include "dosfs.h"
 #include "spr-defs.h"
 
 #ifndef MAX_IMAGES
@@ -656,14 +657,111 @@ int tboot_cmd (int argc, char *argv[])
   return 0;
 }
 
+int sdboot_cmd (int argc, char *argv[])
+{
+        VOLINFO vi;
+	unsigned char *buf_ptr;
+	
+	unsigned char sector[SECTOR_SIZE], sector2[SECTOR_SIZE];
+	FILEINFO fi;
+	unsigned long int pstart,psize, i,fisz;
+	unsigned char pactive, ptype;	
+	DIRINFO di;
+	DIRENT de;
+	unsigned long int cache;
+	
+		// Obtain pointer to first partition on first (only) unit
+	  // Disable data cache if present
+  if (mfspr(SPR_SR) & SPR_SR_DCE)
+    {
+      printf("Disabling data cache\n");
+      dc_disable_cmd(0, 0);
+    }
+  
 
+	buf_ptr=global.src_addr;
+	
+	
+	printf("SD-BOOT start \n");
+	i=init_fat(&vi);
+	 
+	
+	 
+	printf("Volume label '%-11.11s'\n", vi.label);
+	printf("%d sector/s per cluster, %d reserved sector/s, volume total %d sectors.\n", vi.secperclus, vi.reservedsecs, vi.numsecs);
+	printf("%d sectors per FAT, first FAT at sector #%d, root dir at #%d.\n",vi.secperfat,vi.fat1,vi.rootdir);
+	printf("(For FAT32, the root dir is a CLUSTER number, FAT12/16 it is a SECTOR number)\n");
+	printf("%d root dir entries, data area commences at sector #%d.\n",vi.rootentries,vi.dataarea);
+	printf("%d clusters (%d bytes) in data area, filesystem IDd as ", vi.numclusters, vi.numclusters * vi.secperclus * SECTOR_SIZE);
+	if (vi.filesystem == FAT12)
+		printf("FAT12.\n");
+	else if (vi.filesystem == FAT16)
+		printf("FAT16.\n");
+	else if (vi.filesystem == FAT32)
+		printf("FAT32.\n");
+	else
+		printf("[unknown]\n");
+ 
+	 	 
+	 
+	if (DFS_OpenDir(&vi, "", &di)) {
+        		printf("Error opening root directory\n");
+		return -1;
+	}
 
+      
+	printf("Readback test\n");
+	if (DFS_OpenFile(&vi,"vmlinux.bin", DFS_READ, sector, &fi)) {
+		printf("error opening file\n");		
+		
+		return -1;
+	}
+	 
+	printf("fi.filen %d, pointer adress:%d, data:%d \n", fi.filelen, buf_ptr, *buf_ptr); 	
+       
+    
+	DFS_ReadFile(&fi, sector, buf_ptr, &i, fi.filelen);
+	printf("\n read complete %d bytes (expected %d) pointer %d\n", i, fi.filelen, fi.pointer);
+	
+	
+	
+      if (global.src_addr > 0)
+      {
+       /* the point of no return */
+       printf("tboot: copying 0x%lx -> 0x0, image size 0x%x...\n",
+	      global.src_addr, i);
+      }
+
+ 		
+       
+
+  // Disable timer: clear it all!
+      mtspr (SPR_SR, mfspr(SPR_SR) & ~SPR_SR_TEE);
+      mtspr(SPR_TTMR, 0);
+      
+      // Put the copyboot program at 24MB mark in memory
+      #define COPYBOOT_LOCATION (1024*1024*24) 
+      printf("tboot: relocating copy loop to 0x%x ...\n", (unsigned long)COPYBOOT_LOCATION);  
+      // Setup where we'll copy the relocation function to
+      void (*relocated_function)(unsigned long, unsigned long, unsigned long, int)
+	= (void*) COPYBOOT_LOCATION;
+      // Now copy the function there, 32 words worth, increase this if needed...
+      relocate_code((void*)COPYBOOT_LOCATION, copy_and_boot, 32);
+      // Indicate we'll jump there...
+      printf("tboot: Relocate (%d bytes from 0x%x to 0) and boot image, ...\n", i, (unsigned long) global.src_addr);
+      // Now do the copy and boot
+      (*relocated_function)(global.src_addr, 0x0, 0x0 + i, 0);
+      
+      return 0;
+	 
+}
 
 void module_load_init (void)
 {
 
   register_command ("tftp_conf", "[ <file> [ <srv_ip> [ <src_addr>]]]", "TFTP configuration", tftp_conf_cmd);
   register_command ("tboot", "[<image number>]", "Bootstrap image downloaded via tftp", tboot_cmd);
+  register_command ("sdboot", "[<image number>]", "Read image from SD-CARD", sdboot_cmd);
 #if 0
   register_command ("tftp", "[<file> [<srv_ip> [<src_addr>]]]",  "TFTP download", tftp_cmd);
   register_command ("copy", "[<dst_addr> [<src_addr [<length>]]]", "Copy memory", copy_cmd);
@@ -674,4 +772,5 @@ void module_load_init (void)
   register_command ("boot_flash", "[<start_addr>]", "Boot image from <start_addr> (default from flash)", boot_flash_cmd);
 #endif
   init_load();
+
 }

@@ -25,6 +25,8 @@
  */
 #define IPCONFIG                 3
 
+#define SDC_CONTROLLER_BASE 0x9e000000
+
 #if BOARD==0
 // Nibbler on bender1
 
@@ -50,6 +52,7 @@
 #  define IN_CLK		  50000000
 #  define FLASH_ORG_16_2          1
 #  define BOARD_DEF_NAME       	  "marvin"
+
 #elif BOARD==2
 //ORSoC usbethdev board
 
