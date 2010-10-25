@@ -39,7 +39,7 @@ gccver="4.2.2"
 gcc="gcc-core-$gccver.tar.bz2"
 gcc_url="http://mirrors.kernel.org/gnu/gcc/gcc-$gccver";
 gcc_patch="gcc-$gccver-or32-fp.patch.bz2"
-gcc_patch_url="ftp://ocuser:oc@orsoc.se/toolchain"
+gcc_patch_url="ftp://ocuser:oc@opencores.org/toolchain"
 
 gdbver="6.8"
 gdb="gdb-$gdbver.tar.bz2"

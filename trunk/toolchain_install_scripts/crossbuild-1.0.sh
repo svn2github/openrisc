@@ -42,44 +42,44 @@ binutilsver="2.20.1"
 binutils="binutils-$binutilsver.tar.bz2"
 binutils_url="http://mirrors.kernel.org/sources.redhat.com/binutils/releases"
 binutils_patch="binutils-$binutilsver-$releasever.patch.bz2"
-binutils_patch_url="ftp://ocuser:oc@orsoc.se/toolchain"
+binutils_patch_url="ftp://ocuser:oc@opencores.org/toolchain"
 
 newlibver="1.18.0"
 newlib="newlib-$newlibver.tar.gz"
 newlib_url="http://mirrors.kernel.org/sourceware/newlib"
 newlib_patch="newlib-$newlibver-$releasever.patch.bz2"
-newlib_patch_url="ftp://ocuser:oc@orsoc.se/toolchain"
+newlib_patch_url="ftp://ocuser:oc@opencores.org/toolchain"
 
 gccver="4.5.1"
 gcc="gcc-$gccver.tar.bz2"
 gcc_url="http://mirrors.kernel.org/gnu/gcc/gcc-$gccver";
 gcc_patch="gcc-$gccver-$releasever_gcc.patch.bz2"
-gcc_patch_url="ftp://ocuser:oc@orsoc.se/toolchain"
+gcc_patch_url="ftp://ocuser:oc@opencores.org/toolchain"
 
 gdbver="7.2"
 gdb="gdb-$gdbver.tar.bz2"
 gdb_url="http://mirrors.kernel.org/gnu/gdb";
 gdb_patch="gdb-$gdbver-$releasever.patch.bz2"
-gdb_patch_url="ftp://ocuser:oc@orsoc.se/toolchain"
+gdb_patch_url="ftp://ocuser:oc@opencores.org/toolchain"
 
 # Options passed to all GNU tools during configure
 or32configure="--disable-checking --enable-fast-install=N/A --disable-libssp --enable-languages=c,c++ --with-or1ksim=$prefix/or1ksim --with-newlib"
 
 simver="0.5.0rc1"
 sim="or1ksim-$simver.tar.bz2"
-sim_url="ftp://ocuser:oc@orsoc.se/toolchain"
+sim_url="ftp://ocuser:oc@opencores.org/toolchain"
 
 linuxver="2.6.35"
 linux="linux-$linuxver.tar.bz2"
 linux_url="http://www.kernel.org/pub/linux/kernel/v2.6"
 linux_patch="linux-$linuxver-or32.patch.bz2"
-linux_patch_url="ftp://ocuser:oc@orsoc.se/toolchain"
+linux_patch_url="ftp://ocuser:oc@opencores.org/toolchain"
 
 uclibcver="0.9.31"
 uclibc="uClibc-$uclibcver.tar.bz2"
 uclibc_url="http://www.uclibc.org/downloads"
 uclibc_patch="uClibc-$uclibcver-or32.patch.bz2"
-uclibc_patch_url="ftp://ocuser:oc@orsoc.se/toolchain"
+uclibc_patch_url="ftp://ocuser:oc@opencores.org/toolchain"
 uclibc_config="extra/Configs/defconfigs/or32"
 
 # These are the tools this script requires and depends upon.

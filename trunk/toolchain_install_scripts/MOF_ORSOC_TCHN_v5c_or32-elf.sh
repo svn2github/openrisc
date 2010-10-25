@@ -195,7 +195,7 @@ SCRIPT_VERSION="v5c"
 ## Beginning globals ##
 
 ## ORSoC FTP download settings ##
-ORSOC_FTP_HOST="195.67.9.12"
+ORSOC_FTP_HOST="opencores.org"
 ORSOC_FTP_USER="ocuser"
 ORSOC_FTP_PASSWD="oc"
 ORSOC_FTP_DIR="toolchain"
