@@ -47,9 +47,9 @@
    @return  val, unless val is zero, in which case 1 is returned.
 /* -------------------------------------------------------------------------- */
 	.align	4
-        .global	_longjmp
-        .type	_longjmp,@function
-_longjmp:
+        .global	longjmp
+        .type	longjmp,@function
+longjmp:
 	/* Sort out the return value */
 	l.sfne	r4,r0
 	l.bf	1f
@@ -93,9 +93,9 @@ _longjmp:
 	l.lwz	r3,12(r3)		/* Now safe */
 	
 	/* Result is already in r11. Having restored r9, it will appear as
-	   though we have returned from the earlier call to _setjmp. The
+	   though we have returned from the earlier call to setjmp. The
 	   non-zero result gives it away though. */
 	l.jr	r9
 	l.nop
 
-	.size	_longjmp, .-_longjmp
+	.size	longjmp, .-longjmp

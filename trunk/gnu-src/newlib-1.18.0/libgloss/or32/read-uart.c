@@ -64,9 +64,9 @@ _read (int   file,
 
       for (i = 0; i < len; i++)
 	{
-	  buf[i] = _uart_getc ();
+	  buf[i] = __uart_getc ();
 #ifdef UART_AUTO_ECHO
-	  _uart_putc (buf[i]);
+	  __uart_putc (buf[i]);
 #endif
 	  /* Return partial buffer if we get EOL */
 	  if ('\n' == buf[i])

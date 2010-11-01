@@ -1,4 +1,21 @@
 ; Options for the OR32 port of the compiler
+; This file is part of GCC.
+;
+; Copyright (C) 2010 Embecosm Limited
+;
+; GCC is free software; you can redistribute it and/or modify it under
+; the terms of the GNU General Public License as published by the Free
+; Software Foundation; either version 3, or (at your option) any later
+; version.
+;
+; GCC is distributed in the hope that it will be useful, but WITHOUT ANY
+; WARRANTY; without even the implied warranty of MERCHANTABILITY or
+; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+; for more details.
+;
+; You should have received a copy of the GNU General Public License
+; along with GCC; see the file COPYING3.  If not see
+; <http://www.gnu.org/licenses/>.
 
 mhard-float
 Target RejectNegative Mask(HARD_FLOAT)
@@ -28,10 +45,6 @@ msoft-mul
 Target RejectNegative InverseMask(HARD_MUL)
 Do not use hardware multiplication
 
-maj
-Target Mask(MASK_ALIGNED_JUMPS)
-Use aligned jumps
-
 msext
 Target Mask(MASK_SEXT)
 Use sign-extending instructions
@@ -41,16 +54,12 @@ Target Mask(MASK_CMOV)
 Use conditional move instructions
 
 mlogue
-Target Mask(MASK_SCHED_LOGUE)
+Target Mask(SCHED_LOGUE)
 Schedule prologue/epilogue
 
 mror
 Target Mask(MASK_ROR)
 Emit ROR instructions
-
-msibcall
-Target Mask(MASK_SIBCALL)
-Enable sibcall optimization
 
 mor32-newlib
 Target RejectNegative
@@ -59,3 +68,11 @@ Link with the OR32 newlib library
 mor32-newlib-uart
 Target RejectNegative
 Link with the OR32 newlib UART library
+
+;; provide struct padding as in previous releases.
+;; Note that this will only affect STRUCTURE_SIZE_BOUNDARY, in particular
+;; make 2 byte structs 4-byte alignned and sized.
+;; We still use ROUND_TYPE_ALIGN to increase alignment of larger structs.
+mpadstruct
+Target Report RejectNegative Mask(PADSTRUCT)
+Make structs a multiple of 4 bytes (warning: ABI altered)

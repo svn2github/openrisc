@@ -12,8 +12,8 @@ load_base_board_description "basic-sim"
 setup_sim or32
 
 # Options for the simulator
-set cfg_file [lookfor_file ${srcdir} libgloss/or32/sim.cfg]
-set_board_info sim,options "-a \"-f ${cfg_file}\""
+# set cfg_file [lookfor_file ${srcdir} libgloss/or32/sim.cfg]
+# set_board_info sim,options "-a \"-f ${cfg_file}\""
 
 # No multilib options needed by default.
 process_multilib_options ""
@@ -42,7 +42,7 @@ set_board_info cflags    "-mor32-newlib"
 set_board_info ldscript ""
 
 # This simulator isn't slow.
-set_board_info slow_simulator 0
+set_board_info slow_simulator 1
 
 # Can't pass arguments to programs on this target..
 set_board_info noargs  1

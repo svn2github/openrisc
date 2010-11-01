@@ -2,13 +2,13 @@
 // { dg-do compile }
 // { dg-options "-O2" }
 
-struct A { char x[12], y[35]; };
+struct A { char x[12], y[35]; }; // change to y[32] to get warning on or32
 struct B { char z[50]; };
 
 inline void
 foo (char *dest, const char *__restrict src, __SIZE_TYPE__ n)
 {
-  __builtin___strncpy_chk (dest, src, n, __builtin_object_size (dest, 0));	// { dg-warning "will always overflow" }
+  __builtin___strncpy_chk (dest, src, n, __builtin_object_size (dest, 0));	// { dg-warning "will always overflow" "" { target { ! or32-*-* } } }
 }
 
 void bar (const char *, int);

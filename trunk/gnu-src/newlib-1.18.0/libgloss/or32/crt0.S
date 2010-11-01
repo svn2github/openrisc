@@ -60,7 +60,7 @@
 	l.sw	8(r1),r5						;\
 									;\
 	l.ori	r3,r0,0xffff		/* Failure RC */		;\
-	l.jal	_exit							;\
+	l.jal	exit							;\
 	l.nop								;\
 									;\
 	l.rfe				/* Never executed we hope */
@@ -110,7 +110,7 @@
 
 	/* 0x100: RESET exception */
         .org	0x100 	
-_reset:
+__reset:
 	/* Jump to program initialisation code */
 	l.j	_start
 	l.nop
@@ -124,16 +124,16 @@ _reset:
 
 	   We use registers we know will not interfere in this case. */
 	.org	0x200
-_buserr:
+__buserr:
 	l.nop				/* Will be overwritten */
 	l.nop
 	l.nop
 	l.nop
 
-_buserr_std:
+__buserr_std:
 	UNHANDLED_EXCEPTION (.L200)
 
-_buserr_special:	
+__buserr_special:	
 	l.mfspr	r24,r0,SPR_EPCR_BASE
 	l.addi	r24,r24,4		/* Return one instruction on */
 	l.mtspr	r0,r24,SPR_EPCR_BASE
@@ -272,12 +272,12 @@ stack:	.space	4,0
 _start:
 	/* Finding the end of stack means we need to handle the bus
 	   error. Patch in some special handler code. */
-	l.movhi	r30,hi(_buserr)		/* Where to copy to */
-	l.ori	r30,r30,lo(_buserr)
-	l.movhi	r28,hi(_buserr_std)	/* Where to stop copying */
-	l.ori	r28,r28,lo(_buserr_std)
-	l.movhi	r26,hi(_buserr_special)	/* Where to copy from */
-	l.ori	r26,r26,lo(_buserr_special)
+	l.movhi	r30,hi(__buserr)	/* Where to copy to */
+	l.ori	r30,r30,lo(__buserr)
+	l.movhi	r28,hi(__buserr_std)	/* Where to stop copying */
+	l.ori	r28,r28,lo(__buserr_std)
+	l.movhi	r26,hi(__buserr_special)/* Where to copy from */
+	l.ori	r26,r26,lo(__buserr_special)
 
 .L11:	l.sfeq	r28,r30
 	l.bf	.L12
@@ -325,10 +325,10 @@ _start:
 	l.add	r2,r30,r0
 
 	/* Clear out the bus error vector special code. */
-	l.movhi	r30,hi(_buserr)
-	l.ori	r30,r30,lo(_buserr)
-	l.movhi	r28,hi(_buserr_std)
-	l.ori	r28,r28,lo(_buserr_std)
+	l.movhi	r30,hi(__buserr)
+	l.ori	r30,r30,lo(__buserr)
+	l.movhi	r28,hi(__buserr_std)
+	l.ori	r28,r28,lo(__buserr_std)
 	l.movhi	r26,0x1500		/* l.nop 0 */
 	l.ori	r26,r26,0x0000
 
@@ -453,17 +453,17 @@ _start:
         l.addi  r28,r28,4		/* Delay slot */
 
 	/* Call global and static constructors */
-	l.jal	init
+	l.jal	__init
 	l.nop
 	
 	/* Set up destructors to be called from exit if main never returns */
-	l.movhi	r3,hi(fini)
+	l.movhi	r3,hi(__fini)
 	l.jal	atexit
-	l.ori	r3,r3,lo(fini)		/* Delay slot */
+	l.ori	r3,r3,lo(__fini)	/* Delay slot */
 
 	/* Initialise UART in a C function. If the UART isn't present, we'll */
 	/* link against a dummy function. */
-	l.jal    _uart_init
+	l.jal    __uart_init
 	l.nop
 
 	/* Jump to main program entry point (argc = argv = envp = 0) */
@@ -473,7 +473,7 @@ _start:
 	l.or	r5,r0,r0		/* Delay slot */
 
 	/* If program exits, call exit routine */
-	l.jal   _exit
+	l.jal   exit
 	l.addi  r3,r11,0		/* Delay slot */
 
 	/* Loop forever */

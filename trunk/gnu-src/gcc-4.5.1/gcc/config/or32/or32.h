@@ -1,6 +1,7 @@
 /* Definitions of target machine for GNU compiler.  OpenRISC 1000 version.
    Copyright (C) 1987, 1988, 1992, 1995, 1996, 1999, 2000, 2001, 2002, 
    2003, 2004, 2005 Free Software Foundation, Inc.
+   Copyright (C) 2010 Embecosm Limited
    Contributed by Damjan Lampret <damjanl@bsemi.com> in 1999.
    Major optimizations by Matjaz Breskvar <matjazb@bsemi.com> in 2005.
 
@@ -46,13 +47,13 @@ Boston, MA 02111-1307, USA.  */
 #undef CPP_SPEC
 #define CPP_SPEC "%{mor32-newlib*:-idirafter %(target_prefix)/newlib-include}"
 
-/* Make sure we pick up the crtinit.o and crtfini.o files. */
+/* Make sure we pick up the or32-crtbegin.o and or32-crtend.o files. */
 #undef STARTFILE_SPEC
 #define STARTFILE_SPEC "%{!shared:%{mor32-newlib*:%(target_prefix)/newlib/crt0.o} \
-                        %{!mor32-newlib*:crt0.o%s} crtinit.o%s}"
+                        %{!mor32-newlib*:crt0.o%s} crti.o%s crtbegin.o%s}"
 
 #undef ENDFILE_SPEC
-#define ENDFILE_SPEC "crtfini.o%s"
+#define ENDFILE_SPEC "crtend.o%s crtn.o%s"
 
 /* Specify the newlib library path if necessary */
 #undef LINK_SPEC
@@ -121,7 +122,7 @@ extern int target_flags;
 #define EMPTY_FIELD_BOUNDARY 8
 
 /* Every structure's size must be a multiple of this.  */
-#define STRUCTURE_SIZE_BOUNDARY 32
+#define STRUCTURE_SIZE_BOUNDARY (TARGET_PADSTRUCT ? 32 : 8)
 
 /* A bitfield declared as `int' forces `int' alignment for the struct.  */
 #define PCC_BITFIELD_TYPE_MATTERS 1
@@ -131,6 +132,15 @@ extern int target_flags;
 
 /* The best alignment to use in cases where we have a choice.  */
 #define FASTEST_ALIGNMENT 32
+
+#define ROUND_TYPE_ALIGN(STRUCT, COMPUTED, SPECIFIED)   \
+  ((TREE_CODE (STRUCT) == RECORD_TYPE                   \
+    || TREE_CODE (STRUCT) == UNION_TYPE                 \
+    || TREE_CODE (STRUCT) == QUAL_UNION_TYPE)           \
+   && !TYPE_PACKED (STRUCT)				\
+   && TYPE_FIELDS (STRUCT) != 0                         \
+     ? MAX (MAX ((COMPUTED), (SPECIFIED)), or32_struct_alignment (STRUCT)) \
+     : MAX ((COMPUTED), (SPECIFIED)))                   \
 
 /* Make strings word-aligned so strcpy from constants will be faster.  */
 /*
@@ -151,6 +161,13 @@ extern int target_flags;
         || TREE_CODE (TYPE) == UNION_TYPE                               \
         || TREE_CODE (TYPE) == RECORD_TYPE)) ? FASTEST_ALIGNMENT : (ALIGN))
 */ /* CHECK - btw code gets bigger with this one */
+#define DATA_ALIGNMENT(TYPE, ALIGN) \
+  ((ALIGN) < FASTEST_ALIGNMENT \
+   ? or32_data_alignment ((TYPE), (ALIGN)) : (ALIGN))
+
+#define LOCAL_ALIGNMENT(TYPE, ALIGN) \
+  ((ALIGN) < FASTEST_ALIGNMENT \
+   ? or32_data_alignment ((TYPE), (ALIGN)) : (ALIGN))
 
 /* Define this if move instructions will actually fail to work
    when given unaligned data.  */
@@ -198,13 +215,13 @@ extern int target_flags;
    The hardware registers are assigned numbers for the compiler
    from 0 to just below FIRST_PSEUDO_REGISTER.
    All registers that the compiler knows about must be given numbers,
-   even those that are not normally considered general registers.
+   even those that are not normally considered general registers.  */
 
-   JPB 1-Sep-10: I think the old stuff was incorrect. Regs 0-31 are the GPRs,
-                 reg 32 is the CC register, all the rest are pseudo. I think
-                 OR32_LAST_INT_REG should be 31, not 32. */
-#define OR32_LAST_INT_REG       32
-#define OR32_FLAGS_REG         (OR32_LAST_INT_REG + 0)
+#define OR32_LAST_ACTUAL_REG       31
+#define ARG_POINTER_REGNUM     (OR32_LAST_ACTUAL_REG + 1)
+#define FRAME_POINTER_REGNUM   (ARG_POINTER_REGNUM + 1)
+#define OR32_LAST_INT_REG      FRAME_POINTER_REGNUM
+#define OR32_FLAGS_REG         (OR32_LAST_INT_REG + 1)
 #define FIRST_PSEUDO_REGISTER  (OR32_FLAGS_REG + 1)
 
 /* 1 for registers that have pervasive standard uses
@@ -213,10 +230,10 @@ extern int target_flags;
    r2 as frame/arg pointer.  r9 is link register, r0
    is zero, r10 is linux thread */
 #define FIXED_REGISTERS { \
-  1, 1, 1, 0, 0, 0, 0, 0, \
+  1, 1, 0, 0, 0, 0, 0, 0, \
   0, 1, 1, 0, 0, 0, 0, 0, \
   0, 0, 0, 0, 0, 0, 0, 0, \
-  0, 0, 0, 0, 0, 0, 0, 0, 1}
+  0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1 }
 /* 1 for registers not available across function calls.
    These must include the FIXED_REGISTERS and also any
    registers that can be used without being saved.
@@ -224,13 +241,13 @@ extern int target_flags;
    and the register where structure-value addresses are passed.
    Aside from that, you can include as many other registers as you like.  */
 #define CALL_USED_REGISTERS { \
-  1, 1, 1, 1, 1, 1, 1, 1, \
+  1, 1, 0, 1, 1, 1, 1, 1, \
   1, 1, 1, 1, 0, 1, 0, 1, \
   0, 1, 0, 1, 0, 1, 0, 1, \
-  0, 1, 0, 1, 0, 1, 0, 1, 1}
+  0, 1, 0, 1, 0, 1, 0, 1, 1, 1, 1}
 
 /* stack pointer: must be FIXED and CALL_USED */
-/* frame pointer: must be FIXED and CALL_USED */
+/* hard frame pointer: must be FIXED and CALL_USED */
 
 /* Return number of consecutive hard regs needed starting at reg REGNO
    to hold something of mode MODE.
@@ -322,7 +339,7 @@ extern int target_flags;
 #define STACK_POINTER_REGNUM 1
 
 /* Base register for access to local variables of the function.  */
-#define FRAME_POINTER_REGNUM 2
+#define HARD_FRAME_POINTER_REGNUM 2
 
 /* Link register. */
 #define LINK_REGNUM 9
@@ -358,15 +375,12 @@ extern int target_flags;
       + OR32_ALIGN (get_frame_size(), 4);				\
   }
 
-/* Base register for access to arguments of the function.  */
-#define ARG_POINTER_REGNUM FRAME_POINTER_REGNUM
+/* Register in which static-chain is passed to a function.  */
 
-/* Register in which static-chain is passed to a function. 
-
-   JPB 4-Sep-10: r0 was the wrong thing to use here. I'll take a punt at
-                 using r11 (return value reg). This is a change to the
-                 ABI, which needs documenting. */
 #define STATIC_CHAIN_REGNUM 11
+
+#define PROLOGUE_TMP 13
+#define EPILOGUE_TMP 3
 
 /* Register in which address to store a structure value
    is passed to a function.  */
@@ -440,8 +454,8 @@ enum reg_class
 #define REG_CLASS_CONTENTS						\
   {									\
     { 0x00000000, 0x00000000 },		/* NO_REGS */			\
-    { 0xffffffff, 0x00000001 },		/* GENERAL_REGS */		\
-    { 0xffffffff, 0x00000000 }		/* ALL_REGS */			\
+    { 0xffffffff, 0x00000003 },		/* GENERAL_REGS */		\
+    { 0xffffffff, 0x00000007 }		/* ALL_REGS */			\
   }
 
 /* The same information, inverted:
@@ -449,44 +463,14 @@ enum reg_class
    Return the class number of the smallest class containing reg number REGNO.
    This could be a conditional expression or could index an array.
 
-   For the OR32, so long as the reg is r1-r31, we are in GENERAL_REGS, if we
-   are > 32, then we are in NO_REGS, otherwise we are in ALL_REGS. */
+   ??? 0 is not really a register, but a constant.  */
 #define REGNO_REG_CLASS(regno)						\
-  ((0 == regno) ? ALL_REGS : ((1 <= regno) && (regno <= 31))		\
+  ((0 == regno) ? ALL_REGS : ((1 <= regno) && (regno <= OR32_LAST_INT_REG))		\
    ? GENERAL_REGS : NO_REGS)
 
 /* The class value for index registers, and the one for base regs.  */
 #define INDEX_REG_CLASS GENERAL_REGS
 #define BASE_REG_CLASS  GENERAL_REGS
-
-/* Get reg_class from a letter such as appears in the machine description.  */
-/* JPB 29 Aug 10: Obsolete, need to be replaced. */
-#define REG_CLASS_FROM_LETTER(C) NO_REGS
-
-/* A C expression that defines the machine-dependent operand constraint
-   letters ('I', 'J', 'K', . . . 'P') that specify particular ranges of
-   integer values. If "c" is one of those letters, the expression should check
-   that value, an integer, is in the appropriate range and return 1 if so, 0
-   otherwise. If "c" is not one of those letters, the value should be 0
-   regardless of value.
-
-   For OR32, I don't believe we use J, O or P, so these should return 0.
-
-   JPB 29 Aug 10: Obsolete, need to be replaced. */
-#define CONST_OK_FOR_LETTER_P(value, c)					\
-  (  (c) == 'I' ? ((value) >= -32768 && (value) <= 32767)		\
-   : (c) == 'J' ? ((value) == 0)					\
-   : (c) == 'K' ? ((value) >=0 && (value) <= 65535)			\
-   : (c) == 'L' ? ((value) >=0 && (value) <= 31)			\
-   : (c) == 'M' ? (((value) & 0xffff) == 0)				\
-   : (c) == 'N' ? ((value) >= -33554432 && (value) <= 33554431)		\
-   : (c) == 'O' ? ((value) == 0)					\
-   : 0 )
-
-/* Similar, but for floating constants, and defining letters G and H.
-   Here "value" is the CONST_DOUBLE rtx itself.  */
-/* JPB 29 Aug 10: Obsolete, need to be replaced. */
-#define CONST_DOUBLE_OK_FOR_LETTER_P(value, C) 1
 
 /* Given an rtx X being reloaded into a reg required to be in class CLASS,
    return the class of reg to actually use.  In general this is just CLASS;
@@ -553,6 +537,15 @@ enum reg_class
 
    This is the approached used by OR32. */
 #define ACCUMULATE_OUTGOING_ARGS 1
+
+#define ELIMINABLE_REGS							\
+{{ ARG_POINTER_REGNUM,   STACK_POINTER_REGNUM},				\
+ { ARG_POINTER_REGNUM,   HARD_FRAME_POINTER_REGNUM},			\
+ { FRAME_POINTER_REGNUM, STACK_POINTER_REGNUM},				\
+ { FRAME_POINTER_REGNUM, HARD_FRAME_POINTER_REGNUM}}
+
+#define INITIAL_ELIMINATION_OFFSET(FROM, TO, OFFSET) \
+  (OFFSET) = or32_initial_elimination_offset ((FROM), (TO))
 
 /* A C expression that should indicate the number of bytes of its own
    arguments that a function pops on returning, or 0 if the function pops no
@@ -780,7 +773,10 @@ enum reg_class
    prologue.  This RTL is either a REG, indicating that the return
    value is saved in REG, or a MEM representing a location in
    the stack.  */
-#define INCOMING_RETURN_ADDR_RTX gen_rtx_REG (Pmode, GP_ARG_RETURN)
+#define INCOMING_RETURN_ADDR_RTX gen_rtx_REG (Pmode, LINK_REGNUM)
+
+#define RETURN_ADDR_RTX(COUNT, FP) \
+  ((COUNT) ? NULL_RTX : get_hard_reg_initial_val (Pmode, LINK_REGNUM))
 
 
 /* Addressing modes, and classification of registers for them.  */
@@ -963,7 +959,7 @@ enum reg_class
    "r8",   "r9", "r10", "r11", "r12", "r13", "r14", "r15",		\
    "r16", "r17", "r18", "r19", "r20", "r21", "r22", "r23",		\
    "r24", "r25", "r26", "r27", "r28", "r29", "r30", "r31",		\
-   "cc-flag"}
+   "argp", "frame", "cc-flag"}
 
 
 /* -------------------------------------------------------------------------- */
@@ -1136,7 +1132,11 @@ enum reg_class
 
 /* This is how to output an element of a case-vector that is relative.  */
 #define ASM_OUTPUT_ADDR_DIFF_ELT(stream, body, value, rel)		\
-  fprintf (stream, "\t.wordt.L%d-.L%d\n", value, rel)
+  fprintf (stream, "\t.word\t.L%d-.L%d\n", value, rel)
+
+#define JUMP_TABLES_IN_TEXT_SECTION (flag_pic)
+/* ??? If we were serious about PIC, we should also use l.jal to get
+   the table start address.  */
 
 /* This is how to output an assembler line that says to advance the location
    counter to a multiple of 2**log bytes.  */
@@ -1286,6 +1286,8 @@ enum reg_class
       else								\
 	abort ();							\
     }									\
+  else if (code == 'J')							\
+    or32_print_jump_restore (x);					\
   else if (GET_CODE (x) == REG)						\
     fprintf (stream, "%s", reg_names[REGNO (x)]);			\
   else if (GET_CODE (x) == MEM)						\
@@ -1337,7 +1339,7 @@ enum reg_class
 /* The size of the trampoline in bytes. This is a block of code followed by
    two words specifying the function address and static chain pointer. */
 #define TRAMPOLINE_SIZE							\
-  (or32_trampoline_code_size + GET_MODE_SIZE (ptr_mode) * 2)
+  (or32_trampoline_code_size () + GET_MODE_SIZE (ptr_mode) * 2)
 
 /* Alignment required for trampolines, in bits.
 

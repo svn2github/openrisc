@@ -446,6 +446,8 @@ moxie-*-*)
 	;;
 or32-*-elf)
 	;;
+or32-*linux*)
+	;;
 pdp11-*-*)
 	;;
 picochip-*-*)

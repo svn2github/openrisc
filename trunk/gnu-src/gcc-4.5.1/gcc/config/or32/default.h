@@ -1,5 +1,6 @@
 /* Definitions of target machine for GNU compiler for OR32.
    Copyright (C) 1996, 1997, 1998, 2005 Free Software Foundation, Inc.
+   Copyright (C) 2010 Embecosm Limited
    Contributed by Damjan Lampret <damjanl@bsemi.com> in 1999.
    Based upon the rs6000 port.
    
@@ -70,4 +71,4 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #endif
 
 #undef JUMP_TABLES_IN_TEXT_SECTION
-#define JUMP_TABLES_IN_TEXT_SECTION 0
+#define JUMP_TABLES_IN_TEXT_SECTION (flag_pic)

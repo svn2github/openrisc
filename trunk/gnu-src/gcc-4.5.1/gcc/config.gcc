@@ -1,6 +1,7 @@
 # GCC target-specific configuration file.
 # Copyright 1997, 1998, 1999, 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007,
 # 2008, 2009, 2010 Free Software Foundation, Inc.
+# Copyright (C) 2010 Embecosm Limited
 
 #This file is part of GCC.
 
@@ -1910,13 +1911,13 @@ mn10300-*-*)
 	use_gcc_stdint=wrap
 	;;
 or32-*-elf*)
-	tm_file="${tm_file} dbxelf.h elfos.h ${cpu_type}/elf.h"
-	extra_parts="crtinit.o crtfini.o"
+	tm_file="${tm_file} dbxelf.h elfos.h newlib-stdint.h ${cpu_type}/elf.h"
+	extra_parts="crti.o crtbegin.o crtend.o crtn.o"
         tmake_file=${cpu_type}/t-${cpu_type}
 	;;
 or32-*linux*)
 	tm_file="${tm_file} dbxelf.h elfos.h or32/elf.h or32/linux-gas.h or32/linux-elf.h"
-	tmake_file=or32/t-default
+	tmake_file="${cpu_type}/t-${cpu_type} or32/t-linux"
 	;;
 pdp11-*-*)
 	tm_file="${tm_file} newlib-stdint.h"

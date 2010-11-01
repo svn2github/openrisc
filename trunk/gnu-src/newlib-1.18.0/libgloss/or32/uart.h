@@ -149,8 +149,8 @@
 #define UART_EFR_ENI	0x10	/* Enhanced Interrupt */
 
 /* The library functions defined here, avoiding namespace polution. */
-extern void  _uart_init ();
-extern void  _uart_putc (char c);
-extern char  _uart_getc ();
+extern void  __uart_init ();
+extern void  __uart_putc (char c);
+extern char  __uart_getc ();
 
 #endif	/* UART__H */

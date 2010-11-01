@@ -519,6 +519,7 @@ proc check_profiling_available { test_what } {
 	     || [istarget mep-*-elf]
 	     || [istarget mips*-*-elf*]
 	     || [istarget moxie-*-elf*]
+	     || [istarget or32-*-elf*]
 	     || [istarget rx-*-*]	
 	     || [istarget xstormy16-*]
 	     || [istarget xtensa*-*-elf]

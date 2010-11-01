@@ -1,3 +1,9 @@
+2010-09-20  Jeremy Bennett  <jeremy.bennett@embecosm.com>
+
+	* wrapper.c (sim_read, sim_write). Corrected pointer print format.
+	(sim_fetch_register, sim_store_register): Added missing arg "len"
+	to debug printf statements.
+
 2010-09-01  Jeremy Bennett  <jeremy.bennett@embecosm.com>
 
 	* wrapper.c (sim_write). Buffer changed to const char.

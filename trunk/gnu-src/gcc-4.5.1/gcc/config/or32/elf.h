@@ -26,12 +26,6 @@ Boston, MA 02111-1307, USA.  */
 #undef  OBJECT_FORMAT_ELF
 #define OBJECT_FORMAT_ELF
 
-/* use SDB debugging info and make it default */
-#undef  DBX_DEBUGGING_INFO
-#define DBX_DEBUGGING_INFO
-
-#undef  PREFERRED_DEBUGGING_TYPE
-#define PREFERRED_DEBUGGING_TYPE DBX_DEBUG
-
-#undef  PUT_SDB_DEF
-#define PUT_SDB_DEF
+/* or32 debug info support is controlled by tm.h header files we include:
+   dbxelf.h enables optional stabs debug info.
+   elfos.h sets PREFERRED_DEBUGGING_TYPE to DWARF2_DEBUG .  */

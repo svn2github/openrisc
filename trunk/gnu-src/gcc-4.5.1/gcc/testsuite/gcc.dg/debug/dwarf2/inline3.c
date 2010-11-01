@@ -1,7 +1,7 @@
 /* Verify that only one DW_AT_const_value is emitted for baz,
    not for baz abstract DIE and again inside of
    DW_TAG_inlined_subroutine.  */
-/* { dg-options "-O2 -g -dA" } */
+/* { dg-options "-O2 -gdwarf-2 -dA" } */
 /* { dg-do compile } */
 /* { dg-final { scan-assembler-times " DW_AT_const_value" 1 } } */
 

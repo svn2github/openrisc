@@ -1,5 +1,5 @@
 /* { dg-do run } */
-/* { dg-skip-if "Variadic funcs have all args on stack. Normal funcs have args in registers." { "avr-*-*" } { "*" } { "" } } */
+/* { dg-skip-if "Variadic funcs have all args on stack. Normal funcs have args in registers." { "avr-*-*" "or32-*-*" } { "*" } { "" } } */
 /* { dg-skip-if "Variadic funcs use Base AAPCS.  Normal funcs use VFP variant." { "arm*-*-*" } { "-mfloat-abi=hard" } { "" } } */
 
 /* PR target/12503 */
@@ -27,6 +27,8 @@ void bar(char *name, ...)
 
 int main(void)
 {
+  char dummy[64]; /* Make sure we have 64 bytes of stack to copy.  */
+
   bar("eeee", 5.444567, 8.90765, 4.567789, INTEGER_ARG);
 
   return 0;

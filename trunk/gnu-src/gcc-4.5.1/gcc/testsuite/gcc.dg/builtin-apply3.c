@@ -25,6 +25,8 @@ void bar(int arg)
 
 int main(void)
 {
+  char dummy[16]; /* Make sure we have 16 bytes of stack to copy.  */
+
   bar(INTEGER_ARG);
 
   return 0;

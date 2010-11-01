@@ -26,6 +26,8 @@
 # binutils, so is built on its own.
 component_dirs='binutils-2.20.1 newlib-1.18.0 gcc-4.5.1'
 gdb_dir='gdb-7.2'
+linux_dir='linux-2.6.35'
+uclibc_dir='uclibc-0.9.31'
 unified_src=srcw
 build_dir=bld-or32
 gdb_build_dir=bld-gdb
@@ -282,7 +284,7 @@ then
 	  --with-or1ksim=${or1ksim_dir} \
 	  ${newlibconfigure} \
 	  --enable-fast-install=N/A --disable-libssp \
-	  --enable-languages=c --prefix=${install_dir}
+	  --enable-languages=c,c++ --prefix=${install_dir}
 
     if [ $? != 0 ]
     then
@@ -316,18 +318,18 @@ then
     exit 1
 fi
 
-make all-target-libgcc all-target-libstdc++-v3 ${newlibmake}
+make all-target-libgcc ${newlibmake}
 if [ $? != 0 ]
 then
-    echo "make (libraries) failed."
+    echo "make (libgcc and Newlib) failed."
     exit 1
 fi
 
-# GDB has to be built separately at present.
+# GDB and simulator have to be built separately at present.
 cd ..
 cd ${gdb_build_dir}
 
-make all-build all-gdb
+make all-build all-sim all-gdb
 if [ $? != 0 ]
 then
     echo "make (GDB) failed."
@@ -346,8 +348,7 @@ then
     cd {build_dir}
 
     for tool_check in check-binutils check-gas check-ld check-gcc \
-	              check-target-libgcc check-target-libstdc++-v3 \
-	              ${newlibcheck}
+	              check-target-libgcc ${newlibcheck}
     do
 	make ${tool_check}
 
@@ -361,7 +362,7 @@ then
     cd ..
     cd ${gdb_build_dir}
 
-    make check-gdb
+    make check-sim check-gdb
 
     if [ $? != 0 ];
     then
@@ -378,7 +379,7 @@ then
     cd ${build_dir}
 
     make install-binutils install-gas install-ld install-gcc \
-	 install-target-libgcc install-target-libstdc++-v3 ${newlibinstall}
+	 install-target-libgcc ${newlibinstall}
 
     if [ $? != 0 ];
     then
@@ -390,7 +391,7 @@ then
     cd ..
     cd ${gdb_build_dir}
 
-    make install-gdb
+    make install-sim install-gdb
 
     if [ $? != 0 ];
     then
@@ -435,5 +436,3 @@ then
 	mv ${install_dir}/or32-elf/lib/crt0.o ${install_dir}/or32-elf/newlib
     fi
 fi
-
-# uClibc could be safely built and installed now

@@ -25,11 +25,11 @@
 
 	
 /* -------------------------------------------------------------------------- */
-/*!_setjmp
+/*!setjmp
 
    All processor state is saved in the buffer provided. We need not save r0
    (it will always be zero) and we need not save r11 (it will always be
-   overridden here, and in _longjmp).
+   overridden here, and in longjmp).
 
    @todo We should prefer to save and restore the status register, but this is
 	 not directly possible in user code. There is some merit in code to
@@ -41,9 +41,9 @@
    @return  zero.
 /* -------------------------------------------------------------------------- */
 	.align	4
-        .global	_setjmp
-        .type	_setjmp,@function
-_setjmp:
+        .global	setjmp
+        .type	setjmp,@function
+setjmp:
 	l.sw	4(r3),r1		/* Slot 0 saved for flag in future */
 	l.sw	8(r3),r2
 	l.sw	12(r3),r3
@@ -78,4 +78,4 @@ _setjmp:
 	l.jr	r9
 	l.addi	r11,r0,0		/* Zero result */
 
-	.size	_setjmp, .-_setjmp
+	.size	setjmp, .-setjmp

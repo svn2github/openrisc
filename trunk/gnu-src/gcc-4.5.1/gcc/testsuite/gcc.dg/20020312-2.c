@@ -48,6 +48,8 @@ extern void abort (void);
 /* No pic register.  */
 #elif defined(__moxie__)
 /* No pic register.  */
+#elif defined(__or32__)
+/* No pic register.  */
 #elif defined(__hppa__)
 /* PIC register is %r27 or %r19, but is used even without -fpic.  */
 #elif defined(__pdp11__)

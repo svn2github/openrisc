@@ -114,7 +114,7 @@ sim_open (SIM_OPEN_KIND                kind,
   static SIM_DESC  static_sd = NULL;
 
 #ifdef OR32_SIM_DEBUG
-  printf ("sim_open called\n");
+  printf ("sim_open called\n", (int) kind);
 #endif
 
   /* If static_sd is not yet allocated, we allocate it and mark the simulator
@@ -364,7 +364,7 @@ sim_read (SIM_DESC       sd  ATTRIBUTE_UNUSED,
   int res = or1ksim_read_mem (mem, buf, len);
 
 #ifdef OR32_SIM_DEBUG
-  printf ("Reading %d bytes from 0x%08p\n", len, mem);
+  printf ("Reading %d bytes from 0x%8p\n", len, (void *) mem);
 #endif
 
   return  res;
@@ -390,7 +390,7 @@ sim_write (SIM_DESC             sd  ATTRIBUTE_UNUSED,
 	   int                  len)
 {
 #ifdef OR32_SIM_DEBUG
-  printf ("Writing %d bytes to 0x%08p\n", len, mem);
+  printf ("Writing %d bytes to 0x%8p\n", len, (void *) mem);
 #endif
 
   return  or1ksim_write_mem ((unsigned int) mem, buf, len);
@@ -433,7 +433,7 @@ sim_fetch_register (SIM_DESC       sd,
 #endif
   if (4 != len)
     {
-      fprintf (stderr, "Invalid register length %d\n");
+      fprintf (stderr, "Invalid register length %d\n", len);
       return  0;
     }
 
@@ -499,7 +499,7 @@ sim_store_register (SIM_DESC       sd,
 
   if (4 != len)
     {
-      fprintf (stderr, "Invalid register length %d\n");
+      fprintf (stderr, "Invalid register length %d\n", len);
       return  0;
     }
 
@@ -588,6 +588,7 @@ sim_resume (SIM_DESC  sd,
 
   unsigned long int  retval;		/* Return value on Or1ksim exit */
 
+  unsigned long int  cycles;            /* Length of run in cycles */
   int                res;		/* Result of a run. */
 
 #ifdef OR32_SIM_DEBUG
@@ -634,6 +635,9 @@ sim_resume (SIM_DESC  sd,
       (void) or1ksim_write_reg (OR32_NPC_REGNUM, sd->resume_npc);
     }
 
+  /* Set a time point */
+  or1ksim_set_time_point ();
+
   /* Unstall and run */
   or1ksim_set_stall_state (0);
   res = or1ksim_run (-1.0);
@@ -648,6 +652,9 @@ sim_resume (SIM_DESC  sd,
       (void) or1ksim_read_reg (OR32_FIRST_ARG_REGNUM, &retval);
       sd->last_rc     = (unsigned int) retval;
       sd->resume_npc  = OR32_RESET_EXCEPTION;
+      cycles = (long int) (or1ksim_get_time_period ()
+			   * (double) or1ksim_clock_rate());
+      printf ("%ld cycles: Exiting (%u)\n", cycles, sd->last_rc);
       break;
 
     case OR1KSIM_RC_BRKPT:
@@ -757,6 +764,10 @@ void
 sim_do_command (SIM_DESC  sd   ATTRIBUTE_UNUSED,
 		char     *cmd  ATTRIBUTE_UNUSED)
 {
+#ifdef OR32_SIM_DEBUG
+  printf ("sim_do_command called\n");
+#endif
+
 }	/* sim_do_command () */
 
 
@@ -772,6 +783,10 @@ sim_do_command (SIM_DESC  sd   ATTRIBUTE_UNUSED,
 void
 sim_set_callbacks (struct host_callback_struct *ptr ATTRIBUTE_UNUSED)
 {
+#ifdef OR32_SIM_DEBUG
+  printf ("sim_set_callbacks called\n");
+#endif
+
 }	/* sim_set_callbacks () */
 
 
@@ -787,6 +802,10 @@ sim_set_callbacks (struct host_callback_struct *ptr ATTRIBUTE_UNUSED)
 void
 sim_size (int  size  ATTRIBUTE_UNUSED)
 {
+#ifdef OR32_SIM_DEBUG
+  printf ("sim_size called\n");
+#endif
+
 }	/* sim_size () */
 
 
@@ -802,4 +821,8 @@ sim_size (int  size  ATTRIBUTE_UNUSED)
 void
 sim_trace (SIM_DESC  sd  ATTRIBUTE_UNUSED)
 {
+#ifdef OR32_SIM_DEBUG
+  printf ("sim_trace called\n");
+#endif
+
 }	/* sim_trace () */

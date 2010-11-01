@@ -1,3 +1,22 @@
+2010-10-29  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* or32/crt0.S (_start): After main, call exit.
+
+	* or32/crt0.S: Rename implementation symbols to reside in the
+	implementation namespace.
+	* or32/read-uart.c, or32/write-uart.c, or32/uart-dummy.c: Likewise.
+	* or32/uart.c, or32/uart.h: Likewise.
+
+	* or32/crt0.S (UNHANDLED_EXCEPTION): Call exit.
+
+2010-10-28  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* or32/crt0.S (_start): Rename fini to __fini.
+
+2010-09-13  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* or32/crt0.S (_start): Rename init to __init.
+
 2010-08-19  Jeremy Bennett <jeremy.bennett@embecosm.com>
 
 	* or32/crt0.S (_start): Remove all leading underscores from

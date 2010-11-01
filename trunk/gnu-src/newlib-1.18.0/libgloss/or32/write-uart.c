@@ -47,7 +47,7 @@ extern int  errno;
 static void
 outbyte (char  c)
 {
-  _uart_putc (c);
+  __uart_putc (c);
 
 }	/* outbyte () */
 

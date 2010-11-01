@@ -69,7 +69,7 @@
 /*!Initialize the UART                                                        */
 /* -------------------------------------------------------------------------- */
 void
-_uart_init ()
+__uart_init ()
 {
 	int divisor;
 
@@ -93,7 +93,7 @@ _uart_init ()
 	UREG8 (UART_DLM)  = (divisor >> 8) & 0x000000ff;
 	UREG8 (UART_LCR) &= ~(UART_LCR_DLAB);
 
-}	/* _uart_init () */
+}	/* __uart_init () */
 
 
 /* -------------------------------------------------------------------------- */
@@ -101,7 +101,7 @@ _uart_init ()
 
    @param[in] c  The character to output				      */
 /* -------------------------------------------------------------------------- */
-void _uart_putc (char  c)
+void __uart_putc (char  c)
 {
   unsigned char lsr;
 
@@ -112,7 +112,7 @@ void _uart_putc (char  c)
   UREG8 (UART_TX) = c;
   WAIT_FOR_XMITR;
 
-}	/* _uart_putc () */
+}	/* __uart_putc () */
 
 
 /* -------------------------------------------------------------------------- */
@@ -121,7 +121,7 @@ void _uart_putc (char  c)
    @reurn  The character read.                                                */
 /* -------------------------------------------------------------------------- */
 char
-_uart_getc ()
+__uart_getc ()
 {
   unsigned char lsr;
   char c;
@@ -131,4 +131,4 @@ _uart_getc ()
 
   return  UREG8 (UART_RX);
 
-}	/* _uart_getc () */
+}	/* __uart_getc () */

@@ -1,8 +1,10 @@
 /* OR32-specific support for 32-bit ELF
    Copyright 2002, 2004, 2005, 2007 Free Software Foundation, Inc.
+   Copyright (C) 2010 Embecosm Limited
    Contributed by Ivan Guzvinec  <ivang@opencores.org>
    Modified by Gyorgy Jeney <nog@sdf.lonestar.org> and
    Balint Cristian <rezso@rdsor.ro>
+   Changed from Rel to Rela by Joern Rennecke <joern.rennecke@embecosm.com>.
 
    This file is part of BFD, the Binary File Descriptor library.
 
@@ -29,9 +31,13 @@
 #include "elf/common.h"
 #include "libiberty.h"
 
+/* We need RELA in order to handle highpart relocations independent of
+   the presence and/or location and/or value of a lowpart relocation.  */
+#if 0
 /* Try to minimize the amount of space occupied by relocation tables
    on the ROM (not that the ROM won't be swamped by other ELF overhead).  */
 #define USE_REL	1
+#endif
 
 /* Set the right machine number for an OR32 ELF file.  */
 
@@ -59,6 +65,7 @@ or32_elf_final_write_processing (bfd *abfd,
   elf_elfheader (abfd)->e_flags &=~ EF_OR32_MACH;
 }
 
+#if 0 /* Not needed for RELA.  */
 static bfd_reloc_status_type
 or32_elf_generic_reloc (bfd *abfd,
 		   arelent *reloc_entry,
@@ -220,6 +227,7 @@ or32_elf_const_reloc (bfd *abfd,
                                   input_section, output_bfd,
                                   error_message);
 }
+#endif
 
 
 static reloc_howto_type elf_or32_howto_table[] =
@@ -247,10 +255,10 @@ static reloc_howto_type elf_or32_howto_table[] =
 	 FALSE,	                /* pc_relative */
 	 0,	                /* bitpos */
 	 complain_overflow_bitfield, /* complain_on_overflow */
-	 bfd_elf_generic_reloc, 	/* special_function */
+	 bfd_elf_generic_reloc,	/* special_function */
 	 "R_OR32_32",		/* name */
-	 TRUE,	                /* partial_inplace */
-	 0xffffffff,	        /* src_mask */
+	 FALSE,			/* partial_inplace */
+	 0,		        /* src_mask */
 	 0xffffffff,   		/* dst_mask */
 	 FALSE),                /* pcrel_offset */
 
@@ -262,10 +270,10 @@ static reloc_howto_type elf_or32_howto_table[] =
 	 FALSE,	                /* pc_relative */
 	 0,	                /* bitpos */
 	 complain_overflow_bitfield, /* complain_on_overflow */
-	 bfd_elf_generic_reloc, 	/* special_function */
+	 bfd_elf_generic_reloc,	/* special_function */
 	 "R_OR32_16",		/* name */
-	 TRUE,	                /* partial_inplace */
-	 0x0000ffff,	        /* src_mask */
+	 FALSE,			/* partial_inplace */
+	 0,		        /* src_mask */
 	 0x0000ffff,   		/* dst_mask */
 	 FALSE),                /* pcrel_offset */
 
@@ -277,10 +285,10 @@ static reloc_howto_type elf_or32_howto_table[] =
 	 FALSE,	                /* pc_relative */
 	 0,	                /* bitpos */
 	 complain_overflow_bitfield, /* complain_on_overflow */
-	 bfd_elf_generic_reloc, 	/* special_function */
+	 bfd_elf_generic_reloc,	/* special_function */
 	 "R_OR32_8",		/* name */
-	 TRUE,	                /* partial_inplace */
-	 0x000000ff,	        /* src_mask */
+	 FALSE,			/* partial_inplace */
+	 0,		        /* src_mask */
 	 0x000000ff,   		/* dst_mask */
 	 FALSE),                /* pcrel_offset */
 
@@ -292,10 +300,10 @@ static reloc_howto_type elf_or32_howto_table[] =
 	 FALSE,			/* pc_relative */
 	 0,			/* bitpos */
 	 complain_overflow_dont, /* complain_on_overflow */
-	 or32_elf_const_reloc,	/* special_function */
+	 bfd_elf_generic_reloc,	/* special_function */
 	 "R_OR32_CONST",	/* name */
-	 TRUE,			/* partial_inplace */
-	 0x0000ffff,		/* src_mask */
+	 FALSE,			/* partial_inplace */
+	 0,			/* src_mask */
 	 0x0000ffff,		/* dst_mask */
 	 FALSE),		/* pcrel_offset */
 
@@ -307,10 +315,10 @@ static reloc_howto_type elf_or32_howto_table[] =
 	 FALSE,			/* pc_relative */
 	 0,			/* bitpos */
 	 complain_overflow_dont, /* complain_on_overflow */
-	 or32_elf_consth_reloc,	/* special_function */
+	 bfd_elf_generic_reloc,	/* special_function */
 	 "R_OR32_CONSTH",	/* name */
-	 TRUE,			/* partial_inplace */
-	 0x0000ffff,		/* src_mask */
+	 FALSE,			/* partial_inplace */
+	 0,			/* src_mask */
 	 0x0000ffff,		/* dst_mask */
 	 FALSE),		/* pcrel_offset */
 
@@ -322,12 +330,12 @@ static reloc_howto_type elf_or32_howto_table[] =
 	 TRUE,			/* pc_relative */
 	 0,			/* bitpos */
 	 complain_overflow_dont, /* complain_on_overflow */
-	 or32_elf_generic_reloc,/* special_function */
+	 bfd_elf_generic_reloc,	/* special_function */
 	 "R_OR32_JUMPTARG",	/* name */
-	 TRUE,			/* partial_inplace */
-	 0x03ffffff,			/* src_mask */
+	 FALSE,			/* partial_inplace */
+	 0,			/* src_mask */
 	 0x03ffffff,		/* dst_mask */
-	 TRUE), 		/* pcrel_offset */
+	 FALSE), 		/* pcrel_offset */
 
   /* GNU extension to record C++ vtable hierarchy.  */
   HOWTO (R_OR32_GNU_VTINHERIT, /* type */
@@ -359,6 +367,104 @@ static reloc_howto_type elf_or32_howto_table[] =
          0,                     /* dst_mask */
          FALSE),                /* pcrel_offset */
 };
+
+static bfd_boolean
+or32_relocate_section (bfd * output_bfd,
+		       struct bfd_link_info *info,
+		       bfd * input_bfd,
+		       asection * input_section,
+		       bfd_byte * contents,
+		       Elf_Internal_Rela * relocs,
+		       Elf_Internal_Sym * local_syms,
+		       asection ** local_sections)
+{
+  Elf_Internal_Shdr *symtab_hdr = &elf_tdata (input_bfd)->symtab_hdr;
+  struct elf_link_hash_entry **sym_hashes = elf_sym_hashes (input_bfd);
+  Elf_Internal_Rela *rel= rel = relocs;
+  Elf_Internal_Rela *relend = relocs + input_section->reloc_count;
+
+  for (; rel < relend; rel++)
+    {
+      int r_type = ELF32_R_TYPE (rel->r_info);
+      reloc_howto_type *howto;
+      unsigned long r_symndx;
+      struct elf_link_hash_entry *h = NULL;
+      Elf_Internal_Sym *sym = NULL;
+      asection *sec = NULL;
+      bfd_vma relocation = 0;
+      bfd_reloc_status_type r;
+      const char *name = NULL;
+
+      if ((unsigned) r_type >= ARRAY_SIZE (elf_or32_howto_table))
+	{
+	  bfd_set_error (bfd_error_bad_value);
+	  return FALSE;
+	}
+
+      if (r_type == R_OR32_GNU_VTENTRY
+	  || r_type == R_OR32_GNU_VTINHERIT)
+	continue;
+
+      howto = &elf_or32_howto_table[r_type];
+      r_symndx = ELF32_R_SYM (rel->r_info);
+
+      if (r_symndx < symtab_hdr->sh_info)
+        {
+	  sym = local_syms + r_symndx;
+	  sec = local_sections[r_symndx];
+	  relocation = _bfd_elf_rela_local_sym (output_bfd, sym, &sec, rel);
+
+	  name = bfd_elf_string_from_elf_section
+	    (input_bfd, symtab_hdr->sh_link, sym->st_name);
+	  name = (name == NULL) ? bfd_section_name (input_bfd, sec) : name;
+        }
+      else
+        {
+	  bfd_boolean unresolved_reloc, warned;
+
+	  RELOC_FOR_GLOBAL_SYMBOL (info, input_bfd, input_section, rel,
+				   r_symndx, symtab_hdr, sym_hashes,
+				   h, sec, relocation,
+				   unresolved_reloc, warned);
+        }
+
+      if (sec != NULL && elf_discarded_section (sec))
+	{
+	  /* For relocs against symbols from removed linkonce sections,
+	     or sections discarded by a linker script, we just want the
+	     section contents zeroed.  Avoid any special processing.  */
+	  _bfd_clear_contents (howto, input_bfd, contents + rel->r_offset);
+	  rel->r_info = 0;
+	  rel->r_addend = 0;
+	  continue;
+	}
+
+      if (info->relocatable)
+        continue;
+
+      r = _bfd_final_link_relocate (howto, input_bfd, input_section, contents,
+				    rel->r_offset, relocation, rel->r_addend);
+      if (r != bfd_reloc_ok)
+	{
+	  const char *msg = NULL;
+
+	  switch (r)
+	    {
+	    /* FIXME: give useful messages for possible errors.  */
+	    default:
+	      msg = _("internal error: unknown error");
+	      break;
+	    }
+	  if (msg)
+	    r = info->callbacks->warning
+	      (info, msg, name, input_bfd, input_section, rel->r_offset);
+
+	  if (!r)
+	    return FALSE;
+	}
+    }
+  return TRUE;
+}
 
 /* Map BFD reloc types to OR32 ELF reloc types.  */
 
@@ -442,5 +548,7 @@ or32_info_to_howto_rel (bfd *abfd ATTRIBUTE_UNUSED,
 #define elf_backend_object_p	or32_elf_object_p
 #define elf_backend_final_write_processing \
 				or32_elf_final_write_processing
+#define elf_backend_rela_normal	1
+#define elf_backend_relocate_section or32_relocate_section
 
 #include "elf32-target.h"

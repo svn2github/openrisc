@@ -5,7 +5,8 @@
 
    Contributed by Damjan Lampret <damjanl@bsemi.com> in 1999.
    Major optimizations by Matjaz Breskvar <matjazb@bsemi.com> in 2005.
-   Updated for GCC 4.5 by Jeremy Bennett <jeremy.bennett@embecoms.com> in 2010
+   Updated for GCC 4.5 by Jeremy Bennett <jeremy.bennett@embecoms.com>
+   and Joern Rennecke <joern.rennecke@embecosm.com> in 2010.
 
    This file is part of GNU CC.
 
@@ -101,7 +102,6 @@ static struct
 /* ========================================================================== */
 /* Local (i.e. static) utility functions */
 
-
 /* -------------------------------------------------------------------------- */
 /*!Must the current function save a register?
 
@@ -123,7 +123,7 @@ or32_save_reg_p (int regno)
 
   /* We need to save the old frame pointer before setting up a new
      one.  */
-  if (regno == FRAME_POINTER_REGNUM && frame_pointer_needed)
+  if (regno == HARD_FRAME_POINTER_REGNUM && frame_pointer_needed)
     return true;
 
   /* We need to save the incoming return address if it is ever clobbered
@@ -135,6 +135,14 @@ or32_save_reg_p (int regno)
 
 }	/* or32_save_reg_p () */
 
+bool
+or32_save_reg_p_cached (int regno)
+{
+  return (frame_info.mask & ((HOST_WIDE_INT) 1 << regno)) != 0;
+}
+
+/* N.B. contrary to the ISA documentation, the stack includes the outgoing
+   arguments.  */
 /* -------------------------------------------------------------------------- */
 /*!Compute full frame size and layout.
 
@@ -150,6 +158,7 @@ or32_compute_frame_size (HOST_WIDE_INT size)
   HOST_WIDE_INT args_size;
   HOST_WIDE_INT vars_size;
   HOST_WIDE_INT stack_offset;
+  bool interrupt_p = false;
 
   int regno;
 
@@ -165,48 +174,62 @@ or32_compute_frame_size (HOST_WIDE_INT size)
   if (vars_size == 0 && current_function_is_leaf)
     args_size = 0;
 
-  stack_offset = args_size;
+  stack_offset = 0;
 
-  /* Save link register right after possible outgoing arguments.  */
+  /* Save link register right at the bottom.  */
   if (or32_save_reg_p (LINK_REGNUM))
     {
+      stack_offset = stack_offset - UNITS_PER_WORD;
       frame_info.lr_save_offset = stack_offset;
       frame_info.save_lr_p = true;
-      stack_offset = stack_offset + UNITS_PER_WORD;
     }
   else
     frame_info.save_lr_p = false;
 
   /* Save frame pointer right after possible link register.  */
-  if (or32_save_reg_p (FRAME_POINTER_REGNUM))
+  if (frame_pointer_needed)
     {
+      stack_offset = stack_offset - UNITS_PER_WORD;
       frame_info.fp_save_offset = stack_offset;
       frame_info.save_fp_p = true;
-      stack_offset = stack_offset + UNITS_PER_WORD;
     }
   else
     frame_info.save_fp_p = false;
 
   frame_info.gpr_size = 0;
   frame_info.mask = 0;
-  frame_info.gpr_offset = stack_offset;
 
-  for (regno = 0; regno <= OR32_LAST_INT_REG; regno++)
+  for (regno = 0; regno <= OR32_LAST_ACTUAL_REG; regno++)
     {
-      if (regno == LINK_REGNUM || regno == FRAME_POINTER_REGNUM)
+      if (regno == LINK_REGNUM
+	  || (frame_pointer_needed && regno == HARD_FRAME_POINTER_REGNUM))
 	/* These have already been saved if so needed.  */
 	continue;
 
       if (or32_save_reg_p (regno))
 	{
 	  frame_info.gpr_size += UNITS_PER_WORD;
-	  frame_info.mask |= (1 << regno);
+	  frame_info.mask |= ((HOST_WIDE_INT) 1 << regno);
 	}
     }
 
   frame_info.total_size = ((frame_info.save_fp_p ? UNITS_PER_WORD : 0)
 			   + (frame_info.save_lr_p ? UNITS_PER_WORD : 0)
 			   + args_size + frame_info.gpr_size + vars_size);
+  gcc_assert (PROLOGUE_TMP != STATIC_CHAIN_REGNUM);
+  if (frame_info.total_size > 32767 && interrupt_p)
+    {
+      int n_extra
+	= (!!(~frame_info.mask && 1 << PROLOGUE_TMP)
+	   + !!(~frame_info.mask & 1 << EPILOGUE_TMP)) * UNITS_PER_WORD;
+
+      frame_info.gpr_size += n_extra;
+      frame_info.total_size += n_extra;
+      frame_info.mask |= (1 << PROLOGUE_TMP) | (1 << EPILOGUE_TMP);
+    }
+
+  stack_offset -= frame_info.gpr_size;
+  frame_info.gpr_offset = stack_offset;
 
   return frame_info.total_size;
 
@@ -235,23 +258,18 @@ emit_frame_insn (rtx insn)
 
 
 /* -------------------------------------------------------------------------- */
-/*!Generate the RTX for an indexed memory access
+/* Generate a RTX for the indexed memory address based on stack_pointer_rtx
+   and a displacement
 
-   Generate a RTX for the indexed memory address based on a base address and a
-   displacement
-
-   @param[in] base  The base address RTX
    @param[in] disp  The displacement
 
    @return  The RTX for the generated address.                                */
 /* -------------------------------------------------------------------------- */
 static rtx
-indexed_memory (rtx            base,
-		HOST_WIDE_INT  disp)
+stack_disp_mem (HOST_WIDE_INT disp)
 {
-  return gen_rtx_MEM (Pmode, gen_rtx_PLUS (Pmode, base, GEN_INT (disp)));
-
-}	/* indexed_memory () */
+  return gen_frame_mem (Pmode, plus_constant (stack_pointer_rtx, disp));
+}
 
 
 /* -------------------------------------------------------------------------- */
@@ -491,7 +509,7 @@ or32_regnum_ok_for_base_p (HOST_WIDE_INT  num,
 
    @return  RTX for the move.                                                 */
 /* -------------------------------------------------------------------------- */
-rtx
+static rtx
 or32_emit_move (rtx dest, rtx src)
 {
   return (can_create_pseudo_p ()
@@ -596,47 +614,26 @@ void
 or32_expand_prologue (void)
 {
   int total_size = or32_compute_frame_size (get_frame_size ());
-  rtx sp_rtx;
-  rtx value_rtx;
+  rtx insn;
 
   if (!total_size)
     /* No frame needed.  */
     return;
 
-  sp_rtx = gen_rtx_REG (Pmode, STACK_POINTER_REGNUM);
-
-  if (total_size > 32767)
-    {
-      value_rtx = gen_rtx_REG (Pmode, GP_ARG_RETURN);
-      emit_frame_insn (gen_rtx_SET (Pmode, value_rtx, GEN_INT (total_size)));
-    }
-  else
-    value_rtx = GEN_INT (total_size);
-
-  /* Update the stack pointer to reflect frame size.  */
-  emit_frame_insn
-    (gen_rtx_SET (Pmode, stack_pointer_rtx,
-		  gen_rtx_MINUS (Pmode, stack_pointer_rtx, value_rtx)));
-
   if (frame_info.save_fp_p)
     {
-      emit_frame_insn
-	(gen_rtx_SET (Pmode,
-		      indexed_memory (stack_pointer_rtx,
-				      frame_info.fp_save_offset),
-		      frame_pointer_rtx));
+      emit_frame_insn (gen_rtx_SET (Pmode,
+				    stack_disp_mem (frame_info.fp_save_offset),
+				    hard_frame_pointer_rtx));
 
       emit_frame_insn
-	(gen_rtx_SET (Pmode, frame_pointer_rtx,
-		      gen_rtx_PLUS (Pmode, frame_pointer_rtx, value_rtx)));
+	(gen_add3_insn (hard_frame_pointer_rtx, stack_pointer_rtx, const0_rtx));
     }
   if (frame_info.save_lr_p)
     {
 
       emit_frame_insn
-	(gen_rtx_SET (Pmode,
-		      indexed_memory (stack_pointer_rtx,
-				      frame_info.lr_save_offset),
+	(gen_rtx_SET (Pmode, stack_disp_mem (frame_info.lr_save_offset),
 		      gen_rtx_REG (Pmode, LINK_REGNUM)));
     }
   if (frame_info.gpr_size)
@@ -644,20 +641,33 @@ or32_expand_prologue (void)
       int offset = 0;
       int regno;
 
-      for (regno = 0; regno <= OR32_LAST_INT_REG; regno++)
+      for (regno = 0; regno <= OR32_LAST_ACTUAL_REG; regno++)
 	{
-	  HOST_WIDE_INT disp = frame_info.gpr_offset + offset;
-
-	  if (!(frame_info.mask & (1 << regno)))
+	  if (!(frame_info.mask & ((HOST_WIDE_INT) 1 << regno)))
 	    continue;
 
 	  emit_frame_insn
 	    (gen_rtx_SET (Pmode,
-			  indexed_memory (stack_pointer_rtx, disp),
+			  stack_disp_mem (frame_info.gpr_offset + offset),
 			  gen_rtx_REG (Pmode, regno)));
 	  offset = offset + UNITS_PER_WORD;
 	}
     }
+
+  /* Update the stack pointer to reflect frame size.  */
+  insn = gen_add2_insn (stack_pointer_rtx, GEN_INT (-total_size));
+  if (total_size > 32767)
+    {
+      rtx note = insn;
+      rtx value_rtx = gen_rtx_REG (Pmode, PROLOGUE_TMP);
+
+      or32_emit_set_const32 (value_rtx, GEN_INT (-total_size));
+      insn = emit_frame_insn (gen_add2_insn (stack_pointer_rtx, value_rtx));
+      add_reg_note (insn, REG_FRAME_RELATED_EXPR, note);
+    }
+  else
+    emit_frame_insn (insn);
+
 }	/* or32_expand_prologue () */
 
 
@@ -674,38 +684,59 @@ or32_expand_prologue (void)
    For the OR32 this is currently controlled by the -mlogue option. It should
    be the default, once it is proved to work.
 
-   @param[in] sibcall  Non-zero (TRUE) if this is a sibcall return, which can
-                       benefit from tail call optimization. Zero (FALSE)
-                       otherwise.                                             */
+   @param[in] sibcall  The sibcall epilogue insn if this is a sibcall return,
+                       NULL_RTX otherwise.                                             */
 /* -------------------------------------------------------------------------- */
 void
-or32_expand_epilogue (int sibcall)
+or32_expand_epilogue (rtx sibcall)
 {
   int total_size = or32_compute_frame_size (get_frame_size ());
-  rtx value_rtx;
+  int sibcall_regno = FIRST_PSEUDO_REGISTER;
 
-  if (total_size > 32767)
+  if (sibcall)
     {
-      value_rtx = gen_rtx_REG (Pmode, 3);
-
-      emit_insn (gen_rtx_SET (Pmode, value_rtx, GEN_INT (total_size)));
+      sibcall = next_nonnote_insn (sibcall);
+      gcc_assert (CALL_P (sibcall) && SIBLING_CALL_P (sibcall));
+      sibcall = XVECEXP (PATTERN (sibcall), 0, 0);
+      if (GET_CODE (sibcall) == SET)
+	sibcall = SET_SRC (sibcall);
+      gcc_assert (GET_CODE (sibcall) == CALL);
+      sibcall = XEXP (sibcall, 0);
+      gcc_assert (MEM_P (sibcall));
+      sibcall = XEXP (sibcall, 0);
+      if (REG_P (sibcall))
+	sibcall_regno = REGNO (sibcall);
+      else
+	gcc_assert (CONSTANT_P (sibcall));
+    }
+  if (frame_info.save_fp_p)
+    {
+      emit_insn
+	(gen_add3_insn (stack_pointer_rtx, hard_frame_pointer_rtx, const0_rtx));
+      emit_insn
+	(gen_rtx_SET (Pmode, hard_frame_pointer_rtx,
+		      stack_disp_mem (frame_info.fp_save_offset)));
     }
   else
-    value_rtx = GEN_INT (total_size);
+    {
+      rtx value_rtx;
+
+      if (total_size > 32767)
+	{
+	  value_rtx = gen_rtx_REG (Pmode, EPILOGUE_TMP);
+	  or32_emit_set_const32 (value_rtx, GEN_INT (total_size));
+	}
+      else
+	value_rtx = GEN_INT (total_size);
+      if (total_size)
+	emit_insn (gen_add2_insn (stack_pointer_rtx, value_rtx));
+    }
 
   if (frame_info.save_lr_p)
     {
       emit_insn
         (gen_rtx_SET (Pmode, gen_rtx_REG (Pmode, LINK_REGNUM),
-                      indexed_memory (stack_pointer_rtx,
-				      frame_info.lr_save_offset)));
-    }
-  if (frame_info.save_fp_p)
-    {
-      emit_insn
-	(gen_rtx_SET (Pmode, gen_rtx_REG (Pmode, FRAME_POINTER_REGNUM),
-		      indexed_memory (stack_pointer_rtx,
-				      frame_info.fp_save_offset)));
+                      stack_disp_mem (frame_info.lr_save_offset)));
     }
 
   if (frame_info.gpr_size)
@@ -713,31 +744,46 @@ or32_expand_epilogue (int sibcall)
       int offset = 0;
       int regno;
 
-      for (regno = 0; regno <= OR32_LAST_INT_REG; regno++)
+      for (regno = 0; regno <= OR32_LAST_ACTUAL_REG; regno++)
 	{
-	  HOST_WIDE_INT disp = frame_info.gpr_offset + offset;
-
-	  if (!(frame_info.mask & (1 << regno)))
+	  if (!(frame_info.mask & ((HOST_WIDE_INT) 1 << regno)))
 	    continue;
 
-	  emit_insn
-	    (gen_rtx_SET (Pmode, gen_rtx_REG (Pmode, regno),
-			  indexed_memory (stack_pointer_rtx, disp)));
+	  if (regno != sibcall_regno)
+	    emit_insn
+	      (gen_rtx_SET (Pmode, gen_rtx_REG (Pmode, regno),
+			    stack_disp_mem (frame_info.gpr_offset + offset)));
 	  offset = offset + UNITS_PER_WORD;
 	}
     }
 
-  if (total_size)
-    {
-      emit_insn (gen_rtx_SET (Pmode, stack_pointer_rtx,
-			      gen_rtx_PLUS (Pmode,
-					    stack_pointer_rtx, value_rtx)));
-    }
-
   if (!sibcall)
-    emit_jump_insn (gen_return_internal (gen_rtx_REG( Pmode, 9)));
+    emit_jump_insn (gen_return_internal (gen_rtx_REG (Pmode, 9)));
 
 }	/* or32_expand_epilogue () */
+
+/* We are outputting a jump which needs JUMP_ADDRESS, which is the
+   register it uses as jump destination, restored,
+   e.g. a sibcall using a callee-saved register.
+   Emit the register restore as delay slot insn.  */
+void
+or32_print_jump_restore (rtx jump_address)
+{
+  int regno, jump_regno;
+  HOST_WIDE_INT offset = frame_info.gpr_offset;
+
+  gcc_assert (REG_P (jump_address));
+  jump_regno = REGNO (jump_address);
+  for (regno = 0; regno != jump_regno; regno++)
+    {
+      gcc_assert (regno <= OR32_LAST_ACTUAL_REG);
+      if (!(frame_info.mask & ((HOST_WIDE_INT) 1 << regno)))
+	continue;
+      offset = offset + UNITS_PER_WORD;
+    }
+  asm_fprintf (asm_out_file, "\n\tl.lwz\tr%d,"HOST_WIDE_INT_PRINT_DEC"(r1)\n",
+	       jump_regno, offset);
+}
 
 
 /* -------------------------------------------------------------------------- */
@@ -983,20 +1029,10 @@ or32_output_bf (rtx * operands)
   mode_calc = SELECT_CC_MODE (code, or32_compare_op0, or32_compare_op1);
   mode_got  = GET_MODE (operands[2]);
 
-  if (!TARGET_MASK_ALIGNED_JUMPS)
-    {
-      if (mode_calc != mode_got)
-	return "l.bnf\t%l0%(";
-      else
-	return "l.bf\t%l0%(";
-    }
+  if (mode_calc != mode_got)
+    return "l.bnf\t%l0%(";
   else
-    {
-      if (mode_calc != mode_got)
-	return ".balignl\t0x8,0x15000015,0x4\n\tl.bnf\t%l0%(";
-      else
-	return ".balignl 0x8,0x15000015,0x4;\n\tl.bf\t%l0%(";
-    }
+    return "l.bf\t%l0%(";
 }	/* or32_output_bf () */
 
 
@@ -1176,7 +1212,7 @@ or32_output_function_prologue (FILE          *file,
 
      JPB 30-Aug-10: Surely that is not correct. If this option is set, we
      should never even be called! */
-  if (TARGET_MASK_SCHED_LOGUE)
+  if (TARGET_SCHED_LOGUE)
     return;
 
   if (size < 0)
@@ -1227,19 +1263,19 @@ or32_output_function_prologue (FILE          *file,
       int  offset = OR32_ALIGN (crtl->outgoing_args_size, 4) + lr_save_area;
 
       fprintf (file, "\tl.sw\t%d(r%d),r%d\n", offset,
-	       STACK_POINTER_REGNUM, FRAME_POINTER_REGNUM);
+	       STACK_POINTER_REGNUM, HARD_FRAME_POINTER_REGNUM);
 
       if (stack_size >= 0x8000)
-	fprintf (file, "\tl.add\tr%d,r%d,r%d\n", FRAME_POINTER_REGNUM,
+	fprintf (file, "\tl.add\tr%d,r%d,r%d\n", HARD_FRAME_POINTER_REGNUM,
 		 STACK_POINTER_REGNUM, GP_ARG_RETURN);
       else
-	fprintf (file, "\tl.addi\tr%d,r%d,%d\n", FRAME_POINTER_REGNUM,
+	fprintf (file, "\tl.addi\tr%d,r%d,%d\n", HARD_FRAME_POINTER_REGNUM,
 		 STACK_POINTER_REGNUM, stack_size);
 
       /* The CFA is already pointing at the start of our frame (i.e. the new
 	 FP). The old FP has been saved relative to the SP, so we need to use
 	 stack_size to work out where. */
-      dwarf2out_reg_save (l, FRAME_POINTER_REGNUM, offset - stack_size);
+      dwarf2out_reg_save (l, HARD_FRAME_POINTER_REGNUM, offset - stack_size);
     }
 
   /* Save the return address if necessary */
@@ -1254,7 +1290,7 @@ or32_output_function_prologue (FILE          *file,
       /* The CFA is already pointing at the start of our frame (i.e. the new
 	 FP). The LR has been saved relative to the SP, so we need to use
 	 stack_size to work out where. */
-      dwarf2out_reg_save (l, FRAME_POINTER_REGNUM, offset - stack_size);
+      dwarf2out_reg_save (l, HARD_FRAME_POINTER_REGNUM, offset - stack_size);
     }
 
   save_area = (OR32_ALIGN (crtl->outgoing_args_size, 4)
@@ -1273,7 +1309,8 @@ or32_output_function_prologue (FILE          *file,
 	  /* The CFA is already pointing at the start of our frame (i.e. the
 	     new FP). The register has been saved relative to the SP, so we
 	     need to use stack_size to work out where. */
-	  dwarf2out_reg_save (l, FRAME_POINTER_REGNUM, save_area - stack_size);
+	  dwarf2out_reg_save (l, HARD_FRAME_POINTER_REGNUM,
+			      save_area - stack_size);
 	  save_area += 4;
 	}
     }
@@ -1345,7 +1382,7 @@ or32_output_function_epilogue (FILE * file, HOST_WIDE_INT size)
 
      JPB 30-Aug-10: Surely that is not correct. If this option is set, we
      should never even be called! */
-  if (TARGET_MASK_SCHED_LOGUE)
+  if (TARGET_SCHED_LOGUE)
     return;
 
   /* Work out the frame size */
@@ -1363,7 +1400,7 @@ or32_output_function_epilogue (FILE * file, HOST_WIDE_INT size)
   /* Restore the frame pointer if necessary */
   if (fp_save_area)
     {
-      fprintf (file, "\tl.lwz\tr%d,%d(r%d)\n", FRAME_POINTER_REGNUM,
+      fprintf (file, "\tl.lwz\tr%d,%d(r%d)\n", HARD_FRAME_POINTER_REGNUM,
 	       OR32_ALIGN (crtl->outgoing_args_size, 4)
 	       + lr_save_area, STACK_POINTER_REGNUM);
     }
@@ -1388,39 +1425,21 @@ or32_output_function_epilogue (FILE * file, HOST_WIDE_INT size)
       fprintf (file, "\tl.movhi\tr3,hi(%d)\n", stack_size);
       fprintf (file, "\tl.ori\tr3,r3,lo(%d)\n", stack_size);
 
-      if (!TARGET_MASK_ALIGNED_JUMPS)
-	fprintf (file, "\tl.jr\tr%d\n", LINK_REGNUM);
-      else
-	{
-	  fprintf (file, "\t.balignl\t0x8,0x15000015,0x4\n");
-	  fprintf (file, "\tl.jr\tr%d\n", LINK_REGNUM);
-	}
+      fprintf (file, "\tl.jr\tr%d\n", LINK_REGNUM);
 
       fprintf (file, "\tl.add\tr%d,r%d,r3\n", STACK_POINTER_REGNUM,
 	       STACK_POINTER_REGNUM);
     }
   else if (stack_size > 0)
     {
-      if (!TARGET_MASK_ALIGNED_JUMPS)
-	fprintf (file, "\tl.jr\tr%d\n", LINK_REGNUM);
-      else
-	{
-	  fprintf (file, "\t.balignl 0x8,0x15000015,0x4\n");
-	  fprintf (file, "\tl.jr\tr%d\n", LINK_REGNUM);
-	}
+      fprintf (file, "\tl.jr\tr%d\n", LINK_REGNUM);
 
       fprintf (file, "\tl.addi\tr%d,r%d,%d\n", STACK_POINTER_REGNUM,
 	       STACK_POINTER_REGNUM, stack_size);
     }
   else
     {
-      if (!TARGET_MASK_ALIGNED_JUMPS)
-	fprintf (file, "\tl.jr\tr%d\n", LINK_REGNUM);
-      else
-	{
-	  fprintf (file, "\t.balignl\t0x8,0x15000015,0x4\n");
-	  fprintf (file, "\tl.jr\tr%d\n", LINK_REGNUM);
-	}
+      fprintf (file, "\tl.jr\tr%d\n", LINK_REGNUM);
 
       fprintf (file, "\tl.nop\n");		/* Delay slot */
     }
@@ -1505,10 +1524,8 @@ or32_function_value (const_tree  ret_type,
    successful sibling call optimization may vary greatly between different
    architectures.
 
-   For the OR32, we currently allow sibcall optimization if the -msibcall
-   argument is passed.
-
-   JPB 30-Aug-10: Surely we should always allow this?
+   For the OR32, we currently allow sibcall optimization whenever
+   -foptimize-sibling-calls is enabled.
 
    @param[in] decl  The function for which we may optimize
    @param[in] exp   The call expression which is candidate for optimization.
@@ -1520,8 +1537,7 @@ static bool
 or32_function_ok_for_sibcall (tree  decl ATTRIBUTE_UNUSED,
 			      tree  exp ATTRIBUTE_UNUSED)
 {
-  return TARGET_MASK_SIBCALL;
-
+  return true;
 }	/* or32_function_ok_for_sibcall () */
 
 
@@ -1560,6 +1576,7 @@ or32_pass_by_reference (CUMULATIVE_ARGS   *cum ATTRIBUTE_UNUSED,
 }	/* or32_pass_by_reference () */
 
 
+#if 0
 /* -------------------------------------------------------------------------- */
 /*!Is a frame pointer required?
 
@@ -1600,6 +1617,17 @@ or32_frame_pointer_required (void)
 	return 1;
 
 }	/* or32_frame_pointer_required () */
+#endif
+
+int
+or32_initial_elimination_offset(int from, int to)
+{
+  if (from == ARG_POINTER_REGNUM && to == HARD_FRAME_POINTER_REGNUM)
+    return 0;
+  or32_compute_frame_size (get_frame_size ());
+  return ((from == FRAME_POINTER_REGNUM ? frame_info.gpr_offset : 0)
+	  + (to == STACK_POINTER_REGNUM ? frame_info.total_size : 0));
+}
 
 
 /* -------------------------------------------------------------------------- */
@@ -1849,14 +1877,14 @@ or32_legitimate_address_p (enum machine_mode  mode ATTRIBUTE_UNUSED,
    initializing the trampoline proper.
 
    For the OR32, no static chain register is used. We choose to use the return
-   value (rv) register. The rvh register is used as a temporary. The code is
-   based on that for MIPS. The trampoline code is:
+   value (rv) register. The code is based on that for MIPS.
+   The trampoline code is:
 
-              l.movhi r12,hi(end_addr)
-              l.ori   r12,lo(end_addr)
-              l.lwz   r13,4(r12)
+              l.movhi r11,hi(end_addr)
+              l.ori   r11,lo(end_addr)
+              l.lwz   r13,4(r11)
               l.jr    r13
-              l.lwz   r11,0(r12)
+              l.lwz   r11,0(r11)
       end_addr:
               .word   <static chain>
               .word   <nested_function>
@@ -1903,11 +1931,11 @@ or32_trampoline_init (rtx   m_tramp,
 
   /* Build up the code in TRAMPOLINE.
 
-              l.movhi r12,hi(end_addr)
-              l.ori   r12,lo(end_addr)
-              l.lwz   r13,4(r12)
+              l.movhi r11,hi(end_addr)
+              l.ori   r11,lo(end_addr)
+              l.lwz   r13,4(r11)
               l.jr    r13
-              l.lwz   r11,0(r12)
+              l.lwz   r11,0(r11)
        end_addr:
   */
 
@@ -1920,20 +1948,20 @@ or32_trampoline_init (rtx   m_tramp,
 
   /* Emit the l.movhi, adding an operation to OR in the high bits from the
      RTX. */
-  opcode = gen_int_mode (OR32_MOVHI (12, 0), SImode);
+  opcode = gen_int_mode (OR32_MOVHI (11, 0), SImode);
   trampoline[i++] = expand_simple_binop (SImode, IOR, opcode, high, NULL,
 					 false, OPTAB_WIDEN); 
   
   /* Emit the l.ori, adding an operations to OR in the low bits from the
      RTX. */
-  opcode = gen_int_mode (OR32_ORI (12, 12, 0), SImode);
+  opcode = gen_int_mode (OR32_ORI (11, 11, 0), SImode);
   trampoline[i++] = expand_simple_binop (SImode, IOR, opcode, low, NULL,
 					 false, OPTAB_WIDEN); 
 
   /* Emit the l.lwz of the function address. No bits to OR in here, so we can
      do the opcode directly. */
   trampoline[i++] =
-    gen_int_mode (OR32_LWZ (13, 12, target_function_offset - end_addr_offset),
+    gen_int_mode (OR32_LWZ (13, 11, target_function_offset - end_addr_offset),
 		  SImode);
 
   /* Emit the l.jr of the function. No bits to OR in here, so we can do the
@@ -1943,7 +1971,7 @@ or32_trampoline_init (rtx   m_tramp,
   /* Emit the l.lwz of the static chain. No bits to OR in here, so we can
      do the opcode directly. */
   trampoline[i++] =
-    gen_int_mode (OR32_LWZ (STATIC_CHAIN_REGNUM, 12,
+    gen_int_mode (OR32_LWZ (STATIC_CHAIN_REGNUM, 11,
 			    static_chain_offset - end_addr_offset), SImode);
 
   /* Copy the trampoline code.  Leave any padding uninitialized.  */
@@ -1993,6 +2021,85 @@ or32_dwarf_calling_convention (const_tree  function ATTRIBUTE_UNUSED)
 
 }	/* or32_dwarf_calling_convention () */
 
+/* If DELTA doesn't fit into a 16 bit signed number, emit instructions to
+   add the highpart to DST; return the signed-16-bit lowpart of DELTA.
+   TMP_REGNO is a register that may be used to load a constant.  */
+static HOST_WIDE_INT
+or32_output_highadd (FILE *file,
+		     const char *dst, int tmp_regno, HOST_WIDE_INT delta)
+{
+  if (delta < -32768 || delta > 32767)
+    {
+      if (delta >= -65536 && delta < 65534)
+	{
+	  asm_fprintf (file, "\tl.addi\t%s,%s,%d\n",
+		       dst, dst, (int) (delta + 1) >> 1);
+	  delta >>= 1;
+	}
+      else
+	{
+	  const char *tmp = reg_names[tmp_regno];
+	  HOST_WIDE_INT high = (delta + 0x8000) >> 16;
+
+	  gcc_assert (call_used_regs[tmp_regno]);
+	  asm_fprintf (file, "\tl.movhi\t%s,%d\n" "\tl.add\t%s,%s,%s\n",
+		 tmp, (int) high,
+		 dst, dst, tmp);
+	  delta -= high << 16;
+	}
+    }
+  return delta;
+}
+
+/* Output a tailcall to FUNCTION.  The caller will fill in the delay slot.  */
+void
+or32_output_tailcall (FILE *file, tree function)
+{
+  /* We'll need to add more code if we want to fully support PIC.  */
+  gcc_assert (!flag_pic || (*targetm.binds_local_p) (function));
+
+  fputs ("\tl.j\t", file);
+  assemble_name (file, XSTR (XEXP (DECL_RTL (function), 0), 0));
+  fputc ('\n', file);
+}
+
+static void
+or32_output_mi_thunk (FILE *file, tree thunk ATTRIBUTE_UNUSED,
+		      HOST_WIDE_INT delta, HOST_WIDE_INT vcall_offset,
+		      tree function)
+{
+  int this_regno
+    = aggregate_value_p (TREE_TYPE (TREE_TYPE (function)), function) ? 4 : 3;
+  const char *this_name = reg_names[this_regno];
+
+
+  delta = or32_output_highadd (file, this_name, PROLOGUE_TMP, delta);
+  if (!vcall_offset)
+    or32_output_tailcall (file, function);
+  if (delta || !vcall_offset)
+    asm_fprintf (file, "\tl.addi\t%s,%s,%d\n",
+		 this_name, this_name, (int) delta);
+
+  /* If needed, add *(*THIS + VCALL_OFFSET) to THIS.  */
+  if (vcall_offset != 0)
+    {
+      const char *tmp_name = reg_names[PROLOGUE_TMP];
+
+      /* l.lwz tmp,0(this)           --> tmp = *this
+	 l.lwz tmp,vcall_offset(tmp) --> tmp = *(*this + vcall_offset)
+	 add this,this,tmp           --> this += *(*this + vcall_offset) */
+
+      asm_fprintf (file, "\tl.lwz\t%s,0(%s)\n",
+                   tmp_name, this_name);
+      vcall_offset = or32_output_highadd (file, tmp_name,
+					  STATIC_CHAIN_REGNUM, vcall_offset);
+      asm_fprintf (file, "\tl.lwz\t%s,%d(%s)\n",
+                   tmp_name, (int) vcall_offset, tmp_name);
+      or32_output_tailcall (file, function);
+      asm_fprintf (file, "\tl.add\t%s,%s,%s\n", this_name, this_name, tmp_name);
+    }
+}
+
 
 /* ========================================================================== */
 /* Target hook initialization.
@@ -2009,7 +2116,7 @@ or32_dwarf_calling_convention (const_tree  function ATTRIBUTE_UNUSED)
 
 /* Default target_flags if no switches specified. */
 #undef  TARGET_DEFAULT_TARGET_FLAGS
-#define TARGET_DEFAULT_TARGET_FLAGS (MASK_HARD_MUL)
+#define TARGET_DEFAULT_TARGET_FLAGS (MASK_HARD_MUL | MASK_SCHED_LOGUE)
 
 /* Output assembly directives to switch to section name. The section should
    have attributes as specified by flags, which is a bit mask of the SECTION_*
@@ -2034,9 +2141,6 @@ or32_dwarf_calling_convention (const_tree  function ATTRIBUTE_UNUSED)
 
 #undef  TARGET_PASS_BY_REFERENCE
 #define TARGET_PASS_BY_REFERENCE or32_pass_by_reference
-
-#undef  TARGET_FRAME_POINTER_REQUIRED
-#define TARGET_FRAME_POINTER_REQUIRED or32_frame_pointer_required
 
 #undef  TARGET_ARG_PARTIAL_BYTES
 #define TARGET_ARG_PARTIAL_BYTES or32_arg_partial_bytes
@@ -2065,9 +2169,73 @@ or32_dwarf_calling_convention (const_tree  function ATTRIBUTE_UNUSED)
 #undef TARGET_DWARF_CALLING_CONVENTION
 #define TARGET_DWARF_CALLING_CONVENTION  or32_dwarf_calling_convention
 
+#undef TARGET_ASM_OUTPUT_MI_THUNK
+#define TARGET_ASM_OUTPUT_MI_THUNK or32_output_mi_thunk
+
+#undef TARGET_ASM_CAN_OUTPUT_MI_THUNK
+#define TARGET_ASM_CAN_OUTPUT_MI_THUNK hook_bool_const_tree_hwi_hwi_const_tree_true
+
 /* Trampoline stubs are yet to be written. */
 /* #define TARGET_ASM_TRAMPOLINE_TEMPLATE */
 /* #define TARGET_TRAMPOLINE_INIT */
 
 /* Initialize the GCC target structure.  */
 struct gcc_target targetm = TARGET_INITIALIZER;
+
+/* Lay out structs with increased alignment so that they can be accessed
+   more efficiently.  But don't increase the size of one or two byte
+   structs.  */
+int
+or32_struct_alignment (tree t)
+{
+  unsigned HOST_WIDE_INT total = 0;
+  tree field;
+  unsigned max_align
+    = maximum_field_alignment ? maximum_field_alignment : BIGGEST_ALIGNMENT;
+  bool struct_p;
+
+  switch (TREE_CODE (t))
+    {
+    case RECORD_TYPE:
+      struct_p = true; break;
+    case UNION_TYPE: case QUAL_UNION_TYPE:
+      struct_p = false; break;
+    default: gcc_unreachable ();
+    }
+  /* Skip all non field decls */
+  for (field = TYPE_FIELDS (t); field; field = TREE_CHAIN (field))
+    {
+      unsigned HOST_WIDE_INT field_size;
+
+      if (TREE_CODE (field) != FIELD_DECL)
+	continue;
+      if (!host_integerp (DECL_SIZE (field), 1))
+	return max_align;
+      field_size = tree_low_cst (DECL_SIZE (field), 1);
+      if (field_size >= BIGGEST_ALIGNMENT)
+	return max_align;
+      if (struct_p)
+	total += field_size;
+      else
+	total = MAX (total, field_size);
+    }
+
+  return total < max_align ? (1U << ceil_log2 (total)) : max_align;
+}
+
+/* Increase the alignment of objects so that they are easier to copy.
+   Note that this can cause more struct copies to be inlined, so code
+   size might increase, but so should perfromance.  */
+int
+or32_data_alignment (tree t, int align)
+{
+  if (align < FASTEST_ALIGNMENT && TREE_CODE (t) == ARRAY_TYPE)
+    {
+      int size = int_size_in_bytes (t);
+
+      return (size > 0 && size < FASTEST_ALIGNMENT / BITS_PER_UNIT
+	      ? (1 << floor_log2 (size)) * BITS_PER_UNIT
+	      : FASTEST_ALIGNMENT);
+    }
+  return align;
+}

@@ -1,3 +1,8 @@
+2010-10-29  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* libc/machine/or32/setjmp.S, libc/machine/or32/longjmp.S:
+	Rename _setjmp / _longjmp to setjmp / longjmp.
+
 2010-07-07  Jeremy Bennett <jeremy.bennett@embecosm.com>
 
 	* testsuite/lib/newlibprocs.exp: Renamed from newlib.exp, since
