@@ -1,3 +1,14 @@
+2010-11-01  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* config/or32/or32.h (HANDLE_PRAGMA_PACK_PUSH_POP): Define.
+
+2010-10-31  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	 * config/or32/or32.c (or32_struct_alignment): Refine rules to
+	 avoid overriding user settings.
+
+	 * Don't increase alignment of struct with sole packed field.
+
 2010-10-29  Joern Rennecke  <joern.rennecke@embecosm.com>
 
 	* config/or32/or32.c (or32_output_mi_thunk): New function.
@@ -73,7 +84,6 @@
 	Use PROLOGUE_TMP and EPILOGUE_TMP.
 	(or32_function_ok_for_sibcall): Retrun true.
 	(TARGET_DEFAULT_TARGET_FLAGS): Include MASK_SCHED_LOGUE.
-	(STATIC_CHAIN_REGNUM): Change to GP_ARG_RETURNH.
 	(PROLOGUE_TMP, EPILOGUE_TMP): Define.
 	* config/or32/or32.md (CC_REG): New constant.  Use it to denote
 	register number of flags register.
@@ -128,7 +138,7 @@
 	* config/or32/or32.c (or32_struct_alignment): New function.
 	(or32_data_alignment): Likewise.
 	* config/or32/or32.h (STRUCTURE_SIZE_BOUNDARY): Default to 8.
-	(ROUND_TYPE_ALIGN, DATA_ALIGNMENT, LOCAL_ALIGNMEN): Define.
+	(ROUND_TYPE_ALIGN, DATA_ALIGNMENT, LOCAL_ALIGNMENT): Define.
 
 	* config/or32/or32.c (or32_struct_alignment): Take
 	maximum_field_alignment into account.

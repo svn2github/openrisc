@@ -1,4 +1,5 @@
 /* Definitions for rtems targeting an OpenRisc OR32 using COFF
+   ??? this is for OR32, but the rest of the above seems bogus.
    Copyright (C) 1996, 1997, 2005 Free Software Foundation, Inc.
    Contributed by Joel Sherrill (joel@OARcorp.com).
 

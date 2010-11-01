@@ -2052,7 +2052,7 @@ or32_output_highadd (FILE *file,
 }
 
 /* Output a tailcall to FUNCTION.  The caller will fill in the delay slot.  */
-void
+static void
 or32_output_tailcall (FILE *file, tree function)
 {
   /* We'll need to add more code if we want to fully support PIC.  */
@@ -2189,6 +2189,8 @@ int
 or32_struct_alignment (tree t)
 {
   unsigned HOST_WIDE_INT total = 0;
+  int default_align_fields = 0;
+  int special_align_fields = 0;
   tree field;
   unsigned max_align
     = maximum_field_alignment ? maximum_field_alignment : BIGGEST_ALIGNMENT;
@@ -2209,17 +2211,43 @@ or32_struct_alignment (tree t)
 
       if (TREE_CODE (field) != FIELD_DECL)
 	continue;
+      /* If this is a field in a non-qualified union, or the sole field in
+	 a struct, and the alignment was set by the user, don't change the
+	 alignment.
+	 If the field is a struct/union in a non-qualified union, we already
+	 had sufficient opportunity to pad it - if we didn't, that'd be
+	 because the alignment was set as above.
+	 Likewise if the field is a struct/union and the sole field in a
+	 struct.  */
+      if (DECL_USER_ALIGN (field)
+	  || TYPE_USER_ALIGN (TREE_TYPE (field))
+	  || TREE_CODE (TREE_TYPE (field)) == UNION_TYPE
+	  || TREE_CODE (TREE_TYPE (field)) == QUAL_UNION_TYPE
+	  || TREE_CODE (TREE_TYPE (field)) == RECORD_TYPE)
+	{
+	  if (TREE_CODE (t) == UNION_TYPE)
+	    return 0;
+	  special_align_fields++;
+	}
+      else if (DECL_PACKED (field))
+	special_align_fields++;
+      else
+	default_align_fields++;
       if (!host_integerp (DECL_SIZE (field), 1))
-	return max_align;
-      field_size = tree_low_cst (DECL_SIZE (field), 1);
+	field_size = max_align;
+      else
+	field_size = tree_low_cst (DECL_SIZE (field), 1);
       if (field_size >= BIGGEST_ALIGNMENT)
-	return max_align;
+	total = max_align;
       if (struct_p)
 	total += field_size;
       else
 	total = MAX (total, field_size);
     }
 
+  if (!default_align_fields
+      && (TREE_CODE (t) != RECORD_TYPE || special_align_fields <= 1))
+    return 0;
   return total < max_align ? (1U << ceil_log2 (total)) : max_align;
 }
 

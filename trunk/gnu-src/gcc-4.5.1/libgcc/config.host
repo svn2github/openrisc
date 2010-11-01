@@ -1,6 +1,7 @@
 # libgcc host-specific configuration file.
 # Copyright 1997, 1998, 1999, 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007,
 # 2008, 2009, 2010 Free Software Foundation, Inc.
+# Copyright (C) 2010 Embecosm Limited
 
 #This file is part of GCC.
 
@@ -447,6 +448,8 @@ moxie-*-*)
 or32-*-elf)
 	;;
 or32-*linux*)
+	tmake_file="${cpu_type}/t-${cpu_type} or32/t-or32"
+	extra_parts="$extra_parts crti.o crtn.o"
 	;;
 pdp11-*-*)
 	;;

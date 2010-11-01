@@ -47,7 +47,7 @@ Boston, MA 02111-1307, USA.  */
 #undef CPP_SPEC
 #define CPP_SPEC "%{mor32-newlib*:-idirafter %(target_prefix)/newlib-include}"
 
-/* Make sure we pick up the or32-crtbegin.o and or32-crtend.o files. */
+/* Make sure we pick up the crti.o, crtbegin.o, crtend.o and crtn.o files. */
 #undef STARTFILE_SPEC
 #define STARTFILE_SPEC "%{!shared:%{mor32-newlib*:%(target_prefix)/newlib/crt0.o} \
                         %{!mor32-newlib*:crt0.o%s} crti.o%s crtbegin.o%s}"
@@ -247,7 +247,8 @@ extern int target_flags;
   0, 1, 0, 1, 0, 1, 0, 1, 1, 1, 1}
 
 /* stack pointer: must be FIXED and CALL_USED */
-/* hard frame pointer: must be FIXED and CALL_USED */
+/* hard frame pointer: must be call saved.  */
+/* soft frame pointer / arg pointer: must be FIXED and CALL_USED */
 
 /* Return number of consecutive hard regs needed starting at reg REGNO
    to hold something of mode MODE.
@@ -1349,6 +1350,9 @@ enum reg_class
 /* Mark functions for garbage collection. */
 extern GTY(()) rtx or32_compare_op0;
 extern GTY(()) rtx or32_compare_op1;
+
+/* Enable parsing of #pragma pack(push,<n>) and #pragma pack(pop).  */
+#define HANDLE_PRAGMA_PACK_PUSH_POP
 
 
 #endif /* _OR32_H_ */
