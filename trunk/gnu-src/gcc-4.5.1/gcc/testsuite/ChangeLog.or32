@@ -1,0 +1,50 @@
+2010-10-29  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* gcc.dg/tree-ssa/pr44258.c (struct val): Add warning marker for !or32.
+
+2010-10-29  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* g++.dg/abi/packed1.C (struct INNER): Add or32-*-* to list of targets
+	that warn about inefficient alignment.
+
+2010-10-28  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* g++.dg/ext/strncpy-chk1.C (foo) [or32]: Don't expect warning.
+
+2010-10-26  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* gcc.dg/tree-ssa/pr44258.c (struct val): Mark b2 as packed.
+
+2010-09-25  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* gcc.dg/builtin-apply3.c (main): Add variable 'dummy' to pad stack.
+	* gcc.dg/builtin-apply2.c (main): Likewise.
+	(toplevel): Skip of or32.
+	* gcc.dg/builtin-stringop-chk-1.c (test2): Expect 10 byte struct to be
+	padded on or32.
+
+2010-09-16  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* gcc.dg/torture/pr37868.c: Add dg skip-if for alignment exception on
+	or32.
+
+2010-09-14  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* lib/target-supports.exp (check_profiling_available): Clear
+	profiling_available_saved for or32-*-elf*.
+
+	* gcc.dg/debug/dwarf2/inline2.c (dg-options): Use -gdwarf-2.
+	* gcc.dg/debug/dwarf2/inline3.c (dg-options): Likewise.
+	* gcc.dg/debug/dwarf2/struct-loc1.c (dg-options): Likewise.
+	* gcc.dg/debug/dwarf2/pr41445-1.c (dg-options): Likewise.
+	* gcc.dg/debug/dwarf2/pr41445-2.c (dg-options): Likewise.
+	* gcc.dg/debug/dwarf2/pr41445-3.c (dg-options): Likewise.
+	* gcc.dg/debug/dwarf2/pr41445-4.c (dg-options): Likewise.
+	* gcc.dg/debug/dwarf2/pr41445-5.c (dg-options): Likewise.
+	* gcc.dg/debug/dwarf2/pr41445-6.c (dg-options): Likewise.
+	* gcc.dg/debug/dwarf2/pr37726.c (dg-options): Likewise.
+	* gcc.dg/debug/dwarf2/global-used-types.c (dg-options): Likewise.
+
+2010-09-13  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* gcc.dg/20020312-2.c: Add __or32__ case.
