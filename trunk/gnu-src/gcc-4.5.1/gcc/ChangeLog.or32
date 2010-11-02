@@ -2,6 +2,10 @@
 
 	* config/or32/or32.h (HANDLE_PRAGMA_PACK_PUSH_POP): Define.
 
+	* config/or32/t-linux ($(T)crtbegin.o): Rename __dso_handle.
+
+	(crtbegin$(objext)): Likewise.
+
 2010-10-31  Joern Rennecke  <joern.rennecke@embecosm.com>
 
 	 * config/or32/or32.c (or32_struct_alignment): Refine rules to

@@ -33,3 +33,4 @@ NL_TARGET = -DNL_TARGET_or32
 
 ## COMMON_POST_CONFIG_FRAG
 
+wrapper.o: targ-vals.h

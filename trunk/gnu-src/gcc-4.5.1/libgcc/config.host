@@ -448,7 +448,7 @@ moxie-*-*)
 or32-*-elf)
 	;;
 or32-*linux*)
-	tmake_file="${cpu_type}/t-${cpu_type} or32/t-or32"
+	tmake_file="${cpu_type}/t-${cpu_type} or32/t-linux"
 	extra_parts="$extra_parts crti.o crtn.o"
 	;;
 pdp11-*-*)

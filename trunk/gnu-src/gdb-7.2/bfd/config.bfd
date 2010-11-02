@@ -1057,7 +1057,7 @@ case "${targ}" in
     targ_underscore=yes
     ;;
 
-  or32-*-elf)
+  or32-*-elf| or32-*-*linux* | or32-*-rtems)
     targ_defvec=bfd_elf32_or32_big_vec
     ;;
 

@@ -1,3 +1,7 @@
+2010-11-02  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* Makefile.in (wrapper.o): Depend on targ-vals.h .
+
 2010-09-20  Jeremy Bennett  <jeremy.bennett@embecosm.com>
 
 	* wrapper.c (sim_read, sim_write). Corrected pointer print format.

@@ -1,5 +1,5 @@
 
-#line 3 "../../srcw/ld/ldlex.c"
+#line 3 "../../unisrc/ld/ldlex.c"
 
 #define  YY_INT_ALIGNED short int
 
@@ -1655,7 +1655,7 @@ int yywrap (void) { return 1; }
 
 
 
-#line 1659 "../../srcw/ld/ldlex.c"
+#line 1659 "../../unisrc/ld/ldlex.c"
 
 #define INITIAL 0
 #define SCRIPT 1
@@ -1752,7 +1752,7 @@ static int input (void );
 /* This used to be an fputs(), but since the string might contain NUL's,
  * we now use fwrite().
  */
-#define ECHO fwrite( yytext, yyleng, 1, yyout )
+#define ECHO do { if (fwrite( yytext, yyleng, 1, yyout )) {} } while (0)
 #endif
 
 /* Gets input and stuffs it into "buf".  number of characters read, or YY_NULL,
@@ -1864,7 +1864,7 @@ YY_DECL
 	}
     }
 
-#line 1868 "../../srcw/ld/ldlex.c"
+#line 1868 "../../unisrc/ld/ldlex.c"
 
 	if ( !(yy_init) )
 		{
@@ -3031,7 +3031,7 @@ YY_RULE_SETUP
 #line 463 "ldlex.l"
 ECHO;
 	YY_BREAK
-#line 3035 "../../srcw/ld/ldlex.c"
+#line 3035 "../../unisrc/ld/ldlex.c"
 
 	case YY_END_OF_BUFFER:
 		{

@@ -1,3 +1,8 @@
+2010-11-01  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* config.host (or32-*linux*): Remove duplicate t-or32; add t-linux.
+	* config/or32/t-linux: New file.
+
 2010-10-30  Joern Rennecke  <joern.rennecke@embecosm.com>
 
 	* config.host (or32-*linux*): Handle new config.
