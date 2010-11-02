@@ -65,7 +65,7 @@ gdb_patch_url="ftp://ocuser:oc@opencores.org/toolchain"
 # Options passed to all GNU tools during configure
 or32configure="--disable-checking --enable-fast-install=N/A --disable-libssp --enable-languages=c,c++ --with-or1ksim=$prefix/or1ksim --with-newlib"
 
-simver="0.5.0rc1"
+simver="0.5.0rc2"
 sim="or1ksim-$simver.tar.bz2"
 sim_url="ftp://ocuser:oc@opencores.org/toolchain"
 
