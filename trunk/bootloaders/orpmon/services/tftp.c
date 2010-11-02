@@ -268,6 +268,7 @@ TftpHandler (unsigned char * pkt, unsigned dest, unsigned src, unsigned len)
 			TftpServerPort = src;
 			TftpLastBlock = 0;
 
+
 			if (TftpBlock != 1) {	/* Assertion */
 				printf ("\nTFTP error: "
 					"First block is not block 1 (%d)\n"
@@ -277,8 +278,11 @@ TftpHandler (unsigned char * pkt, unsigned dest, unsigned src, unsigned len)
 				break;
 			}
 		}
-		
+
 		if (TftpBlock == TftpLastBlock) {
+#ifdef ET_DEBUG
+		  printf("block %d - repeated\n",TftpLastBlock);
+#endif
 		  /*
 		   *	Same block again; resend ack (maybe got lost last time)
 		   */
@@ -287,6 +291,9 @@ TftpHandler (unsigned char * pkt, unsigned dest, unsigned src, unsigned len)
 		}
 		else
 		  {
+#ifdef ET_DEBUG
+		    printf("block %d - OK\n",TftpLastBlock);
+#endif
 		    TftpLastBlock = TftpBlock;
 		    NetSetTimeout (TIMEOUT * TICKS_PER_SEC, TftpTimeout);
 		    

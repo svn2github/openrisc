@@ -25,8 +25,6 @@
  */
 #define IPCONFIG                 3
 
-#define SDC_CONTROLLER_BASE 0x9e000000
-
 #if BOARD==0
 // Nibbler on bender1
 
@@ -54,8 +52,7 @@
 #  define BOARD_DEF_NAME       	  "marvin"
 
 #elif BOARD==2
-//ORSoC usbethdev board
-
+//ORSoC ordb1a3pe1500
 #  define FLASH_BASE_ADDR         0xf0000000
 #  define FLASH_SIZE              0x04000000
 #  define FLASH_BLOCK_SIZE        0x00040000
@@ -121,8 +118,8 @@
 #define BOARD_DEF_IMAGE_NAME    "boot.img"
 #define BOARD_DEF_LOAD_SPACE    0xa00000
 #define ETH_MDIOPHYADDR      	0x00
-#define ETH_MACADDR0      	0xad
-#define ETH_MACADDR1      	0xda
+#define ETH_MACADDR0      	0x00
+#define ETH_MACADDR1      	0x12
 #define ETH_MACADDR2      	0x34
 #define ETH_MACADDR3      	0x56
 #define ETH_MACADDR4      	0x78
@@ -144,17 +141,17 @@
 #define ETH_MACADDR4      	0x78
 #define ETH_MACADDR5      	0x9c
 
-#elif IPCONFIG==3 // ORSoC LAN
+#elif IPCONFIG==3 // JB ORSoC board 2
 
-#define BOARD_DEF_IP    	0xc0a80103 // 192.168.1.3
+#define BOARD_DEF_IP    	0xc0a8015a // 192.168.1.90
 #define BOARD_DEF_MASK  	0xffffff00 // 255.255.255.0
 #define BOARD_DEF_GW    	0xc0a80101 // 192.168.1.1
-#define BOARD_DEF_TBOOT_SRVR 	0xc0a80101 // 192.168.1.1
+#define BOARD_DEF_TBOOT_SRVR 	0xc0a80108 // 192.168.1.8
 #define BOARD_DEF_IMAGE_NAME    "boot.img"
 #define BOARD_DEF_LOAD_SPACE    0xa00000
 #define ETH_MDIOPHYADDR      	0x00
-#define ETH_MACADDR0      	0xad
-#define ETH_MACADDR1      	0xaa
+#define ETH_MACADDR0      	0x00
+#define ETH_MACADDR1      	0x12
 #define ETH_MACADDR2      	0x34
 #define ETH_MACADDR3      	0x56
 #define ETH_MACADDR4      	0x78
@@ -169,16 +166,14 @@
 #define BOARD_DEF_IMAGE_NAME    "boot.img"
 #define BOARD_DEF_LOAD_SPACE    0xa00000
 #define ETH_MDIOPHYADDR      	0x00
-#define ETH_MACADDR0      	0xad
-#define ETH_MACADDR1      	0xaa
+#define ETH_MACADDR0      	0x00
+#define ETH_MACADDR1      	0x01
 #define ETH_MACADDR2      	0x34
 #define ETH_MACADDR3      	0x56
 #define ETH_MACADDR4      	0x78
-#define ETH_MACADDR5      	0x9d
+#define ETH_MACADDR5      	0x9e
 
 #endif
-
-
 
 #define UART_BAUD_RATE  	115200
 
@@ -212,6 +207,8 @@
 #define ATA_BASE_ADDR   	0x9e000000
 #define KBD_BASE_ADD    	0x94000000
 #define KBD_IRQ         	5
+
+#define SDC_CONTROLLER_BASE     0x9e000000
 
 #define SANCHO_BASE_ADD         0x98000000
 /*  Address for ETH_DATA */

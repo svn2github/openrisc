@@ -122,7 +122,7 @@ static int net_check_prereq (proto_t protocol);
 int
 NetLoop(proto_t protocol)
 {
-#if 1
+
   if (!NetTxPacket) {
     int	i;
     printf("NetTxPacket begin setup\n");
@@ -264,7 +264,7 @@ NetLoop(proto_t protocol)
       return 0;
     }
   }
-#endif
+
 }
 
 /**********************************************************************/
@@ -460,11 +460,11 @@ NetReceive(volatile unsigned char * pkt, int len)
     printf("Got IP\n");
 #endif
     if (len < IP_HDR_SIZE) {
-      debug ("len bad %d < %d\n", len, IP_HDR_SIZE);
+      debug ("ip header len bad %d < %d\n", len, IP_HDR_SIZE);
       return;
     }
     if (len < SWAP16(ip->ip_len)) {
-      printf("len bad %d < %d\n", len, SWAP16(ip->ip_len));
+      printf("ip header (swap) len bad %d < %d\n", len, SWAP16(ip->ip_len));
       return;
     }
     len = SWAP16(ip->ip_len);

@@ -3,10 +3,8 @@
 #define ETH_TOTAL_BD  32
 #define ETH_MAXBUF_LEN 0x600
 
-#define ETH_TXBD_NUM      16
-#define ETH_TXBD_NUM_MASK (ETH_TXBD_NUM - 1)
-#define ETH_RXBD_NUM      16
-#define ETH_RXBD_NUM_MASK (ETH_RXBD_NUM - 1)
+#define ETH_TXBD_NUM      8
+#define ETH_RXBD_NUM      24
 
 typedef unsigned int uint;
 

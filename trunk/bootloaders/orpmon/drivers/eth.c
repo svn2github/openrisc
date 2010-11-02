@@ -10,6 +10,7 @@
 
 //#define PRINT_PACKETS
 //#define ETHPHY_10MBPS
+//#define ETHPHY_RESET_ON_INIT
 
 extern int printf (const char *fmt, ...);
 extern void lolev_ie(void);
@@ -31,8 +32,25 @@ int eth_monitor_enabled;
 static void
 print_packet(unsigned long add, int len)
 {
+  int truncate = (len > 256);
+  int length_to_print = truncate ? 256 : len;
+
   int i;
- 
+  printf("\nipacket: add = %lx len = %d\n", add, len);
+  for(i = 0; i < length_to_print; i++) {
+    if(!(i % 8))
+      printf(" ");
+    if(!(i % 16))
+      printf("\n");
+    printf(" %.2x", *(((unsigned char *)add) + i));
+
+  }
+  printf("\n");
+
+  if (truncate)
+    printf("\ttruncated....\n");
+  /*
+  int i;
   printf("ipacket: add = %lx len = %d\n", add, len);
   for(i = 0; i < len; i++) {
       if(!(i % 16)) printf("\n");
@@ -40,6 +58,7 @@ print_packet(unsigned long add, int len)
       printf(" %.2x", *(((unsigned char *)add) + i));
   }
   printf("\n");
+  */
 }
 
 void init_tx_bd_pool(void)
@@ -213,8 +232,20 @@ void eth_init (void (*rec)(volatile unsigned char *, int))
   REG32(ETH_REG_BASE + ETH_MODER) = ETH_MODER_RST;    /* Reset ON */
   REG32(ETH_REG_BASE + ETH_MODER) &= ~ETH_MODER_RST;  /* Reset OFF */
 
-  /* Setting TX BD number */
-  REG32(ETH_REG_BASE + ETH_TX_BD_NUM) = ETH_TXBD_NUM;
+#ifdef ETHPHY_RESET_ON_INIT
+  REG32(ETH_REG_BASE + ETH_MIIADDRESS) = 0<<8; // BMCR reg
+  REG32(ETH_REG_BASE + ETH_MIITX_DATA) = 0x8000; // RESET bit
+  REG32(ETH_REG_BASE + ETH_MIICOMMAND) = ETH_MIICOMMAND_WCTRLDATA;
+  while(REG32(ETH_REG_BASE + ETH_MIISTATUS) & ETH_MIISTATUS_BUSY);
+
+  while(1){
+    REG32(ETH_REG_BASE + ETH_MIIADDRESS) = 1<<8;
+    REG32(ETH_REG_BASE + ETH_MIICOMMAND) = ETH_MIICOMMAND_RSTAT;
+    while(REG32(ETH_REG_BASE + ETH_MIISTATUS) & ETH_MIISTATUS_BUSY);
+    if(REG32(ETH_REG_BASE + ETH_MIIRX_DATA) & 0x04)
+      break;
+  }
+#endif
     
 #ifdef ETHPHY_10MBPS
   // Set PHY to 10 Mbps full duplex
@@ -232,6 +263,10 @@ void eth_init (void (*rec)(volatile unsigned char *, int))
   }
   
 #endif
+
+
+  /* Setting TX BD number */
+  REG32(ETH_REG_BASE + ETH_TX_BD_NUM) = ETH_TXBD_NUM;
 
   /* Set min/max packet length */
   REG32(ETH_REG_BASE + ETH_PACKETLEN) = 0x00400600;
@@ -265,6 +300,8 @@ void eth_init (void (*rec)(volatile unsigned char *, int))
 
   /* Initialize rx pointers */
   rx_next = 0;
+
+  /* Assign receive function pointer to what we were passed */
   receive = rec;
 
   /* Set local MAC address */
@@ -277,6 +314,9 @@ void eth_init (void (*rec)(volatile unsigned char *, int))
 
   /* Clear all pending interrupts */
   REG32(ETH_REG_BASE + ETH_INT) = 0xffffffff;
+
+  /* Register interrupt handler */
+  int_add (ETH_IRQ, eth_int);
 
   /* Promisc, IFG, CRCEn */
   REG32(ETH_REG_BASE + ETH_MODER) |= ETH_MODER_PAD | ETH_MODER_IFG | ETH_MODER_CRCEN;
@@ -300,8 +340,6 @@ void eth_init (void (*rec)(volatile unsigned char *, int))
   /* Enable receiver and transmiter */
   REG32(ETH_REG_BASE + ETH_MODER) |= ETH_MODER_RXEN | ETH_MODER_TXEN;
 
-  /* Register interrupt handler */
-  int_add (ETH_IRQ, eth_int);
 }
 
 /* Returns pointer to next free buffer; NULL if none available */
@@ -320,10 +358,14 @@ void *eth_get_tx_buf ()
 
   add = bd[tx_next].addr;
 
-  tx_next = (tx_next + 1) & ETH_TXBD_NUM_MASK;
+  tx_next++;
 
-  if(tx_next == tx_last)
-      tx_full = 1;
+  if (tx_next == ETH_TXBD_NUM)
+    tx_next = 0;
+
+  // Disabled for now - highly unlikely we'll ever run out of TX buffer spots
+  //if(tx_next == tx_last)
+  //tx_full = 1;
 
   return (void *)add;
 }
@@ -335,7 +377,7 @@ void eth_send (void *buf, unsigned long len)
     int i;
 
 #ifdef PRINT_PACKETS  
-  printf("transmitted packet:\t");
+    printf("transmitted packet txbd %d:\t", tx_last);
   print_packet(buf, len);
 #endif
 
@@ -361,13 +403,18 @@ void eth_send (void *buf, unsigned long len)
       goto retry_eth_send;
     }
   */
-  tx_last = (tx_last + 1) & ETH_TXBD_NUM_MASK;
+  tx_last++;
+
+  if (tx_last == ETH_TXBD_NUM)
+    tx_last = 0;
+
   tx_full = 0;
 
 }
 
 /* Waits for packet and pass it to the upper layers */
-unsigned long eth_rx (void)
+unsigned long 
+eth_rx (void)
 {
   eth_bd  *bd;
   unsigned long len = 0;
@@ -413,7 +460,7 @@ unsigned long eth_rx (void)
 
     if(!bad) {
 #ifdef PRINT_PACKETS
-      printf("received packet:\t");
+      printf("received packet: rxbd %d\t",rx_next);
       print_packet(bd[rx_next].addr, bd[rx_next].len_status >> 16);
 #endif
 
@@ -424,7 +471,10 @@ unsigned long eth_rx (void)
     bd[rx_next].len_status &= ~ETH_RX_BD_STATS;
     bd[rx_next].len_status |= ETH_RX_BD_EMPTY;
 
-    rx_next = (rx_next + 1) & ETH_RXBD_NUM_MASK;
+    rx_next++;
+
+    if (rx_next == ETH_RXBD_NUM)
+      rx_next = 0;
   }
 }
 
