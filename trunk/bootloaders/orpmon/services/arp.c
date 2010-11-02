@@ -29,13 +29,14 @@
 #include "arp.h"
 #include "string.h"
 
-#define TIMEOUT		5		/* Seconds before trying ARP again */
-#define TIMEOUT_COUNT	1		/* # of timeouts before giving up  */
-#define DEBUG // jb
-static void ArpHandler(unsigned char *pkt, unsigned dest, unsigned src, unsigned len);
+#define TIMEOUT		5	/* Seconds before trying ARP again */
+#define TIMEOUT_COUNT	1	/* # of timeouts before giving up  */
+#define DEBUG			// jb
+static void ArpHandler(unsigned char *pkt, unsigned dest, unsigned src,
+		       unsigned len);
 static void ArpTimeout(void);
 
-int	ArpTry = 0;
+int ArpTry = 0;
 
 /*
  *	Handle a ARP received packet.
@@ -44,68 +45,67 @@ static void
 ArpHandler(unsigned char *pkt, unsigned dest, unsigned src, unsigned len)
 {
 	/* Check if the frame is really an ARP reply */
-	if (memcmp (NetServerEther, NetBcastAddr, 6) != 0) {
+	if (memcmp(NetServerEther, NetBcastAddr, 6) != 0) {
 #ifdef	DEBUG
 		printf("Got good ARP - start TFTP\n");
 #endif
-		TftpStart ();
+		TftpStart();
 	}
 }
-
 
 /*
  *	Timeout on ARP request.
  */
-static void
-ArpTimeout(void)
+static void ArpTimeout(void)
 {
 	if (ArpTry >= TIMEOUT_COUNT) {
 		printf("\nRetry count exceeded; starting again\n");
-		NetStartAgain ();
+		NetStartAgain();
 	} else {
-		NetSetTimeout (TIMEOUT * TICKS_PER_SEC, ArpTimeout);
-		ArpRequest ();
+		NetSetTimeout(TIMEOUT * TICKS_PER_SEC, ArpTimeout);
+		ArpRequest();
 	}
 }
 
-
-void
-ArpRequest (void)
+void ArpRequest(void)
 {
 	int i;
 	volatile unsigned char *pkt;
-	ARP_t *	arp;
+	ARP_t *arp;
 #ifdef	DEBUG
 	printf("ARP broadcast %d\n", ++ArpTry);
-#endif	
-	pkt = NetTxPacket;
+#endif
+	// NetTxPacket is a char* to global buffer used for constructing 
+	// a packet to send.
+	pkt = NetTxPacket; 
 
+	// Setup an ethernet header for ARP protocol in packet
 	NetSetEther(pkt, NetBcastAddr, PROT_ARP);
 	pkt += ETHER_HDR_SIZE;
 
-	arp = (ARP_t *)pkt;
+	arp = (ARP_t *) pkt;
 
 	arp->ar_hrd = ARP_ETHER;
 	arp->ar_pro = PROT_IP;
 	arp->ar_hln = 6;
 	arp->ar_pln = 4;
-	arp->ar_op  = ARPOP_REQUEST;
+	arp->ar_op = ARPOP_REQUEST;
 	NetCopyEther(&arp->ar_data[0], NetOurEther);	/* source ET addr */
-	//*(IPaddr_t *)(&arp->ar_data[6]) = NetOurIP;	/* source IP addr */
-	memcpy(&arp->ar_data[6], (unsigned char*) &NetOurIP, 4);
-	
-	for (i=10; i<16; ++i) {
-		arp->ar_data[i] = 0;			/* dest ET addr = 0*/
+	//*(IPaddr_t *)(&arp->ar_data[6]) = NetOurIP;   /* source IP addr */
+	memcpy(&arp->ar_data[6], (unsigned char *)&NetOurIP, 4);
+
+	for (i = 10; i < 16; ++i) {
+		arp->ar_data[i] = 0;	/* dest ET addr = 0 */
 	}
 
-	if((NetServerIP & NetOurSubnetMask) != (NetOurIP & NetOurSubnetMask)) {
-	  //*(IPaddr_t *)(&arp->ar_data[16]) = NetOurGatewayIP;
-	  memcpy(&arp->ar_data[16], (unsigned char*) &NetOurGatewayIP, 
-		 sizeof(IPaddr_t));
+	if ((NetServerIP & NetOurSubnetMask) != (NetOurIP & NetOurSubnetMask)) {
+		//*(IPaddr_t *)(&arp->ar_data[16]) = NetOurGatewayIP;
+		memcpy(&arp->ar_data[16], (unsigned char *)&NetOurGatewayIP,
+		       sizeof(IPaddr_t));
 	} else {
-	  //*((IPaddr_t *)(&(arp->ar_data[16]))) = NetServerIP;
-	  memcpy(&arp->ar_data[16], (unsigned char*) &NetServerIP,
-		 sizeof(IPaddr_t));
+		//*((IPaddr_t *)(&(arp->ar_data[16]))) = NetServerIP;
+		memcpy(&arp->ar_data[16], (unsigned char *)&NetServerIP,
+		       sizeof(IPaddr_t));
 	}
 
 	NetSendPacket(NetTxPacket, ETHER_HDR_SIZE + ARP_HDR_SIZE);
@@ -113,4 +113,3 @@ ArpRequest (void)
 	NetSetTimeout(TIMEOUT * TICKS_PER_SEC, ArpTimeout);
 	NetSetHandler(ArpHandler);
 }
-

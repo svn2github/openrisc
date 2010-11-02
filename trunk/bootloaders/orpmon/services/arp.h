@@ -21,7 +21,6 @@
  * MA 02111-1307 USA
  */
 
-
 #ifndef __ARP_H__
 #define __ARP_H__
 
@@ -32,9 +31,8 @@
 
 extern int ArpTry;
 
-extern void ArpRequest (void);	/* Send a ARP request */
+extern void ArpRequest(void);	/* Send a ARP request */
 
 /**********************************************************************/
 
 #endif /* __ARP_H__ */
-

@@ -6,6 +6,7 @@
         .extern _dst_beg
         .extern _dst_end        
         .extern int_main
+	.extern int_error
         .extern tick_interrupt
         .extern _crc32
         
@@ -86,10 +87,13 @@ _buserr:
 	/* Just trap */	
 	l.trap 0
 .endif	
+.if 0
 	l.nop 0x1
 	l.j 0
 	l.nop
-
+.endif
+	l.j _int_error
+	l.ori r3, r0, 0x2
 	
 .if IN_FLASH
         .section .vectors, "ax"
@@ -127,9 +131,13 @@ _alignerr:
 .if 0	
 	l.trap 0
 .endif	
+.if 0
 	l.nop 0x1
 	l.j 0
 	l.nop
+.endif
+	l.j _int_error
+	l.ori r3, r0, 0x6
 	
 .if IN_FLASH
         .org 0x700
@@ -141,10 +149,13 @@ _illinsn:
 	/* Just trap */
 	l.trap 0
 .endif	
+.if 0
 	l.nop 0x1
 	l.j 0
 	l.nop
-
+.endif
+	l.j _int_error
+	l.ori r3, r0, 0x7
 
 .if IN_FLASH
         .org 0x800
@@ -606,3 +617,11 @@ align_end:
         l.lwz   r31,0x7c(r1)
         l.addi  r1,r1,128
         l.rfe
+
+
+	/* Jump to error function. Clobber r2 */
+_int_error:
+	l.movhi r2,hi(int_error)
+        l.ori   r2,r2,lo(int_error)
+        l.jr  r2
+        l.nop

@@ -19,33 +19,32 @@
  *	BOOTP header.
  */
 #if (CONFIG_COMMANDS & CFG_CMD_DHCP)
-#define OPT_SIZE 312	/* Minimum DHCP Options size per RFC2131 - results in 576 byte pkt */
+#define OPT_SIZE 312		/* Minimum DHCP Options size per RFC2131 - results in 576 byte pkt */
 #else
 #define OPT_SIZE 64
 #endif
 
-typedef struct
-{
-	unsigned char		bp_op;		/* Operation				*/
+typedef struct {
+	unsigned char bp_op;	/* Operation                            */
 # define OP_BOOTREQUEST	1
 # define OP_BOOTREPLY	2
-	unsigned char		bp_htype;	/* Hardware type			*/
+	unsigned char bp_htype;	/* Hardware type                        */
 # define HWT_ETHER	1
-	unsigned char		bp_hlen;	/* Hardware address length		*/
+	unsigned char bp_hlen;	/* Hardware address length              */
 # define HWL_ETHER	6
-	unsigned char		bp_hops;	/* Hop count (gateway thing)		*/
-	unsigned long		bp_id;		/* Transaction ID			*/
-	unsigned short		bp_secs;	/* Seconds since boot			*/
-	unsigned short		bp_spare1;	/* Alignment				*/
-	IPaddr_t	bp_ciaddr;	/* Client IP address			*/
-	IPaddr_t	bp_yiaddr;	/* Your (client) IP address		*/
-	IPaddr_t	bp_siaddr;	/* Server IP address			*/
-	IPaddr_t	bp_giaddr;	/* Gateway IP address			*/
-	unsigned char		bp_chaddr[16];	/* Client hardware address		*/
-	char		bp_sname[64];	/* Server host name			*/
-	char		bp_file[128];	/* Boot file name			*/
-	char		bp_vend[OPT_SIZE];	/* Vendor information			*/
-}	Bootp_t;
+	unsigned char bp_hops;	/* Hop count (gateway thing)            */
+	unsigned long bp_id;	/* Transaction ID                       */
+	unsigned short bp_secs;	/* Seconds since boot                   */
+	unsigned short bp_spare1;	/* Alignment                            */
+	IPaddr_t bp_ciaddr;	/* Client IP address                    */
+	IPaddr_t bp_yiaddr;	/* Your (client) IP address             */
+	IPaddr_t bp_siaddr;	/* Server IP address                    */
+	IPaddr_t bp_giaddr;	/* Gateway IP address                   */
+	unsigned char bp_chaddr[16];	/* Client hardware address              */
+	char bp_sname[64];	/* Server host name                     */
+	char bp_file[128];	/* Boot file name                       */
+	char bp_vend[OPT_SIZE];	/* Vendor information                   */
+} Bootp_t;
 
 #define BOOTP_HDR_SIZE	sizeof (Bootp_t)
 #define BOOTP_SIZE	(ETHER_HDR_SIZE + IP_HDR_SIZE + BOOTP_HDR_SIZE)
@@ -56,29 +55,29 @@ typedef struct
  */
 
 /* bootp.c */
-extern unsigned long	BootpID;		/* ID of cur BOOTP request		*/
-extern char	BootFile[128];		/* Boot file name			*/
-extern int	BootpTry;
+extern unsigned long BootpID;	/* ID of cur BOOTP request              */
+extern char BootFile[128];	/* Boot file name                       */
+extern int BootpTry;
 #ifdef CONFIG_BOOTP_RANDOM_DELAY
-unsigned long		seed1, seed2;		/* seed for random BOOTP delay		*/
+unsigned long seed1, seed2;	/* seed for random BOOTP delay          */
 #endif
 
-
 /* Send a BOOTP request */
-extern void	BootpRequest (void);
+extern void BootpRequest(void);
 
 /****************** DHCP Support *********************/
 extern void DhcpRequest(void);
 
 /* DHCP States */
 typedef enum { INIT,
-	       INIT_REBOOT,
-	       REBOOTING,
-	       SELECTING,
-	       REQUESTING,
-	       REBINDING,
-	       BOUND,
-	       RENEWING } dhcp_state_t;
+	INIT_REBOOT,
+	REBOOTING,
+	SELECTING,
+	REQUESTING,
+	REBINDING,
+	BOUND,
+	RENEWING
+} dhcp_state_t;
 
 #define DHCP_DISCOVER 1
 #define DHCP_OFFER    2

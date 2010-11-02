@@ -20,423 +20,423 @@ int num_commands = 0;
 
 command_struct command[MAX_COMMANDS];
 
-void putc (const char c)
+void putc(const char c)
 {
-  debug ("putc %i, %i = %c\n", bd.bi_console_type, c, c);
-  switch (bd.bi_console_type) {
-  case CT_NONE:
-    break;
-  case CT_UART:
-    uart_putc (c);
-    break;
+	debug("putc %i, %i = %c\n", bd.bi_console_type, c, c);
+	switch (bd.bi_console_type) {
+	case CT_NONE:
+		break;
+	case CT_UART:
+		uart_putc(c);
+		break;
 #if CRT_ENABLED==1
-  case CT_CRT:
-    screen_putc (c);
-    break;
+	case CT_CRT:
+		screen_putc(c);
+		break;
 #endif
-  case CT_SIM:
-    __printf ("%c", c);
-    break;
-  }
+	case CT_SIM:
+		__printf("%c", c);
+		break;
+	}
 }
 
-int getc ()
+int getc()
 {
-  int ch = 0;
-  debug ("getc %i\n", bd.bi_console_type);
-  switch (bd.bi_console_type) {
+	int ch = 0;
+	debug("getc %i\n", bd.bi_console_type);
+	switch (bd.bi_console_type) {
 #if KBD_ENABLED==1
-  case CT_CRT:
-    while ((volatile int)kbd_head == (volatile int)kbd_tail);
-    ch = kbd_buf[kbd_tail];
-    kbd_tail = (kbd_tail + 1) % KBDBUF_SIZE;
-    return ch;
+	case CT_CRT:
+		while ((volatile int)kbd_head == (volatile int)kbd_tail) ;
+		ch = kbd_buf[kbd_tail];
+		kbd_tail = (kbd_tail + 1) % KBDBUF_SIZE;
+		return ch;
 #endif
-  case CT_UART:
-    return uart_getc ();
-    break;
-  case CT_NONE: /* just to satisfy the compiler */
-  case CT_SIM:
-    break;
-  }
-  return -1;
+	case CT_UART:
+		return uart_getc();
+		break;
+	case CT_NONE:		/* just to satisfy the compiler */
+	case CT_SIM:
+		break;
+	}
+	return -1;
 }
 
-int testc ()
+int testc()
 {
-  debug ("testc %i\n", bd.bi_console_type);
-  switch (bd.bi_console_type) {
+	debug("testc %i\n", bd.bi_console_type);
+	switch (bd.bi_console_type) {
 #if KBD_ENABLED
-  case CT_CRT:
-    if (kbd_head == kbd_tail) return 0;
-    else return getc ();
+	case CT_CRT:
+		if (kbd_head == kbd_tail)
+			return 0;
+		else
+			return getc();
 #endif
-  case CT_UART:
-    return uart_testc ();
-    break;
-  case CT_NONE: /* just to satisfy the compiler */
-  case CT_SIM:
-    break;
-  }
-  return -1;
+	case CT_UART:
+		return uart_testc();
+		break;
+	case CT_NONE:		/* just to satisfy the compiler */
+	case CT_SIM:
+		break;
+	}
+	return -1;
 }
 
-int ctrlc ()
+int ctrlc()
 {
-  if (testc ()) {
-    switch (getc ()) {
-      case 0x03:    /* ^C - Control C */
-        return 1;
-      default:
-        break;
-    }
-  }
-  return 0;
+	if (testc()) {
+		switch (getc()) {
+		case 0x03:	/* ^C - Control C */
+			return 1;
+		default:
+			break;
+		}
+	}
+	return 0;
 }
 
-void
-print_or1k_cache_info()
+void print_or1k_cache_info()
 {
-  // Read out UPR, check what modules we have
-  unsigned long upr = mfspr(SPR_UPR);
-  printf("Instruction cache:\t");
-  if (upr & SPR_UPR_ICP)
-    {
-      // We have instruction cache, read out ICCFGR
-      
-      unsigned long iccfgr = mfspr(SPR_ICCFGR);
-      unsigned int cbs; // cache block size
-      unsigned long ncs = 1 << ((iccfgr & SPR_ICCFGR_NCS) >> 3);
-      if (iccfgr & SPR_ICCFGR_CBS)
-	cbs = 32;
-      else
-	cbs = 16;
+	// Read out UPR, check what modules we have
+	unsigned long upr = mfspr(SPR_UPR);
+	printf("Instruction cache:\t");
+	if (upr & SPR_UPR_ICP) {
+		// We have instruction cache, read out ICCFGR
 
-      printf("%dkB (BS: %d Sets: %d)\n",
-	     (cbs * ncs)/1024, cbs, ncs);
-      
-    }
-  else
-    printf(" not present\n");
+		unsigned long iccfgr = mfspr(SPR_ICCFGR);
+		unsigned int cbs;	// cache block size
+		unsigned long ncs = 1 << ((iccfgr & SPR_ICCFGR_NCS) >> 3);
+		if (iccfgr & SPR_ICCFGR_CBS)
+			cbs = 32;
+		else
+			cbs = 16;
 
-  printf("Data cache:\t\t");
-  if (upr & SPR_UPR_DCP)
-    {
-      // We have instruction cache, read out DCCFGR
-      
-      unsigned long iccfgr = mfspr(SPR_DCCFGR);
-      unsigned int cbs; // cache block size
-      unsigned long ncs = 1 << ((iccfgr & SPR_DCCFGR_NCS) >> 3);
-      if (iccfgr & SPR_DCCFGR_CBS)
-	cbs = 32;
-      else
-	cbs = 16;
+		printf("%dkB (BS: %d Sets: %d)\n",
+		       (cbs * ncs) / 1024, cbs, ncs);
 
-      printf("%dkB (BS: %d Sets: %d)\n",
-	     (cbs * ncs)/1024, cbs, ncs);
-      
-    }
-  else
-    printf(" not present\n");
-  
+	} else
+		printf(" not present\n");
+
+	printf("Data cache:\t\t");
+	if (upr & SPR_UPR_DCP) {
+		// We have instruction cache, read out DCCFGR
+
+		unsigned long iccfgr = mfspr(SPR_DCCFGR);
+		unsigned int cbs;	// cache block size
+		unsigned long ncs = 1 << ((iccfgr & SPR_DCCFGR_NCS) >> 3);
+		if (iccfgr & SPR_DCCFGR_CBS)
+			cbs = 32;
+		else
+			cbs = 16;
+
+		printf("%dkB (BS: %d Sets: %d)\n",
+		       (cbs * ncs) / 1024, cbs, ncs);
+
+	} else
+		printf(" not present\n");
+
 }
 
-unsigned long parse_ip (char *ip)
+unsigned long parse_ip(char *ip)
 {
-  unsigned long num;
-  num = strtoul (ip, &ip, 10) & 0xff;
-  if (*ip++ != '.') return 0;
-  num = (num << 8) | (strtoul (ip, &ip, 10) & 0xff);
-  if (*ip++ != '.') return 0;
-  num = (num << 8) | (strtoul (ip, &ip, 10) & 0xff);
-  if (*ip++ != '.') return 0;
-  num = (num << 8) | (strtoul (ip, &ip, 10) & 0xff);
-  return num;
+	unsigned long num;
+	num = strtoul(ip, &ip, 10) & 0xff;
+	if (*ip++ != '.')
+		return 0;
+	num = (num << 8) | (strtoul(ip, &ip, 10) & 0xff);
+	if (*ip++ != '.')
+		return 0;
+	num = (num << 8) | (strtoul(ip, &ip, 10) & 0xff);
+	if (*ip++ != '.')
+		return 0;
+	num = (num << 8) | (strtoul(ip, &ip, 10) & 0xff);
+	return num;
 }
 
-void change_console_type (enum bi_console_type_t con_type)
+void change_console_type(enum bi_console_type_t con_type)
 {
-  debug ("Console change %i -> %i\n", bd.bi_console_type, con_type);
-  /* Close previous */
-  switch (bd.bi_console_type) {
-  case CT_NONE:
-  case CT_UART:
-  case CT_CRT:
-  case CT_SIM:
-    break;
-  }
-  bd.bi_console_type = con_type;
-  /* Initialize new */
-  switch (bd.bi_console_type) {
-  case CT_NONE:
-    break;
-  case CT_UART:
-    uart_init ();
-    break;
-  case CT_CRT:
+	debug("Console change %i -> %i\n", bd.bi_console_type, con_type);
+	/* Close previous */
+	switch (bd.bi_console_type) {
+	case CT_NONE:
+	case CT_UART:
+	case CT_CRT:
+	case CT_SIM:
+		break;
+	}
+	bd.bi_console_type = con_type;
+	/* Initialize new */
+	switch (bd.bi_console_type) {
+	case CT_NONE:
+		break;
+	case CT_UART:
+		uart_init();
+		break;
+	case CT_CRT:
 #if CRT_ENABLED==1
-    screen_init ();
+		screen_init();
 #endif
 #if KBD_ENABLED
-    kbd_init ();
+		kbd_init();
 #endif
-    break;
-  case CT_SIM:
-    break;
-  }
+		break;
+	case CT_SIM:
+		break;
+	}
 }
 
-void register_command_func (const char *name, const char *params, const char *help, int (*func)(int argc, char *argv[]))
+void register_command_func(const char *name, const char *params,
+			   const char *help, int (*func) (int argc,
+							  char *argv[]))
 {
-  debug ("register_command '%s'\n", name);
-  if (num_commands < MAX_COMMANDS) {
-    command[num_commands].name = name;
-    command[num_commands].params = params;
-    command[num_commands].help = help;
-    command[num_commands].func = func;
-    num_commands++;
-  } else printf ("Command '%s' ignored; MAX_COMMANDS limit reached\n", name);
+	debug("register_command '%s'\n", name);
+	if (num_commands < MAX_COMMANDS) {
+		command[num_commands].name = name;
+		command[num_commands].params = params;
+		command[num_commands].help = help;
+		command[num_commands].func = func;
+		num_commands++;
+	} else
+		printf("Command '%s' ignored; MAX_COMMANDS limit reached\n",
+		       name);
 }
 
 /* Process command and arguments by executing
    specific function. */
 void mon_command(void)
 {
-  char c = '\0';
-  char str[1000];
-  char *pstr = str;
-  char *command_str;
-  char *argv[20];
-  int argc = 0;
-  int chcnt = 0;
+	char c = '\0';
+	char str[1000];
+	char *pstr = str;
+	char *command_str;
+	char *argv[20];
+	int argc = 0;
+	int chcnt = 0;
 
-  /* Show prompt */
-  printf ("\n" BOARD_DEF_NAME"> ");
+	/* Show prompt */
+	printf("\n" BOARD_DEF_NAME "> ");
 
-  while(1)
-    {
-      c=getc();
+	while (1) {
+		c = getc();
 
-      if (c == 0x7f) // Backspace on picocom is showing up as 0x7f
-	c = '\b';
+		if (c == 0x7f)	// Backspace on picocom is showing up as 0x7f
+			c = '\b';
 
-      if (c == '\r' || c == '\f' || c == '\n')
-	{
-	  // Mark end of string
-	  *pstr = '\0';
-	  putc('\n');
-	  break;
+		if (c == '\r' || c == '\f' || c == '\n') {
+			// Mark end of string
+			*pstr = '\0';
+			putc('\n');
+			break;
+		} else if (c == '\b')	// Backspace
+		{
+			if (chcnt > 0) {
+				putc(c);
+				putc(' ');	// cover char with space
+				putc(c);
+				pstr--;
+				chcnt--;
+			}
+		} else {
+			putc(c);
+			*pstr++ = c;
+			chcnt++;
+		}
 	}
-      else if (c == '\b') // Backspace
-	{
-	  if (chcnt > 0)
-	    {
-	      putc(c);
-	      putc(' '); // cover char with space
-	      putc(c);
-	      pstr--;
-	      chcnt--;
-	    }
+
+	/* Skip leading blanks */
+	pstr = str;
+	while (*pstr == ' ' && *pstr != '\0')
+		pstr++;
+
+	/* Get command from the string */
+	command_str = pstr;
+
+	while (1) {
+		/* Go to next argument */
+		while (*pstr != ' ' && *pstr != '\0')
+			pstr++;
+		if (*pstr) {
+			*pstr++ = '\0';
+			while (*pstr == ' ')
+				pstr++;
+			argv[argc++] = pstr;
+		} else
+			break;
 	}
-      else
+
 	{
-	  putc(c);
-	  *pstr++ = c;
-	  chcnt++;
+		int i, found = 0;
+
+		for (i = 0; i < num_commands; i++)
+			if (strcmp(command_str, command[i].name) == 0) {
+				switch (command[i].func(argc, &argv[0])) {
+				case -1:
+					printf
+					    ("Missing/wrong parameters, usage: %s %s\n",
+					     command[i].name,
+					     command[i].params);
+					break;
+				}
+
+				found++;
+				break;
+			}
+		/* 'built-in' build command */
+		if (strcmp(command_str, "build") == 0) {
+			printf("Build tag: %s", BUILD_VERSION);
+			found++;
+		}
+		if (!found)
+			printf("Unknown command. Type 'help' for help.\n");
 	}
-    }
 
-  /* Skip leading blanks */
-  pstr = str;
-  while (*pstr == ' ' && *pstr != '\0') pstr++;
-
-  /* Get command from the string */
-  command_str = pstr;
-
-  while (1) {
-    /* Go to next argument */
-    while (*pstr != ' ' && *pstr != '\0') pstr++;
-    if (*pstr) {
-      *pstr++ = '\0';
-      while (*pstr == ' ') pstr++;
-      argv[argc++] = pstr;
-    }
-    else
-      break;
-  }
-
-  {
-    int i, found = 0;
-
-    for (i = 0; i < num_commands; i++)
-      if (strcmp (command_str, command[i].name) == 0)
-      {
-        switch ( command[i].func(argc, &argv[0]) )
-        {
-          case -1:
-            printf ("Missing/wrong parameters, usage: %s %s\n", 
-		    command[i].name, command[i].params);
-            break;
-        }
-
-        found++;
-        break;
-      }
-    /* 'built-in' build command */
-    if(strcmp(command_str, "build") == 0) {
-      printf("Build tag: %s", BUILD_VERSION);
-      found++;
-    }
-    if (!found)
-      printf ("Unknown command. Type 'help' for help.\n");
-  }
-  
 }
 
 #if HELP_ENABLED
-extern unsigned long _src_addr; // Stack section ends here, will print it out
+extern unsigned long _src_addr;	// Stack section ends here, will print it out
 /* Displays help screen */
-int help_cmd (int argc, char *argv[])
+int help_cmd(int argc, char *argv[])
 {
-  int i;
-  for (i = 0; i < num_commands; i++)
-    printf ("%-10s %-20s - %s\n", command[i].name, command[i].params, command[i].help);
+	int i;
+	for (i = 0; i < num_commands; i++)
+		printf("%-10s %-20s - %s\n", command[i].name, command[i].params,
+		       command[i].help);
 
-  // Build info....
-  printf("\n");
-  printf("CPU info\n");
-  printf("Frequency\t\t%dMHz\n", IN_CLK/1000000);
-  print_or1k_cache_info();
-  printf("\n");
-  printf("Info: Stack section addr 0x%x\n",(unsigned long) &_src_addr);
-  printf("Build tag: %s", BUILD_VERSION);
+	// Build info....
+	printf("\n");
+	printf("CPU info\n");
+	printf("Frequency\t\t%dMHz\n", IN_CLK / 1000000);
+	print_or1k_cache_info();
+	printf("\n");
+	printf("Info: Stack section addr 0x%x\n", (unsigned long)&_src_addr);
+	printf("Build tag: %s", BUILD_VERSION);
 
-  return 0;
+	return 0;
 }
 #endif /* HELP_ENABLED */
 
-void module_cpu_init (void);
-void module_memory_init (void);
-void module_eth_init (void);
-void module_dhry_init (void);
-void module_coremark_init (void);
-void module_camera_init (void);
-void module_load_init (void);
+void module_cpu_init(void);
+void module_memory_init(void);
+void module_eth_init(void);
+void module_dhry_init(void);
+void module_coremark_init(void);
+void module_camera_init(void);
+void module_load_init(void);
 void tick_init(void);
-void module_touch_init (void);
-void module_ata_init (void);
-void module_hdbug_init (void);
-
+void module_touch_init(void);
+void module_ata_init(void);
+void module_hdbug_init(void);
 
 /* List of all initializations */
-void mon_init (void)
+void mon_init(void)
 {
-  /* Set defaults */
-  global.erase_method = 2; /* as needed */
-  global.src_addr = (unsigned long)&_src_addr;
-  global.dst_addr = FLASH_BASE_ADDR;
-  global.eth_add[0] = ETH_MACADDR0;
-  global.eth_add[1] = ETH_MACADDR1;
-  global.eth_add[2] = ETH_MACADDR2;
-  global.eth_add[3] = ETH_MACADDR3;
-  global.eth_add[4] = ETH_MACADDR4;
-  global.eth_add[5] = ETH_MACADDR5;
-  global.ip = BOARD_DEF_IP;
-  global.gw_ip = BOARD_DEF_GW;
-  global.mask = BOARD_DEF_MASK;
+	/* Set defaults */
+	global.erase_method = 2;	/* as needed */
+	global.src_addr = (unsigned long)&_src_addr;
+	global.dst_addr = FLASH_BASE_ADDR;
+	global.eth_add[0] = ETH_MACADDR0;
+	global.eth_add[1] = ETH_MACADDR1;
+	global.eth_add[2] = ETH_MACADDR2;
+	global.eth_add[3] = ETH_MACADDR3;
+	global.eth_add[4] = ETH_MACADDR4;
+	global.eth_add[5] = ETH_MACADDR5;
+	global.ip = BOARD_DEF_IP;
+	global.gw_ip = BOARD_DEF_GW;
+	global.mask = BOARD_DEF_MASK;
 
 #define CPU_CMDS
 #define MEM_CMDS
 #define DHRY_CMDS
 #define COREMARK_CMDS
-  //#define CAMERA_CMDS
+	//#define CAMERA_CMDS
 #define LOAD_CMDS
-    //#define TOUCHSCREEN_CMDS
-    //#define ATA_CMDS
-    //#define HDBUG_CMDS
+	//#define TOUCHSCREEN_CMDS
+	//#define ATA_CMDS
+	//#define HDBUG_CMDS
 #define TICK_CMDS
 #define ETH_CMDS
 #define LOAD_CMDS
-  
-  /* Init modules */
+
+	/* Init modules */
 #ifdef CPU_CMDS
-  module_cpu_init ();
+	module_cpu_init();
 #endif
 #ifdef MEM_CMDS
-  module_memory_init ();
+	module_memory_init();
 #endif
 #ifdef ETH_CMDS
-  module_eth_init ();
+	module_eth_init();
 #endif
 #ifdef DHRY_CMDS
-  module_dhry_init ();
+	module_dhry_init();
 #endif
 #ifdef COREMARK_CMDS
-  module_coremark_init ();
+	module_coremark_init();
 #endif
 #ifdef CAMERA_CMDS
-  module_camera_init ();
+	module_camera_init();
 #endif
 #ifdef LOAD_CMDS
-  module_load_init ();
+	module_load_init();
 #endif
 #ifdef TOUCHSCREEN_CMDS
-  module_touch_init ();
+	module_touch_init();
 #endif
 #ifdef ATA_CMDS
-  module_ata_init ();
+	module_ata_init();
 #endif
 #ifdef HDBUG_CMDS
-  module_hdbug_init ();
+	module_hdbug_init();
 #endif
 
 #ifdef TICK_CMDS
 #endif
 
 }
-int tboot_cmd (int argc, char *argv[]);
+
+int tboot_cmd(int argc, char *argv[]);
 /* Main shell loop */
 int main(int argc, char **argv)
 {
-  extern unsigned long calc_mycrc32 (void);
+	extern unsigned long calc_mycrc32(void);
 
 #if 0
-  extern unsigned long mycrc32, mysize;
+	extern unsigned long mycrc32, mysize;
 #endif
 
-  timestamp = 0; // clear timer counter
-  
-  int_init ();
+	timestamp = 0;		// clear timer counter
 
-  change_console_type (CONSOLE_TYPE);
+	int_init();
 
-  mtspr(SPR_SR, mfspr(SPR_SR) | SPR_SR_IEE);
+	change_console_type(CONSOLE_TYPE);
+
+	mtspr(SPR_SR, mfspr(SPR_SR) | SPR_SR_IEE);
 
 #if SELF_CHECK
-  printf ("Self check... ");
-  if ((t = calc_mycrc32 ()))
-      printf ("FAILED!!!\n");
-  else
-      printf ("OK\n");
+	printf("Self check... ");
+	if ((t = calc_mycrc32()))
+		printf("FAILED!!!\n");
+	else
+		printf("OK\n");
 #endif /* SELF_CHECK */
 
-  num_commands=0;
-  mon_init ();
+	num_commands = 0;
+	mon_init();
 
-  disable_spincursor();
-  
-  tick_init();
+	disable_spincursor();
 
+	tick_init();
 
-  if (HELP_ENABLED) register_command ("help", "", "shows this help", help_cmd);
+	if (HELP_ENABLED)
+		register_command("help", "", "shows this help", help_cmd);
 
-  printf ("\n" BOARD_DEF_NAME " monitor (type 'help' for help)\n");
-  printf("\tbuild: %s", BUILD_VERSION);
+	printf("\n" BOARD_DEF_NAME " monitor (type 'help' for help)\n");
+	printf("\tbuild: %s", BUILD_VERSION);
 
-  // Loop forever, accepting commands
-  while(1) 
-    {
-      mon_command();
-    }
+	// Loop forever, accepting commands
+	while (1) {
+		mon_command();
+	}
 
 }

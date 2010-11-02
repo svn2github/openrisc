@@ -29,11 +29,10 @@
 
 #if (CONFIG_COMMANDS & CFG_CMD_NET)
 
-#define TIMEOUT		5		/* Seconds before trying BOOTP again */
-#define TIMEOUT_COUNT	1		/* # of timeouts before giving up    */
+#define TIMEOUT		5	/* Seconds before trying BOOTP again */
+#define TIMEOUT_COUNT	1	/* # of timeouts before giving up    */
 
-
-int		RarpTry;
+int RarpTry;
 
 /*
  *	Handle a RARP received packet.
@@ -44,32 +43,28 @@ RarpHandler(uchar * dummi0, unsigned dummi1, unsigned dummi2, unsigned dummi3)
 #ifdef	DEBUG
 	printf("Got good RARP\n");
 #endif
-	TftpStart ();
+	TftpStart();
 }
-
 
 /*
  *	Timeout on BOOTP request.
  */
-static void
-RarpTimeout(void)
+static void RarpTimeout(void)
 {
 	if (RarpTry >= TIMEOUT_COUNT) {
-		puts ("\nRetry count exceeded; starting again\n");
-		NetStartAgain ();
+		puts("\nRetry count exceeded; starting again\n");
+		NetStartAgain();
 	} else {
-		NetSetTimeout (TIMEOUT * CFG_HZ, RarpTimeout);
-		RarpRequest ();
+		NetSetTimeout(TIMEOUT * CFG_HZ, RarpTimeout);
+		RarpRequest();
 	}
 }
 
-
-void
-RarpRequest (void)
+void RarpRequest(void)
 {
 	int i;
 	volatile uchar *pkt;
-	ARP_t *	rarp;
+	ARP_t *rarp;
 
 	printf("RARP broadcast %d\n", ++RarpTry);
 	pkt = NetTxPacket;
@@ -77,16 +72,16 @@ RarpRequest (void)
 	NetSetEther(pkt, NetBcastAddr, PROT_RARP);
 	pkt += ETHER_HDR_SIZE;
 
-	rarp = (ARP_t *)pkt;
+	rarp = (ARP_t *) pkt;
 
 	rarp->ar_hrd = ARP_ETHER;
 	rarp->ar_pro = PROT_IP;
 	rarp->ar_hln = 6;
 	rarp->ar_pln = 4;
-	rarp->ar_op  = RARPOP_REQUEST;
+	rarp->ar_op = RARPOP_REQUEST;
 	NetCopyEther(&rarp->ar_data[0], NetOurEther);	/* source ET addr */
-	*(IPaddr_t *)(&rarp->ar_data[6]) = NetOurIP;	/* source IP addr */
-	NetCopyEther(&rarp->ar_data[10], NetOurEther);	/* dest ET addr = source ET addr ??*/
+	*(IPaddr_t *) (&rarp->ar_data[6]) = NetOurIP;	/* source IP addr */
+	NetCopyEther(&rarp->ar_data[10], NetOurEther);	/* dest ET addr = source ET addr ?? */
 	/* dest. IP addr set to broadcast */
 	for (i = 0; i <= 3; i++) {
 		rarp->ar_data[16 + i] = 0xff;

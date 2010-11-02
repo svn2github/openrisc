@@ -72,5 +72,41 @@ void int_main(void)
     i++;
   }
 }
+
+
+void
+int_error(int vect)
+{
+  printf("\n\nERROR - ");
+  switch(vect)
+    {
+    case 2:
+      printf("BUS ERROR (0x200)\n");
+      break;
+    case 6:
+      printf("ALIGN ERROR (0x600)\n");
+      break;
+    case 7:
+      printf("ILLEGAL INSN ERROR (0x700)\n");
+      break;
+    default:
+      printf("UNKNOWN ERROR (%d)\n",vect);
+      break;
+    }
+
+  printf("\n");
+  
+  // TODO - print some more diagnostics here
+  
+  printf("Attemping to reset...\n\n");
+  
+  asm volatile("l.ori r3, r0, 0x100");
+  asm volatile("l.jr r3");
+  asm volatile("l.nop");
+
+  // Stay here forever. 
+  //while(1);
+
+}
   
 #endif

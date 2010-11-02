@@ -18,3 +18,6 @@ int int_disable(unsigned long vect);
 
 /* Enable interrupt */ 
 int int_enable(unsigned long vect);
+
+/* Error vector handler */
+void int_error(int vect);

@@ -387,22 +387,31 @@ void eth_send (void *buf, unsigned long len)
 
  retry_eth_send:
   bd[tx_last].len_status &= 0x0000ffff & ~ETH_TX_BD_STATS;
+  
   if (eth_monitor_enabled) // enable IRQ when sending
     bd[tx_last].len_status |= ETH_TX_BD_IRQ;
+
   bd[tx_last].len_status |= len << 16 | ETH_TX_BD_READY;
 
-  /*
-  while (bd[tx_last].len_status & ETH_TX_BD_READY);
-  printf("packet tx\n");
-  // Check it was sent OK
-  if ( bd[tx_last].len_status & 0x2)
+  if (!eth_monitor_enabled) // If we're not running the network sniffer...
     {
-      printf("eth_send: carrier sense lost (txbd: 0x%x), deferred, retrying\n",
-	     bd[tx_last].len_status);
-      sleep(1000);
-      goto retry_eth_send;
+      while (bd[tx_last].len_status & ETH_TX_BD_READY);
+
+      //printf("packet tx\n");
+      // Check it was sent OK 
+      /*
+	BUG with current implementation - constantly getting carrier sense
+	lost, and deferred indication, so ignore it for now.
+      if ( bd[tx_last].len_status & 0xf)
+	{
+	  printf("eth_send: carrier sense lost (txbd: 0x%x), deferred, retrying\n",
+		 bd[tx_last].len_status);
+	  sleep(1);
+	  goto retry_eth_send;
+	}
+      */
     }
-  */
+
   tx_last++;
 
   if (tx_last == ETH_TXBD_NUM)

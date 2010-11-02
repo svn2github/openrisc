@@ -112,7 +112,6 @@ char *mem_name[3] = { "Static", "Heap", "Stack" };
 
 */
 
-
 #if MAIN_HAS_NOARGC
 MAIN_RETURN_TYPE coremark_main(void)
 {
@@ -145,8 +144,8 @@ MAIN_RETURN_TYPE coremark_main(int argc, char *argv[])
 	results[0].iterations = 1;
 #endif
 	results[0].execs = get_seed_32(5);
-	if (results[0].execs == 0) {	
-	        /* if not supplied, execute all algorithms */
+	if (results[0].execs == 0) {
+		/* if not supplied, execute all algorithms */
 		results[0].execs = ALL_ALGORITHMS_MASK;
 	}
 	/* put in some default values based on one seed only for easy testing */
@@ -290,7 +289,7 @@ MAIN_RETURN_TYPE coremark_main(int argc, char *argv[])
 		ee_printf("6k performance run parameters for coremark.\n");
 		break;
 	case 0x7b05:		/*  seed1=0x3415, seed2=0x3415, seed3=0x66, 
-				    size 2000 per algorithm */
+				   size 2000 per algorithm */
 		known_id = 1;
 		ee_printf("6k validation run parameters for coremark.\n");
 		break;
@@ -305,7 +304,7 @@ MAIN_RETURN_TYPE coremark_main(int argc, char *argv[])
 		ee_printf("2K performance run parameters for coremark.\n");
 		break;
 	case 0x18f2:		/*  seed1=0x3415, seed2=0x3415, seed3=0x66, 
-				    size 666 per algorithm */
+				   size 666 per algorithm */
 		known_id = 4;
 		ee_printf("2K validation run parameters for coremark.\n");
 		break;
@@ -431,17 +430,15 @@ MAIN_RETURN_TYPE coremark_main(int argc, char *argv[])
 	return MAIN_RETURN_VAL;
 }
 
-
-
-int coremark_cmd (int argc, char *argv[])
+int coremark_cmd(int argc, char *argv[])
 {
-  return coremark_main(argc, argv);
-  
+	return coremark_main(argc, argv);
+
 }
 
-void module_coremark_init (void)
+void module_coremark_init(void)
 {
-  register_command ("coremark", "[<mode>] [<iterations>]", 
-	  "run coremark, mode: p - performance run, o - profile run, default - validation run",
-		    coremark_cmd);
+	register_command("coremark", "[<mode>] [<iterations>]",
+			 "run coremark, mode: p - performance run, o - profile run, default - validation run",
+			 coremark_cmd);
 }

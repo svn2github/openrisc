@@ -21,7 +21,6 @@
  * MA 02111-1307 USA
  */
 
-
 #ifndef __RARP_H__
 #define __RARP_H__
 
@@ -29,15 +28,14 @@
 #include "net.h"
 #endif /* __NET_H__ */
 
-
 /**********************************************************************/
 /*
  *	Global functions and variables.
  */
 
-extern int	RarpTry;
+extern int RarpTry;
 
-extern void RarpRequest (void);	/* Send a RARP request */
+extern void RarpRequest(void);	/* Send a RARP request */
 
 /**********************************************************************/
 
