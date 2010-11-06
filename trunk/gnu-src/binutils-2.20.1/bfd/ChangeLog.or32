@@ -1,3 +1,8 @@
+2010-11-06  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* elf32-or32.c (elf_or32_howto_table) <R_OR32_JUMPTARG>:
+	Set pcrel_offset to TRUE.
+
 2010-10-29  Joern Rennecke  <joern.rennecke@embecosm.com>
 
 	* elf32-or32.c: Add Embecosm Copyright notice.

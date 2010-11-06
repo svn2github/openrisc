@@ -1,5 +1,6 @@
 /* tc-or32.h -- Assemble for the OpenRISC 1000.
-   Copyright (C) 2002, 2003. 2005, 2007 Free Software Foundation, Inc.
+   Copyright (C) 2002, 2003, 2005, 2007 Free Software Foundation, Inc.
+   Copyright (C) 2010 Embecosm Limited
    Contributed by Damjan Lampret <lampret@opencores.org>.
    Based upon a29k port.
 
@@ -52,5 +53,11 @@ extern int or32_unrecognized_line (int);
 /* Values passed to md_apply_fix don't include the symbol value.  */
 #define MD_APPLY_SYM_VALUE(FIX) 0
 #endif
+
+/* Call md_pcrel_from_section(), not md_pcrel_from().  */
+#define MD_PCREL_FROM_SECTION(FIX, SEC) md_pcrel_from_section (FIX, SEC)
+extern long md_pcrel_from_section (struct fix *, segT);
+
+#define TC_FORCE_RELOCATION(FIX) (generic_force_reloc (FIX))
 
 #define ZERO_BASED_SEGMENTS

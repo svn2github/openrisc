@@ -1,5 +1,6 @@
 /* Assembly backend for the OpenRISC 1000.
    Copyright (C) 2002, 2003, 2005, 2007, 2009
+   Copyright (C) 2010 Embecosm Limited
    Free Software Foundation, Inc.
    Contributed by Damjan Lampret <lampret@opencores.org>.
    Modified bu Johan Rydberg, <johan.rydberg@netinsight.se>.
@@ -965,8 +966,21 @@ md_section_align (asection * seg, valueT addr ATTRIBUTE_UNUSED)
    which we have set up as the address of the fixup too.  */
 
 long
-md_pcrel_from (fixS *fixP)
+md_pcrel_from_section (fixS *fixP, segT sec)
 {
+#ifndef USE_REL
+  if (TC_FORCE_RELOCATION (fixP)
+      || (fixP->fx_addsy != (symbolS *) NULL
+	  && S_GET_SEGMENT (fixP->fx_addsy) != sec))
+    {
+      /* If we can't adjust this relocation, or if it references a
+	 local symbol in a different section (which
+	 TC_FORCE_RELOCATION can't check), let the linker figure it
+	 out.  */
+      return 0;
+    }
+#endif
+
   return fixP->fx_where + fixP->fx_frag->fr_address;
 }
 
