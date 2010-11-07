@@ -335,7 +335,7 @@ static reloc_howto_type elf_or32_howto_table[] =
 	 FALSE,			/* partial_inplace */
 	 0,			/* src_mask */
 	 0x03ffffff,		/* dst_mask */
-	 FALSE), 		/* pcrel_offset */
+	 TRUE), 		/* pcrel_offset */
 
   /* GNU extension to record C++ vtable hierarchy.  */
   HOWTO (R_OR32_GNU_VTINHERIT, /* type */

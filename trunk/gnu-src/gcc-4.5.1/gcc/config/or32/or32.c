@@ -95,6 +95,8 @@ static struct
   int total_size;
   int vars_size;
   int args_size;
+  int gpr_frame;
+  int late_frame;
   HOST_WIDE_INT mask;
 }  frame_info;
 
@@ -158,6 +160,7 @@ or32_compute_frame_size (HOST_WIDE_INT size)
   HOST_WIDE_INT args_size;
   HOST_WIDE_INT vars_size;
   HOST_WIDE_INT stack_offset;
+  HOST_WIDE_INT save_size;
   bool interrupt_p = false;
 
   int regno;
@@ -167,6 +170,7 @@ or32_compute_frame_size (HOST_WIDE_INT size)
 
   frame_info.args_size = args_size;
   frame_info.vars_size = vars_size;
+  frame_info.gpr_frame = interrupt_p ? or32_redzone : 0;
 
   /* If the function has local variables, we're committed to
      allocating it anyway.  Otherwise reclaim it here.  */
@@ -213,9 +217,10 @@ or32_compute_frame_size (HOST_WIDE_INT size)
 	}
     }
 
-  frame_info.total_size = ((frame_info.save_fp_p ? UNITS_PER_WORD : 0)
-			   + (frame_info.save_lr_p ? UNITS_PER_WORD : 0)
-			   + args_size + frame_info.gpr_size + vars_size);
+  save_size = (frame_info.gpr_size 
+	       + (frame_info.save_fp_p ? UNITS_PER_WORD : 0)
+	       + (frame_info.save_lr_p ? UNITS_PER_WORD : 0));
+  frame_info.total_size = save_size + vars_size + args_size;
   gcc_assert (PROLOGUE_TMP != STATIC_CHAIN_REGNUM);
   if (frame_info.total_size > 32767 && interrupt_p)
     {
@@ -223,6 +228,7 @@ or32_compute_frame_size (HOST_WIDE_INT size)
 	= (!!(~frame_info.mask && 1 << PROLOGUE_TMP)
 	   + !!(~frame_info.mask & 1 << EPILOGUE_TMP)) * UNITS_PER_WORD;
 
+      save_size += n_extra;
       frame_info.gpr_size += n_extra;
       frame_info.total_size += n_extra;
       frame_info.mask |= (1 << PROLOGUE_TMP) | (1 << EPILOGUE_TMP);
@@ -230,6 +236,23 @@ or32_compute_frame_size (HOST_WIDE_INT size)
 
   stack_offset -= frame_info.gpr_size;
   frame_info.gpr_offset = stack_offset;
+  frame_info.late_frame = frame_info.total_size;
+
+  if (save_size > or32_redzone
+      || (frame_info.gpr_frame
+	  && (frame_info.gpr_frame + frame_info.late_frame <= 32767)))
+    {
+      if (frame_info.gpr_frame + frame_info.late_frame <= 32767)
+	save_size = frame_info.total_size;
+      frame_info.gpr_frame += save_size;
+      frame_info.lr_save_offset += save_size;
+      frame_info.fp_save_offset += save_size;
+      frame_info.gpr_offset += save_size;
+      frame_info.late_frame -= save_size;
+      /* FIXME: check in TARGET_OVERRIDE_OPTIONS for invalid or32_redzone.  */
+      gcc_assert (frame_info.gpr_frame <= 32767);
+      gcc_assert ((frame_info.gpr_frame & 3) == 0);
+    }
 
   return frame_info.total_size;
 
@@ -620,6 +643,9 @@ or32_expand_prologue (void)
     /* No frame needed.  */
     return;
 
+  if (frame_info.gpr_frame)
+    emit_frame_insn (gen_add2_insn (stack_pointer_rtx,
+				    GEN_INT (-frame_info.gpr_frame)));
   if (frame_info.save_fp_p)
     {
       emit_frame_insn (gen_rtx_SET (Pmode,
@@ -655,8 +681,9 @@ or32_expand_prologue (void)
     }
 
   /* Update the stack pointer to reflect frame size.  */
+  total_size = frame_info.late_frame;
   insn = gen_add2_insn (stack_pointer_rtx, GEN_INT (-total_size));
-  if (total_size > 32767)
+  if (total_size > 32768)
     {
       rtx note = insn;
       rtx value_rtx = gen_rtx_REG (Pmode, PROLOGUE_TMP);
@@ -665,7 +692,7 @@ or32_expand_prologue (void)
       insn = emit_frame_insn (gen_add2_insn (stack_pointer_rtx, value_rtx));
       add_reg_note (insn, REG_FRAME_RELATED_EXPR, note);
     }
-  else
+  else if (total_size)
     emit_frame_insn (insn);
 
 }	/* or32_expand_prologue () */
@@ -711,8 +738,7 @@ or32_expand_epilogue (rtx sibcall)
     }
   if (frame_info.save_fp_p)
     {
-      emit_insn
-	(gen_add3_insn (stack_pointer_rtx, hard_frame_pointer_rtx, const0_rtx));
+      emit_insn (gen_frame_dealloc_fp ());
       emit_insn
 	(gen_rtx_SET (Pmode, hard_frame_pointer_rtx,
 		      stack_disp_mem (frame_info.fp_save_offset)));
@@ -721,15 +747,16 @@ or32_expand_epilogue (rtx sibcall)
     {
       rtx value_rtx;
 
+      total_size = frame_info.late_frame;
       if (total_size > 32767)
 	{
 	  value_rtx = gen_rtx_REG (Pmode, EPILOGUE_TMP);
 	  or32_emit_set_const32 (value_rtx, GEN_INT (total_size));
 	}
-      else
+      else if (frame_info.late_frame)
 	value_rtx = GEN_INT (total_size);
       if (total_size)
-	emit_insn (gen_add2_insn (stack_pointer_rtx, value_rtx));
+	emit_insn (gen_frame_dealloc_sp (value_rtx));
     }
 
   if (frame_info.save_lr_p)
@@ -757,6 +784,9 @@ or32_expand_epilogue (rtx sibcall)
 	}
     }
 
+  if (frame_info.gpr_frame)
+    emit_insn (gen_add2_insn (stack_pointer_rtx,
+			      GEN_INT (frame_info.gpr_frame)));
   if (!sibcall)
     emit_jump_insn (gen_return_internal (gen_rtx_REG (Pmode, 9)));
 
@@ -1537,7 +1567,8 @@ static bool
 or32_function_ok_for_sibcall (tree  decl ATTRIBUTE_UNUSED,
 			      tree  exp ATTRIBUTE_UNUSED)
 {
-  return true;
+  /* Assume up to 31 registers of 4 bytes might be saved.  */
+  return or32_redzone >= 31 * 4;
 }	/* or32_function_ok_for_sibcall () */
 
 
@@ -1622,11 +1653,10 @@ or32_frame_pointer_required (void)
 int
 or32_initial_elimination_offset(int from, int to)
 {
-  if (from == ARG_POINTER_REGNUM && to == HARD_FRAME_POINTER_REGNUM)
-    return 0;
   or32_compute_frame_size (get_frame_size ());
-  return ((from == FRAME_POINTER_REGNUM ? frame_info.gpr_offset : 0)
-	  + (to == STACK_POINTER_REGNUM ? frame_info.total_size : 0));
+  return ((from == FRAME_POINTER_REGNUM
+	   ? frame_info.gpr_offset : frame_info.gpr_frame)
+	  + (to == STACK_POINTER_REGNUM ? frame_info.late_frame : 0));
 }
 
 

@@ -76,3 +76,7 @@ Link with the OR32 newlib UART library
 mpadstruct
 Target Report RejectNegative Mask(PADSTRUCT)
 Make structs a multiple of 4 bytes (warning: ABI altered)
+
+mredzone=
+Target RejectNegative Joined UInteger Var(or32_redzone) Init(128)
+Set the size of the stack below sp that is assumed to be safe from interrupts.

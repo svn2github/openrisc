@@ -1,3 +1,19 @@
+2010-11-07  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* config/or32/or32.opt (mredzone=): New option.
+	* config/or32/or32.c (frame_info): New members gpr_frame, late_frame.
+	(or32_compute_frame_size, or32_expand_prologue): Implement -mredzone.
+	or32_expand_epilogue, or32_initial_elimination_offset): Likewise.
+	(or32_function_ok_for_sibcall): Suppress sibcall optimization if
+	the sibcall register might not be available.
+
+	* config/or32/or32.c (or32_expand_prologue): Fix threshold for
+	loading the frame size into a register.
+
+	* config/or32/or32.md (SP_REG, FP_REG, UNSPEC_FRAME): New constants.
+	(frame_dealloc_fp, frame_dealloc_sp): New insn patterns.
+	* config/or32/or32.c (or32_expand_epilogue): Use frame_dealloc_[fs]p.
+
 2010-11-01  Joern Rennecke  <joern.rennecke@embecosm.com>
 
 	* config/or32/or32.h (HANDLE_PRAGMA_PACK_PUSH_POP): Define.
