@@ -20,4 +20,4 @@ int int_disable(unsigned long vect);
 int int_enable(unsigned long vect);
 
 /* Error vector handler */
-void int_error(int vect);
+void int_error(int vect, unsigned long epcr);

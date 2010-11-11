@@ -13,6 +13,7 @@
  * 1 - marvin
  * 2 - ORSoC A3PE1500 board
  * 3 - ORSoC A3P1000 board
+ * 4 - ML501
  */
 #define BOARD                   2
 
@@ -65,7 +66,7 @@
 #  define FLASH_ORG_16_2          1
 #  define BOARD_DEF_NAME       	  "ORSoC devboard"
 #elif BOARD==3
-//ORSoC A3P1000 usbethdev board
+//ORSoC ordb1a3p1000
 
 #  define FLASH_BASE_ADDR         0xf0000000
 #  define FLASH_SIZE              0x04000000
@@ -77,6 +78,20 @@
 #  define IN_CLK		  25000000
 #  define FLASH_ORG_16_2          1
 #  define BOARD_DEF_NAME       	  "ORSoC A3P1000 devboard"
+
+#elif BOARD==4
+//Xilinx ML501
+
+#  define FLASH_BASE_ADDR         0xf0000000
+#  define FLASH_SIZE              0x04000000
+#  define FLASH_BLOCK_SIZE        0x00040000
+#  define START_ADD               0x0
+#  define SDRAM_SIZE              0x10000000
+#  define SDRAM_ROW_SIZE          0x00000400
+#  define SDRAM_BANK_SIZE         0x00800000
+#  define IN_CLK		  50000000
+#  define FLASH_ORG_16_2          1
+#  define BOARD_DEF_NAME       	  "Xilinx ML501"
 
 #else
 //Custom Board
@@ -128,7 +143,7 @@
 #elif IPCONFIG==2
 
 #define BOARD_DEF_IP    	0xac1e0002 // 172.30.0.2
-#define BOARD_DEF_MASK  	0xffffff00 // 255.255.255.0
+#define BOARD_DEF_MASK  	0xffff0000 // 255.255.0.0
 #define BOARD_DEF_GW    	0xac1e0001 //"172.30.0.1"
 #define BOARD_DEF_TBOOT_SRVR 	0xac1e0001 //"172.30.0.1"
 #define BOARD_DEF_IMAGE_NAME    "boot.img"

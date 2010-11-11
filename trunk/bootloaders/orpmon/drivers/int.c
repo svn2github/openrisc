@@ -75,7 +75,7 @@ void int_main(void)
 
 
 void
-int_error(int vect)
+int_error(int vect, unsigned long epcr)
 {
   printf("\n\nERROR - ");
   switch(vect)
@@ -93,6 +93,8 @@ int_error(int vect)
       printf("UNKNOWN ERROR (%d)\n",vect);
       break;
     }
+
+  printf("EPCR: 0x%.8x\n",epcr);
 
   printf("\n");
   
