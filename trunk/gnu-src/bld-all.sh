@@ -95,13 +95,13 @@
 # --newlib-dir
 #     Source directory for newlib (default newlib-1.18.0)
 
-# --uclibc_dir
+# --uclibc-dir
 #     Source directory for uClibc (default uclibc-0.9.31)
 
-# --gdb_dir
+# --gdb-dir
 #     Source directory for gdb (default  gdb-7.2)
 
-# --linux_dir
+# --linux-dir
 #     Source directory for Linux (default linux-2.6.35)
 
 # --no-or32-elf
@@ -551,7 +551,7 @@ function link_unified {
 
 	unset component_dirs
 	unset ignore_list
-	cd ..
+	cd -
     fi
 }	# link_unified
 
@@ -600,7 +600,7 @@ function gnu_config {
 	    exit 1
 	fi
 
-	cd ..
+	cd -
 
 	unset verstr
 	unset langs
@@ -639,7 +639,7 @@ function gnu_make {
 	    exit 1
 	fi
 
-	cd ..
+	cd -
     fi
 
     unset cond
@@ -720,7 +720,7 @@ function install_linux_headers {
 	unset this_prefix
     fi
 
-    cd ..
+    cd -
 
 }	# install_linux_headers
 
@@ -766,7 +766,7 @@ function uclibc_config {
 	unset devprefix
 	unset kheaders
 
-	cd ..
+	cd -
     fi
 }	# uclibc_config
 
@@ -802,7 +802,7 @@ function uclibc_build_install {
 	fi
     fi
 
-    cd ..
+    cd -
 
 }	# uclibc_build_install
 
