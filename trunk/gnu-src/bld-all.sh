@@ -819,7 +819,7 @@ sanity_check
 # directories we are actually building (see below).
 if [ "true" == "${force_flag}" ]
 then
-    echo -n "bld-all.sh: removing ${unisrc_dir}
+    echo -n "bld-all.sh: removing ${unisrc_dir}"
     rm -rf ${unisrc_dir}
 fi
 
