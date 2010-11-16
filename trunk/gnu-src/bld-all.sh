@@ -54,7 +54,8 @@
 # The following arguments control how the script runs:
 
 # --force
-#     Ensure the unified source directory and build directories are recreated.
+#     Ensure the unified source directory and build directories are
+#     recreated. Only build directories of targets being built are removed.
 
 # --prefix <dir>
 #     Specify the install directory (default /opt/or32-new)
@@ -335,7 +336,8 @@ function parse_args {
 	--help)
 	    cat <<EOF;
 --force
-    Ensure the unified source directory and build directories are recreated.
+    Ensure the unified source directory and build directories are
+    recreated. Only build directories of targets being built are removed.
 
 --prefix <dir>
     Specify the install directory (default /opt/or32-new)
@@ -813,11 +815,12 @@ set_defaults
 parse_args $*
 sanity_check
 
+# --force always blows away the link directory. It only blows away build
+# directories we are actually building (see below).
 if [ "true" == "${force_flag}" ]
 then
-    echo -n "bld-all.sh: removing ${unisrc_dir} ${bd_elf} ${bd_elf_gdb} "
-    echo "${bd_linux} ${bd_linux_gdb}"
-    rm -rf ${unisrc_dir} ${bd_elf} ${bd_elf_gdb} ${bd_linux} ${bd_linux_gdb}
+    echo -n "bld-all.sh: removing ${unisrc_dir}
+    rm -rf ${unisrc_dir}
 fi
 
 link_unified
@@ -826,8 +829,14 @@ link_unified
 if [ "true" == "${or32_elf_flag}" ]
 then
     target="or32-elf"
-
     echo "bld-all.sh: or32-elf toolchain"
+
+    # --force only applies to build directories we are using!
+    if [ "true" == "${force_flag}" ]
+    then
+	echo -n "bld-all.sh: removing ${bd_elf} ${bd_elf_gdb} "
+	rm -rf ${bd_elf} ${bd_elf_gdb}
+    fi
 
     # Configure all
     gnu_config ${config_flag} ${prefix} ${bd_elf} ../${unisrc_dir} "c,c++" \
@@ -858,8 +867,14 @@ fi
 if [ "true" == "${or32_linux_flag}" ]
 then
     target="or32-linux"
-
     echo "bld-all.sh: or32-linux toolchain"
+
+    # --force only applies to build directories we are using!
+    if [ "true" == "${force_flag}" ]
+    then
+	echo -n "bld-all.sh: removing ${bd_linux} ${bd_linux_gdb} "
+	rm -rf ${bd_linux} ${bd_linux_gdb}
+    fi
 
     # Stage 1 binutils/GCC build uses no headers and only C
     # language. This is just to create the libc headers, which we put in the
