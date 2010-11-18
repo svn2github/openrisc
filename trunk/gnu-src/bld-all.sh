@@ -57,6 +57,9 @@
 #     Ensure the unified source directory and build directories are
 #     recreated. Only build directories of targets being built are removed.
 
+# --languages <str>
+#     Specify the languages to be built (default c,c++).
+
 # --prefix <dir>
 #     Specify the install directory (default /opt/or32-new)
 
@@ -159,6 +162,7 @@
 function set_defaults {
     # Public params
     force_flag="false"
+    languages="c,c++"
     prefix="/opt/or32-new"
     prefix_tmp="/tmp/or32-tmp-${USER}"
     unisrc_dir="unisrc"
@@ -172,7 +176,7 @@ function set_defaults {
     newlib_dir="newlib-1.18.0"
     uclibc_dir="uclibc-0.9.31"
     gdb_dir="gdb-7.2"
-    linux_dir="linux-2.6.35"
+    linux_dir="linux-2.6.36"
     or32_elf_flag="true"
     or32_linux_flag="true"
     link_flag="true"
@@ -212,6 +216,11 @@ function parse_args {
 	in
 	--force)
 	    force_flag="true";
+	    ;;
+
+	--languages)
+	    languages=$2;
+	    shift;
 	    ;;
 
 	--prefix)
@@ -338,6 +347,9 @@ function parse_args {
 --force
     Ensure the unified source directory and build directories are
     recreated. Only build directories of targets being built are removed.
+
+--languages <str>
+    Specify the languages to be built (default c,c++).
 
 --prefix <dir>
     Specify the install directory (default /opt/or32-new)
@@ -590,7 +602,7 @@ function gnu_config {
 	mkdir -p ${top_builddir} &&                                   \
 	    cd ${top_builddir} &&                                     \
 	    ${top_srcdir}/configure --target=${target}                \
-  	        --with-pkgversion="${verstr}"                         \
+  	        --with-pkgversion="${verstr}" --disable-shared        \
 	        --with-bugurl=http://www.opencores.org/               \
 	        --with-or1ksim=${or1ksim_dir}                         \
 	        --enable-fast-install=N/A --disable-libssp            \
@@ -728,7 +740,7 @@ function install_linux_headers {
 
 
 # ------------------------------------------------------------------------------
-# Conditionally configure uClibc
+# Conditionally configure uClibc. Clean before configuring.
 
 # @param[in] $1       The prefix to use for installation.
 function uclibc_config {
@@ -752,6 +764,14 @@ function uclibc_config {
 	if [ $? != 0 ];
 	then
 	    echo "uClibc sed failed"
+	    exit 1
+	fi
+
+	make ARCH=or32 clean
+
+	if [ $? != 0 ];
+	then
+	    echo "uClibc clean failed"
 	    exit 1
 	fi
 
@@ -839,9 +859,10 @@ then
     fi
 
     # Configure all
-    gnu_config ${config_flag} ${prefix} ${bd_elf} ../${unisrc_dir} "c,c++" \
-	"${newlib_config}"
-    gnu_config ${config_flag} ${prefix} ${bd_elf_gdb} ../${gdb_dir} "c,c++"
+    gnu_config ${config_flag} ${prefix} ${bd_elf} ../${unisrc_dir} \
+	"${languages}" "${newlib_config}"
+    gnu_config ${config_flag} ${prefix} ${bd_elf_gdb} ../${gdb_dir} \
+	"${languages}"
 
     # Build all
     gnu_make ${build_flag} ${bd_elf} all-build all-binutils all-gas all-ld
@@ -887,6 +908,7 @@ then
 	rm -rf ${prefix_tmp}
 	mkdir ${prefix_tmp}
 
+	# To create the headers we only use C
 	gnu_config ${config_flag} ${prefix_tmp} ${bd_linux} ../${unisrc_dir} \
 	    "c" "--without-headers --enable-threads=single"
 	gnu_make ${build_flag} ${bd_linux} all-build all-binutils all-gas all-ld
@@ -923,7 +945,7 @@ then
 	thread_hack="--disable-threads --disable-libgomp"
 
 	gnu_config ${config_flag} ${prefix} ${bd_linux} ../${unisrc_dir} \
-	    "c,c++" \
+	    "${languages}" \
 	    "--with-headers=${prefix_tmp}/or32-linux/include $thread_hack"
 	gnu_make ${build_flag} ${bd_linux} all-build all-binutils all-gas all-ld
 	gnu_make ${build_flag} ${bd_linux} all-gcc
@@ -948,7 +970,8 @@ then
 
     # Configure, build and install GDB (note we need to reconfigure in case
     # only stage1 has been run previously).
-    gnu_config ${config_flag} ${prefix} ${bd_linux_gdb} ../${gdb_dir} "c,c++"
+    gnu_config ${config_flag} ${prefix} ${bd_linux_gdb} ../${gdb_dir} \
+	"${languages}"
     gnu_make ${build_flag} ${bd_linux_gdb} all-build all-sim all-gdb
     gnu_make ${install_flag} ${bd_linux_gdb} install-sim install-gdb
 fi
