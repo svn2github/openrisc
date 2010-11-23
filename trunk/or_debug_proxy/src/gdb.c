@@ -2696,7 +2696,8 @@ rsp_query (struct rsp_buf *p_buf)
 	  if not. It is followed by semicolon-separated optional fields that an 
 	  agent may use to report additional status.
       */
-      put_str_packet ("T0");
+      /* Not supported. Return empty packet */
+      put_str_packet ("");
     }
   else if ((0 == strncmp ("qTfV", p_buf->data, strlen ("qTfV"))) ||
 	   (0 == strncmp ("qTsV", p_buf->data, strlen ("qTsV"))))

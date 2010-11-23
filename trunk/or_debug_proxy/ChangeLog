@@ -1,3 +1,6 @@
+2010-11-23  Julius Baxter  <julius@opencores.org>
+	* src/gdb.c <rsp_query>: qTStatus packet now returns empty packet.
+	
 2010-09-24  Julius Baxter  <julius@opencores.org>
 
 	* ChangeLog: Created.
