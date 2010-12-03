@@ -666,31 +666,7 @@ function gnu_make {
 function relocate_newlib {
     if [ "true" == "${newlib_flag}" ]
     then
-	echo "bld-all.sh: Relocating newlib"
-
-	mkdir -p ${prefix}/or32-elf/newlib
-	rm -rf ${prefix}/or32-elf/newlib-include
-
-	if [ -d ${prefix}/or32-elf/include ]
-	then
-	    mv ${prefix}/or32-elf/include \
-		${prefix}/or32-elf/newlib-include
-	fi
-
-	if [ -d ${prefix}/or32-elf/lib ]
-	then
-	    afiles=`ls -1 ${prefix}/or32-elf/lib | grep '\.a' | head -1`
-
-	    if [ "x$afiles" != "x" ]
-	    then
-		mv ${prefix}/or32-elf/lib/*.a ${prefix}/or32-elf/newlib
-	    fi
-	fi
-
-	if [ -f ${prefix}/or32-elf/lib/crt0.o ]
-	then
-	    mv ${prefix}/or32-elf/lib/crt0.o ${prefix}/or32-elf/newlib
-	fi
+	echo "bld-all.sh: Relocating newlib (no-op)"
     fi
 }	# relocate_newlib
 

@@ -49,7 +49,7 @@ Boston, MA 02111-1307, USA.  */
 
 /* Make sure we pick up the crti.o, crtbegin.o, crtend.o and crtn.o files. */
 #undef STARTFILE_SPEC
-#define STARTFILE_SPEC "%{!shared:%{mor32-newlib*:%(target_prefix)/newlib/crt0.o} \
+#define STARTFILE_SPEC "%{!shared:%{mor32-newlib*:%(target_prefix)/lib/crt0.o} \
                         %{!mor32-newlib*:crt0.o%s} crti.o%s crtbegin.o%s}"
 
 #undef ENDFILE_SPEC
