@@ -156,6 +156,11 @@ case "${target}" in
 			srv_linux_usrregs=yes
 			srv_linux_thread_db=yes
 			;;
+  or32*-*-linux*)	# srv_regobj=reg-or32.o
+			srv_tgtobj="linux-low.o linux-or32-low.o"
+			# srv_linux_usrregs=yes
+ 			# srv_linux_thread_db=yes
+			;;
   powerpc*-*-linux*)	srv_regobj="powerpc-32l.o"
 			srv_regobj="${srv_regobj} powerpc-altivec32l.o"
 			srv_regobj="${srv_regobj} powerpc-cell32l.o"
