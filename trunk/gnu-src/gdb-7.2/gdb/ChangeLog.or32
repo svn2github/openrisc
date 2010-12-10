@@ -1,3 +1,11 @@
+2010-12-11  Julius Baxter  <julius@opencores.org>
+	* gdbserver/linux-or32-low.c: <regs_or32>: updated with correct PTRACE 
+	mappings
+	<include asm/trace.>: Added for ptrace definitions.
+	<or32_regmap>: Updated to use correct ptrace defines.
+	<or32_num_regs>: Changed to reflect correct number of regs.
+	<or32_set_pc>: Change "pc" in supply_register_by_name to "npc".
+
 2010-09-05  Jeremy Bennett  <jeremy.bennett@embecosm.com>
 
 	* version.in: Updated for release 7.2-or32-1.0rc1.
