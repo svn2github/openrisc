@@ -2205,6 +2205,14 @@ or32_output_mi_thunk (FILE *file, tree thunk ATTRIBUTE_UNUSED,
 #undef TARGET_ASM_CAN_OUTPUT_MI_THUNK
 #define TARGET_ASM_CAN_OUTPUT_MI_THUNK hook_bool_const_tree_hwi_hwi_const_tree_true
 
+/* uClibc has some instances where (non-coforming to ISO C) a non-varargs
+   prototype is in scope when calling that function which is implemented
+   as varargs.  We want this to work at least where none of the anonymous
+   arguments are used.  I.e. we want the last named argument to be known
+   as named so it can be passed in a register, varars funtion or not.  */
+#undef TARGET_STRICT_ARGUMENT_NAMING
+#define TARGET_STRICT_ARGUMENT_NAMING hook_bool_CUMULATIVE_ARGS_true
+
 /* Trampoline stubs are yet to be written. */
 /* #define TARGET_ASM_TRAMPOLINE_TEMPLATE */
 /* #define TARGET_TRAMPOLINE_INIT */
