@@ -39,17 +39,7 @@
 #include <sys/reg.h>
 #endif
 
-
-/* -------------------------------------------------------------------------- */
-/*!Initialize the register data.
-  
-  Should be automagically created from a data file in gdb/regformats, but for
-  now we do it manually.                                                      */
-/* -------------------------------------------------------------------------- */
-static void
-init_registers_or32 ()
-{
-  struct reg regs_or32[] = {
+struct reg regs_or32[] = {
     { "npc", PC * 8, 32 },
     { "sr", SR * 8, 32 },
     { "sp", SP * 8, 32 },
@@ -84,6 +74,17 @@ init_registers_or32 ()
     { "r30", GPR30 * 8, 32 },
     { "r31", GPR31 * 8, 32 },
   };
+
+/* -------------------------------------------------------------------------- */
+/*!Initialize the register data.
+  
+  Should be automagically created from a data file in gdb/regformats, but for
+  now we do it manually.                                                      */
+/* -------------------------------------------------------------------------- */
+static void
+init_registers_or32 ()
+{
+  
   static const char *expedite_regs_or32[] = { "sp", "lr", "npc", 0 };
 
   set_register_cache (regs_or32, sizeof (regs_or32) / sizeof (regs_or32[0]));
