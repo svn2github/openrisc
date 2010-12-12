@@ -1,0 +1,21 @@
+2010-12-07 Jeremy Bennett  <jeremy.bennett@embecosm.com>
+
+	* linux-or32-low.c <regs_or32>: Changed to GDB register ordering.
+	<or32_regmap>: Changed to GDB register ordering.
+
+2010-12-11  Julius Baxter  <julius@opencores.org>
+
+	* gdbserver/linux-or32-low.c: <regs_or32>: updated with correct PTRACE
+	mappings
+	<include asm/trace.>: Added for ptrace definitions.
+	<or32_regmap>: Updated to use correct ptrace defines.
+	<or32_num_regs>: Changed to reflect correct number of regs.
+	<or32_set_pc>: Change "pc" in supply_register_by_name to "npc".
+	<struct reg regs_or32>: Moved outside of function so available
+	globally.
+	* gdbserver/configure.srv: <srv_linux_usrregs=yes>: Uncommented.
+
+2010-12-07 Jeremy Bennett  <jeremy.bennett@embecosm.com>
+
+	* linux-or32-low.c: Created.
+	* configure.srv: Added entry for or32-linux.

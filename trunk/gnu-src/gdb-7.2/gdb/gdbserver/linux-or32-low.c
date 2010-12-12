@@ -39,41 +39,56 @@
 #include <sys/reg.h>
 #endif
 
+
+/* -------------------------------------------------------------------------- */
+/*!Global register map
+
+   This should be in GDB order (r0-r1, ppc, npc, sr) to ptrace offset.
+
+   ptrace does not support r0 (so we use r31 for now), nor ppc (so we use npc
+   for now).
+
+   @note This must be a global variable.
+
+   @todo Fix r0 and ppc (needs ptrace changes).                               */
+/* -------------------------------------------------------------------------- */
 struct reg regs_or32[] = {
-    { "npc", PC * 8, 32 },
-    { "sr", SR * 8, 32 },
-    { "sp", SP * 8, 32 },
-    { "fp", GPR2 * 8, 32 },
-    { "r3", GPR3 * 8, 32 },
-    { "r4", GPR4 * 8, 32 },
-    { "r5", GPR5 * 8, 32 },
-    { "r6", GPR6 * 8, 32 },
-    { "r7", GPR7 * 8, 32 },
-    { "r8", GPR8 * 8, 32 },
-    { "lr", GPR9 * 8, 32 },
-    { "r10", GPR10 * 8, 32 },
-    { "r11", GPR11 * 8, 32 },
-    { "r12", GPR12 * 8, 32 },
-    { "r13", GPR13 * 8, 32 },
-    { "r14", GPR14 * 8, 32 },
-    { "r15", GPR15 * 8, 32 },
-    { "r16", GPR16 * 8, 32 },
-    { "r17", GPR17 * 8, 32 },
-    { "r18", GPR18 * 8, 32 },
-    { "r19", GPR19 * 8, 32 },
-    { "r20", GPR20 * 8, 32 },
-    { "r21", GPR21 * 8, 32 },
-    { "r22", GPR22 * 8, 32 },
-    { "r23", GPR23 * 8, 32 },
-    { "r24", GPR24 * 8, 32 },
-    { "r25", GPR25 * 8, 32 },
-    { "r26", GPR26 * 8, 32 },
-    { "r27", GPR27 * 8, 32 },
-    { "r28", GPR28 * 8, 32 },
-    { "r29", GPR29 * 8, 32 },
-    { "r30", GPR30 * 8, 32 },
-    { "r31", GPR31 * 8, 32 },
-  };
+  { "r0",  GPR31 * 8, 32 },
+  { "sp",  SP    * 8, 32 },
+  { "fp",  GPR2  * 8, 32 },
+  { "r3",  GPR3  * 8, 32 },
+  { "r4",  GPR4  * 8, 32 },
+  { "r5",  GPR5  * 8, 32 },
+  { "r6",  GPR6  * 8, 32 },
+  { "r7",  GPR7  * 8, 32 },
+  { "r8",  GPR8  * 8, 32 },
+  { "lr",  GPR9  * 8, 32 },
+  { "r10", GPR10 * 8, 32 },
+  { "r11", GPR11 * 8, 32 },
+  { "r12", GPR12 * 8, 32 },
+  { "r13", GPR13 * 8, 32 },
+  { "r14", GPR14 * 8, 32 },
+  { "r15", GPR15 * 8, 32 },
+  { "r16", GPR16 * 8, 32 },
+  { "r17", GPR17 * 8, 32 },
+  { "r18", GPR18 * 8, 32 },
+  { "r19", GPR19 * 8, 32 },
+  { "r20", GPR20 * 8, 32 },
+  { "r21", GPR21 * 8, 32 },
+  { "r22", GPR22 * 8, 32 },
+  { "r23", GPR23 * 8, 32 },
+  { "r24", GPR24 * 8, 32 },
+  { "r25", GPR25 * 8, 32 },
+  { "r26", GPR26 * 8, 32 },
+  { "r27", GPR27 * 8, 32 },
+  { "r28", GPR28 * 8, 32 },
+  { "r29", GPR29 * 8, 32 },
+  { "r30", GPR30 * 8, 32 },
+  { "r31", GPR31 * 8, 32 },
+  { "ppc", PC    * 8, 32 },
+  { "npc", PC    * 8, 32 },
+  { "sr",  SR    * 8, 32 }
+};
 
 /* -------------------------------------------------------------------------- */
 /*!Initialize the register data.
@@ -93,28 +108,22 @@ init_registers_or32 ()
 }
 
 
-/*! OpenRISC Linux ptrace provides NPC, SR, then GPRS 1 to 31 */
-#define or32_num_regs  (2 + 31)
+/*! This is the number of *GDB* registers. I.e. r0-r31, PPC, NPC and SR. */
+#define or32_num_regs  35
 
 
 /* -------------------------------------------------------------------------- */
 /*!Provide the ptrace "address" of a register.
-                                                                              */
+
+   This must be in GDB order (r0-r1, ppc, npc, sr) to ptrace offset. As with
+   regs_or32, we substitute r31 for r0 and NPC for PPC.                       */
 /* -------------------------------------------------------------------------- */
 static int or32_regmap[] = {
-#ifdef PC
-  PC   , SR   , SP   , GPR2 , GPR3 , GPR4 , GPR5 , GPR6 , 
-  GPR7 , GPR8 , GPR9 , GPR10, GPR11, GPR12, GPR13, GPR14, 
-  GPR15, GPR16, GPR17, GPR18, GPR19, GPR20, GPR21, GPR22, 
-  GPR23, GPR24, GPR25, GPR26, GPR27, GPR28, GPR29, GPR30, 
-  GPR31
-#else
-  4 *  0, 4 *  1, 4 *  2, 4 *  3, 4 *  4, 4 *  5, 4 *  6, 4 *  7,
-  4 *  8, 4 *  9, 4 * 10, 4 * 11, 4 * 12, 4 * 13, 4 * 14, 4 * 15,
-  4 * 16, 4 * 17, 4 * 18, 4 * 19, 4 * 20, 4 * 21, 4 * 22, 4 * 23,
-  4 * 24, 4 * 25, 4 * 26, 4 * 27, 4 * 28, 4 * 29, 4 * 30, 4 * 31,
-  4 * 32, 4 * 33, 4 * 34
-#endif
+  GPR31, SP,    GPR2,  GPR3,  GPR4,  GPR5,  GPR6,  GPR7,
+  GPR8,  GPR9,  GPR10, GPR11, GPR12, GPR13, GPR14, GPR15,
+  GPR16, GPR17, GPR18, GPR19, GPR20, GPR21, GPR22, GPR23,
+  GPR24, GPR25, GPR26, GPR27, GPR28, GPR29, GPR30, GPR31,
+  PC,    PC,    SR
 };
 
 
