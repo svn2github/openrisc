@@ -684,7 +684,7 @@ function install_linux_headers {
     then
 	echo "bld-all.sh: Configuring Linux headers"
 
-	make ARCH=or32 defconfig
+	make ARCH=openrisc defconfig
 
 	if [ $? != 0 ];
 	then
