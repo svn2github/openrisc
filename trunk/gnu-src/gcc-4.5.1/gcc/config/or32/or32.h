@@ -31,6 +31,8 @@ Boston, MA 02111-1307, USA.  */
     {						\
       builtin_define_std ("OR32");		\
       builtin_define_std ("or32");		\
+      if (or32_libc == or32_libc_uclibc)	\
+	builtin_define ("__UCLIBC__");		\
       builtin_assert ("cpu=or32");		\
       builtin_assert ("machine=or32");		\
     }						\
@@ -1354,5 +1356,8 @@ extern GTY(()) rtx or32_compare_op1;
 /* Enable parsing of #pragma pack(push,<n>) and #pragma pack(pop).  */
 #define HANDLE_PRAGMA_PACK_PUSH_POP
 
+/* GLIBC is not implemented, but we handle the selection for consistency
+   with the Linux framework.  */
+enum or32_libc_kind {  or32_libc_newlib, or32_libc_uclibc, or32_libc_glibc };
 
 #endif /* _OR32_H_ */

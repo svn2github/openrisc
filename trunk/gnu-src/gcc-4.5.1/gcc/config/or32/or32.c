@@ -2130,6 +2130,26 @@ or32_output_mi_thunk (FILE *file, tree thunk ATTRIBUTE_UNUSED,
     }
 }
 
+static bool
+or32_handle_option (size_t code, const char *arg ATTRIBUTE_UNUSED,
+		    int value ATTRIBUTE_UNUSED)
+{
+  switch (code)
+    {
+    case OPT_mnewlib:
+      or32_libc = or32_libc_newlib;
+      return true;
+    case OPT_muclibc:
+      or32_libc = or32_libc_uclibc;
+      return true;
+    case OPT_mglibc:
+      or32_libc = or32_libc_glibc;
+      return false;
+    default:
+      return true;
+    }
+}
+
 
 /* ========================================================================== */
 /* Target hook initialization.
@@ -2147,6 +2167,9 @@ or32_output_mi_thunk (FILE *file, tree thunk ATTRIBUTE_UNUSED,
 /* Default target_flags if no switches specified. */
 #undef  TARGET_DEFAULT_TARGET_FLAGS
 #define TARGET_DEFAULT_TARGET_FLAGS (MASK_HARD_MUL | MASK_SCHED_LOGUE)
+
+#undef TARGET_HANDLE_OPTION
+#define TARGET_HANDLE_OPTION or32_handle_option
 
 /* Output assembly directives to switch to section name. The section should
    have attributes as specified by flags, which is a bit mask of the SECTION_*

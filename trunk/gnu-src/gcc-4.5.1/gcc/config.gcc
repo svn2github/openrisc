@@ -1914,10 +1914,13 @@ or32-*-elf*)
 	tm_file="${tm_file} dbxelf.h elfos.h newlib-stdint.h ${cpu_type}/elf.h"
 	extra_parts="crti.o crtbegin.o crtend.o crtn.o"
         tmake_file=${cpu_type}/t-${cpu_type}
+        tm_defines="${tm_defines} OR32_LIBC_DEFAULT=or32_libc_newlib"
 	;;
 or32-*linux*)
 	tm_file="${tm_file} dbxelf.h elfos.h or32/elf.h or32/linux-gas.h or32/linux-elf.h"
 	tmake_file="${cpu_type}/t-${cpu_type} or32/t-linux"
+        tm_defines="`echo $tm_defines|sed -e s/UCLIBC_DEFAULT=.//g`"
+        tm_defines="${tm_defines} UCLIBC_DEFAULT=1 OR32_LIBC_DEFAULT=or32_libc_uclibc"
 	;;
 pdp11-*-*)
 	tm_file="${tm_file} newlib-stdint.h"

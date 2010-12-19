@@ -69,6 +69,23 @@ mor32-newlib-uart
 Target RejectNegative
 Link with the OR32 newlib UART library
 
+mnewlib
+Target Report RejectNegative Var(or32_libc,or32_libc_newlib) Init(OR32_LIBC_DEFAULT)
+Compile for the Linux/Gnu/newlib based toolchain
+
+;; muclibc / mglibc are defined in linux.opt, so we can't easily re-define
+;; how they are recorded.
+;; We could remove linux.opt from extra_options, but that could backfire if
+;; more options are added that we don't want to remove.  Hence we use
+;; TARGET_HANDLE_OPTION.
+muclibc
+Target RejectNegative
+Use uClibc
+
+mglibc
+Target RejectNegative
+Use glibc (not supported)
+
 ;; provide struct padding as in previous releases.
 ;; Note that this will only affect STRUCTURE_SIZE_BOUNDARY, in particular
 ;; make 2 byte structs 4-byte alignned and sized.
