@@ -20,8 +20,11 @@
 # see the files COPYING3 and COPYING.RUNTIME respectively.  If not, see
 # <http://www.gnu.org/licenses/>.
 
+# This is not needed in Linux, and probably not needed in ELF, but left here
+# until we've checked it out.
 	.section .init
 	.global	__init
+	l.nop			 # So __init doesn't start at 0
 __init:
 	l.addi	r1,r1,-4
 	l.sw	0(r1),r9

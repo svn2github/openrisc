@@ -1,3 +1,13 @@
+2010-12-19  Jeremy Bennett <jeremy.bennett@embecosm.com>
+
+	* config.gcc <or32-*-linux*>: Remove extra_parts.
+	* config/or32/crti.S (__init): Add l.nop, so doesn't start at zero.
+
+2010-12-19  Jeremy Bennett <jeremy.bennett@embecosm.com>
+
+	* config/or32/crtn.S (__init, __fini): remove labels.
+	* config.gcc <or32-*-linux*>: Add crti.o and crt.n to extra_parts.
+
 2010-12-16  Joern Rennecke  <joern.rennecke@embecosm.com>
 
 	* config.gcc (or32-*-elf*) <tm_defines>:

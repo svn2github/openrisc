@@ -3,6 +3,9 @@ if ![info exists boards_dir] {
         set boards_dir {}
 }
 
+send_user "tool_root_dir  = $tool_root_dir\n"
+send_user "target_triplet = $target_triplet\n"
+
 # Crude way of finding the boards directory
 lappend boards_dir "${tool_root_dir}/../boards"
 lappend boards_dir "${tool_root_dir}/../../boards"
@@ -12,6 +15,9 @@ lappend boards_dir "${tool_root_dir}/../../../../boards"
 global target_list
   case "$target_triplet" in {
     { "or32-*-elf" } {
-        set target_list { "or32-sim" }
+        set target_list { "or32-elf-sim" }
+    }
+    { "or32-*-linux*" } {
+        set target_list { "or32-linux-sim" }
     }
   }

@@ -1,0 +1,201 @@
+#!/bin/bash
+
+# Copyright (C) 2010 Embecosm Limited
+
+# Contributor Jeremy Bennett <jeremy.bennett@embecosm.com>
+# Contributor Joern Rennecke <joern.rennecke@embecosm.com>
+
+# This file is a board description for testing OpenRISC with uClibc and
+# Or1ksim running Linux.
+
+# This program is free software; you can redistribute it and/or modify it
+# under the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 3 of the License, or (at your option)
+# any later version.
+
+# This program is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+# FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+# more details.
+
+# You should have received a copy of the GNU General Public License along
+# with this program.  If not, see <http://www.gnu.org/licenses/>.          
+
+# This is a list of toolchains that are supported on this board.
+set_board_info target_install {or32-linux}
+
+# No multilib options needed by default.
+process_multilib_options ""
+
+# Load the generic configuration for this board. This will define a basic set
+# of routines needed by the tool to communicate with the board.
+load_generic_config "unix"
+
+# Set up remote target info
+set_board_info hostname "192.168.0.3"
+set_board_info username root
+
+# Use the installed compilers to ensure we get search paths that will find
+# uClibc.
+send_user "set_board_info compiler /opt/or32-new/bin/or32-linux-gcc\n"
+global GCC_UNDER_TEST
+set GCC_UNDER_TEST "/opt/or32-new/bin/or32-linux-gcc"
+set_board_info compiler /opt/or32-new/bin/or32-linux-gcc
+set_board_info c++compiler /opt/or32-new/bin/or32-linux-g++
+
+set_board_info connect telnet
+set_board_info shell_prompt    "~ # "
+set_board_info telnet_username "root"
+set_board_info telnet_password ""
+
+set_board_info file_transfer ftp
+set_board_info ftp_username  root
+set_board_info ftp_password  ""
+
+# Custom proc to close a telnet session
+proc telnet_close {boardname} {
+    set spawn_id [board_info $boardname fileid]
+    verbose "Closing $boardname:$spawn_id"
+
+    if { $spawn_id >= 0 } {
+	catch {close -i $spawn_id}
+	catch wait
+	set spawn_id -1
+
+	set board_info($boardname,fileid) $spawn_id
+    }
+}
+
+
+# Custom proc to exec programs using telnet
+proc telnet_exec {boardname cmd args} {
+    global timeout
+    global verbose
+    set output "(no output)"
+
+    verbose "Executing $boardname:$cmd $args"
+
+    if { [llength $args] > 0 } {
+	set pargs [lindex $args 0];
+    } else {
+	set pargs ""
+    }
+
+    if [board_info $boardname exists shell_prompt] {
+	set shell_prompt [board_info $boardname shell_prompt]
+    }
+    if ![info exists shell_prompt] { # if no prompt, then set it to
+	something generic
+	set shell_prompt ".*> "
+    }
+
+    #Start a new telnet session if one dosen't already exist
+    if ![board_info $boardname exists fileid] {
+	if {[telnet_open $boardname] == -1} {
+	    return [list -1
+		    "telnet to $boardname failed for $cmd, couldn't begin
+telnet session"]
+	}
+    }
+
+    set spawn_id [board_info $boardname fileid]
+    set timeout 30
+
+    #Hit enter to make sure you get a shell prompt
+    send -- "\r"
+
+    expect {
+	-re "$shell_prompt.*$" {
+	    verbose "Got a prompt"
+	}
+	default {
+	    telnet_close $boardname
+	    if {[telnet_open $boardname] != -1} {
+		verbose "started new telnet session, spawn_id is [board_info
+$boardname fileid]"
+		send -- "\r"
+		exp_continue
+	    } else {
+		return [list -1 "telnet to $boardname failed for $cmd, couldn't get
+a shell prompt"]
+	    }
+	    send -- "\r"
+	    exp_continue
+	}
+    }
+    set timeout 10
+    send "$cmd $pargs\r"
+
+    expect {
+	-re "$shell_prompt.*$" {
+	}
+	timeout {
+	    if [info exists expect_out(buffer)] {
+		set execute_output_string $expect_out(buffer)
+	    }
+	    telnet_close $boardname
+	    return "fail timeout"
+	}
+    }
+    #Remove unesesary strings from the output string
+    #
+    #If the file path contains any "+" signs, it will mess things up when $cmd
+    #is used as a regsub pattern (2 lines down), so we replace all "+"s with "."
+    regsub -all "\\+" $cmd "." cmd
+    regsub -all $cmd "$expect_out(buffer)" {} output
+    regsub $shell_prompt $output {} output
+    regsub -all "\[\r\n\]" $output {} output
+
+    #Check the return status
+    set timeout 30
+    send -- "echo \$?\r"
+    expect -re "$shell_prompt.*$"
+
+    #Regsub the output to get the status number
+    regsub -all {echo \$\?} $expect_out(buffer) {} status
+    regsub $shell_prompt $status {} status
+    regsub -all "\[\r\n \]" $status {} status
+
+    #This probably isn't neccessary..
+    if {[regexp {[0123456789]+} $status] != 1} {
+	warning "status not a number, it is <$status>, setting it to 1"
+	set status 1
+    }
+
+    if {$status == 0} {
+	return [list "0" "$output"]
+    } else {
+	return [list "1" "$output"]
+    }
+}
+
+# Options for the simulator
+# set cfg_file [lookfor_file ${srcdir} libgloss/or32/sim.cfg]
+# set_board_info sim,options "-a \"-f ${cfg_file}\""
+
+# We only support uClibc on this target.  We assume that all multilib options
+# have been specified before we get here.
+# set_board_info compiler  "[find_gcc]"
+
+# No linker script needed.
+set_board_info ldscript ""
+
+# This simulator isn't slow.
+set_board_info slow_simulator 0
+
+# Can't pass arguments to programs on this target..
+set_board_info noargs  1
+
+# Used by a few gcc.c-torture testcases to delimit how large the stack can
+# be.
+set_board_info gcc,stack_size 65536
+
+# GDB options
+
+# We can't do input in GDB (yet! HA!). It *will* do output, hurrah.
+set_board_info gdb,noinferiorio 1
+# Or pass arguments.
+set_board_info gdb,noargs  1
+set_board_info noargs 1
+# And there's no support for signals.
+set_board_info gdb,nosignals  1

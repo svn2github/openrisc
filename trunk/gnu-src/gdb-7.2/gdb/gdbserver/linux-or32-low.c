@@ -108,8 +108,15 @@ init_registers_or32 ()
 }
 
 
+/*! Some useful GDB register numbers. */
+#define GDB_REGNUM_R0    0
+#define GDB_REGNUM_R31  31
+#define GDB_REGNUM_PPC  32
+#define GDB_REGNUM_NPC  33
+#define GDB_REGNUM_SR   34
+
 /*! This is the number of *GDB* registers. I.e. r0-r31, PPC, NPC and SR. */
-#define or32_num_regs  35
+#define or32_num_regs  (GDB_REGNUM_SR + 1)
 
 
 /* -------------------------------------------------------------------------- */
@@ -130,7 +137,7 @@ static int or32_regmap[] = {
 /* -------------------------------------------------------------------------- */
 /*!Predicate to indicate if a register can be read.
 
-   For now, we believe all OR32 registers are readable.
+   We mark r0 as not readable.
 
    @param[in] regno  Register to read.
 
@@ -140,7 +147,7 @@ static int or32_regmap[] = {
 static int
 or32_cannot_fetch_register (int  regno)
 {
-  return (regno >= or32_num_regs);
+  return (GDB_REGNUM_R0 == regno) || (regno >= or32_num_regs);
 
 }	/* or32_cannot_fetch_register () */
 
@@ -148,7 +155,7 @@ or32_cannot_fetch_register (int  regno)
 /* -------------------------------------------------------------------------- */
 /*!Predicate to indicate if a register can be written.
 
-   For now, we believe all OR32 registers are writable.
+   We mark r0 and the SR as not writeable.
 
    @param[in] regno  Register to write.
 
@@ -158,7 +165,8 @@ or32_cannot_fetch_register (int  regno)
 static int
 or32_cannot_store_register (int  regno)
 {
-  return (regno >= or32_num_regs);
+  return (GDB_REGNUM_R0 == regno) || (GDB_REGNUM_SR == regno) ||
+         (regno >= or32_num_regs);
 
 }	/* or32_cannot_store_register () */
 

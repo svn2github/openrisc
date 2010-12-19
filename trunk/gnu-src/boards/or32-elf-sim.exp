@@ -1,3 +1,25 @@
+#!/bin/bash
+
+# Copyright (C) 2010 Embecosm Limited
+
+# Contributor Jeremy Bennett <jeremy.bennett@embecosm.com>
+# Contributor Joern Rennecke <joern.rennecke@embecosm.com>
+
+# This file is a board description for testing OpenRISC with newlib and Or1ksim
+
+# This program is free software; you can redistribute it and/or modify it
+# under the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 3 of the License, or (at your option)
+# any later version.
+
+# This program is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+# FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+# more details.
+
+# You should have received a copy of the GNU General Public License along
+# with this program.  If not, see <http://www.gnu.org/licenses/>.          
+
 # This is a list of toolchains that are supported on this board.
 set_board_info target_install {or32-elf}
 
@@ -29,15 +51,9 @@ process_multilib_options ""
 # It's sufficient just to specify -mor32-newlib. Bit of a shame to specify it
 # both in cflags, which are also used when linking, so we'll get the libraries
 # OK as well.
-
-# Calling dummy functions with float arguments fails if a K&R prototype is
-# used rather than an ANSI function prototype. This needs more investigation,
-# but for now we avoid by using -DPROTOTYPES.
-
 set_board_info compiler  "[find_gcc]"
-#set_board_info cflags    "[libgloss_include_flags] [newlib_include_flags]"
 set_board_info cflags    "-mor32-newlib"
-#set_board_info ldflags   "[libgloss_link_flags] -mor32-newlib [newlib_link_flags]"
+
 # No linker script needed.
 set_board_info ldscript ""
 
