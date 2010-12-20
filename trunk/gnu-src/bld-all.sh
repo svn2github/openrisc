@@ -662,16 +662,6 @@ function gnu_make {
 
 
 # ------------------------------------------------------------------------------
-# Conditionally relocate the newlib headers and libraries.
-function relocate_newlib {
-    if [ "true" == "${newlib_flag}" ]
-    then
-	echo "bld-all.sh: Relocating newlib (no-op)"
-    fi
-}	# relocate_newlib
-
-
-# ------------------------------------------------------------------------------
 # Conditionally configure and install the Linux headers
 
 # @param[in] $1       The prefix to use for installation.
@@ -857,7 +847,6 @@ then
 	install-gcc install-target-libgcc install-target-libstdc++-v3 \
 	${newlib_install}
     gnu_make ${install_flag} ${bd_elf_gdb} install-sim install-gdb
-    relocate_newlib
 fi
 
 # Build the uClibc (or32-linux) tool chain
@@ -884,9 +873,13 @@ then
 	rm -rf ${prefix_tmp}
 	mkdir ${prefix_tmp}
 
+        # For header building we use just single threads, or we don't find
+        # pthread.h.
+	thread_config="--enable-threads=single --disable-tls"
+
 	# To create the headers we only use C
 	gnu_config ${config_flag} ${prefix_tmp} ${bd_linux} ../${unisrc_dir} \
-	    "c" "--without-headers --enable-threads=single"
+	    "c" "--without-headers ${thread_config}"
 	gnu_make ${build_flag} ${bd_linux} all-build all-binutils all-gas all-ld
 	gnu_make ${build_flag} ${bd_linux} all-gcc
 	gnu_make ${build_flag} ${bd_linux} all-target-libgcc
@@ -917,20 +910,18 @@ then
     then
 	echo "bld-all.sh: uClibc GCC stage 2"
 
-	# FIXME: uclibc is supposed to provide thread support, but doesn't.
-	thread_hack="--disable-threads --disable-libgomp"
+        # uClibc now supports POSIX threads, but not TLS
+	thread_config="--enable-threads=posix --disable-tls"
 
 	gnu_config ${config_flag} ${prefix} ${bd_linux} ../${unisrc_dir} \
 	    "${languages}" \
-	    "--with-headers=${prefix_tmp}/or32-linux/include $thread_hack"
+	    "--with-headers=${prefix_tmp}/or32-linux/include ${thread_config}"
 	gnu_make ${build_flag} ${bd_linux} all-build all-binutils all-gas all-ld
 	gnu_make ${build_flag} ${bd_linux} all-gcc
 	gnu_make ${build_flag} ${bd_linux} all-target-libgcc
 	gnu_make ${install_flag} ${bd_linux} install-binutils install-gas \
 	    install-ld
 	gnu_make ${install_flag} ${bd_linux} install-gcc install-target-libgcc
-
-	unset thread_hack
 
 	# We need to build uClibc before building the C++ libraries, which in
 	# turn needs the Linux headers
