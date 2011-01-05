@@ -148,6 +148,9 @@
 # --no-uclibc-stage2
 #     Don't do the stage2 build of gcc for Linux (default is to build stage2).
 
+# --make-load <number>
+#     Set make load for make to <number>
+
 # --help
 #     List these options and exit
 
@@ -342,6 +345,11 @@ function parse_args {
 	    uclibc_stage2_flag="false";
 	    ;;
 
+	--make-load)
+	    make_load="-j $2 -l $2";
+	    shift;
+	    ;;
+
 	--help)
 	    cat <<EOF;
 --force
@@ -390,13 +398,13 @@ function parse_args {
 --newlib-dir
     Source directory for newlib (default newlib-1.18.0)
 
---uclibc_dir
+--uclibc-dir
     Source directory for uClibc (default uclibc-0.9.31)
 
---gdb_dir
+--gdb-dir
     Source directory for gdb (default  gdb-7.2)
 
---linux_dir
+--linux-dir
     Source directory for Linux (default linux-2.6.35)
 
 --no-or32-elf
@@ -438,6 +446,10 @@ function parse_args {
 
 --no-uclibc-stage2
     Don't do the stage2 build of gcc for Linux (default is to build stage2).
+
+--make-load <num>
+    Set make load passed with -j and -l options when calling make. Default
+    is set to number of processors as detected via /proc/cpuinfo
 
 --help
     List these options and exit
