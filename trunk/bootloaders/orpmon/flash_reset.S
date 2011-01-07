@@ -55,7 +55,8 @@ _calc_mycrc32:
 
         .org 0x100
 
-        .section .vectors, "ax"
+        .section .reset, "ax"
+
 
 _reset:
 	l.movhi r0, 0
@@ -70,7 +71,8 @@ _reset:
         l.jr    r3
         l.nop
 
-        .org (0x200 - 0x100 + _reset)
+        .section .vectors, "ax"
+        .org 0x200
 
 _buserr:
 .if TRAP_ON_ERROR
@@ -89,7 +91,8 @@ _buserr:
 	l.j 	_int_error /* This will reset */
 	l.ori 	r3, r0, 0x2
 .endif	
-        .org (0x500 - 0x100 + _reset)
+        .section .vectors, "ax"
+        .org 0x500
 
 _tickint:
 #define TIMER_RELOAD_VALUE (SPR_TTMR_IE | SPR_TTMR_RT | ((IN_CLK/TICKS_PER_SEC) & SPR_TTMR_PERIOD))
@@ -111,7 +114,8 @@ _tickint:
 	l.addi 	r1, r1, 136
 	l.rfe
 
-        .org (0x600 - 0x100 + _reset)
+        .section .vectors, "ax"
+        .org 0x600
 
 _alignerr:	
 .if TRAP_ON_ERROR
@@ -131,8 +135,7 @@ _alignerr:
 	l.ori r3, r0, 0x6
 .endif	
 	
-	.org (0x700 - 0x100 + _reset)
-
+        .org 0x700
 _illinsn:
 .if TRAP_ON_ERROR
 	/* Just trap */	
@@ -150,7 +153,7 @@ _illinsn:
 	l.j _int_error /* This will reset */
 	l.ori r3, r0, 0x7
 .endif
-        .org (0x800 - 0x100 + _reset)
+        .org 0x800
 
 _userint:
         l.addi  r1,r1,-256  /*(128 + 128) */
@@ -164,6 +167,42 @@ _userint:
 
         .section .text
 _start:
+        /* Copy form flash to sram */
+        l.movhi r3,hi(_src_beg)
+        l.ori   r3,r3,lo(_src_beg)
+        l.movhi r4,hi(_vec_start)
+        l.ori   r4,r4,lo(_vec_start)
+        l.movhi r5,hi(_vec_end)
+        l.ori   r5,r5,lo(_vec_end)
+        l.sub   r5,r5,r4
+        l.sfeqi r5,0
+        l.bf    2f
+        l.nop
+1:      l.lwz   r6,0(r3)
+        l.sw    0(r4),r6
+        l.addi  r3,r3,4
+        l.addi  r4,r4,4
+        l.addi  r5,r5,-4
+        l.sfgtsi r5,0
+        l.bf    1b
+        l.nop
+2:
+        l.movhi r4,hi(_dst_beg)
+        l.ori   r4,r4,lo(_dst_beg)
+        l.movhi r5,hi(_dst_end)
+        l.ori   r5,r5,lo(_dst_end)
+1:      l.sfgeu r4,r5
+        l.bf    1f
+        l.nop
+        l.lwz   r8,0(r3)
+        l.sw    0(r4),r8
+        l.addi  r3,r3,4
+        l.bnf   1b
+        l.addi  r4,r4,4 
+1:
+        l.addi  r3,r0,0
+        l.addi  r4,r0,0
+3:
 
 	/* Instruction cache enable */
 	/* Check if IC present and skip enabling otherwise */
@@ -274,17 +313,6 @@ _start:
         l.ori   r1,r1,lo(_stack-4)
         l.addi  r2,r0,-3
         l.and   r1,r1,r2
-
-	/* Clear BSS */
-	l.movhi r3, hi(_bstart)
-	l.ori	r3, r3, lo(_bstart)
-	l.movhi r4, hi(_bend)
-	l.ori	r4, r4, lo(_bend)
-.L11:
-	l.sw	0(r3),r0
-	l.sfgtu	r3, r4
-	l.bnf	.L11
-	l.addi	r3, r3, 4
 
 	
         l.movhi r3,hi(main)

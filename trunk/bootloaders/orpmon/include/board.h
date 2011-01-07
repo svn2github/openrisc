@@ -158,10 +158,10 @@
 
 #elif IPCONFIG==3 // JB ORSoC board 2
 
-#define BOARD_DEF_IP    	0xc0a8015a // 192.168.1.90
+#define BOARD_DEF_IP    	0xc0a8005a // 192.168.0.90
 #define BOARD_DEF_MASK  	0xffffff00 // 255.255.255.0
-#define BOARD_DEF_GW    	0xc0a80101 // 192.168.1.1
-#define BOARD_DEF_TBOOT_SRVR 	0xc0a80108 // 192.168.1.8
+#define BOARD_DEF_GW    	0xc0a80001 // 192.168.0.1
+#define BOARD_DEF_TBOOT_SRVR 	0xc0a8000f // 192.168.0.15
 #define BOARD_DEF_IMAGE_NAME    "boot.img"
 #define BOARD_DEF_LOAD_SPACE    0xa00000
 #define ETH_MDIOPHYADDR      	0x00

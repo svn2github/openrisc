@@ -1,0 +1,8 @@
+2011-01-07  Julius Baxter  <julius@opencores.org>
+	* ChangeLog: Created
+	* include/board.h: IP config 3 changes
+	* reset.s: Remove flash boot options and early relocation boot code.
+	Added BSS clearing code.
+	* flash_reset.S: Added, containing all flash boot code.
+	* config.mk: Added different optimization options (all commented out)
+	* ram.ld: Add BSS symbols to help clearing.

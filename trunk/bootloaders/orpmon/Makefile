@@ -32,7 +32,7 @@ docs: Makefile
 reset.o: reset.S Makefile
 	$(CC) -c -o $@ $< $(CFLAGS) -DIN_FLASH=0
 
-reset-flash.o: reset.S Makefile
+reset-flash.o: flash_reset.S Makefile
 	$(CC) -c -o $@ $< $(CFLAGS) -DIN_FLASH=1
 
 orpmon.or32: depend subdirs reset.o $(LIBS) Makefile gencrc

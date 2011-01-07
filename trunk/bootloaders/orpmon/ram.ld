@@ -57,7 +57,10 @@ SECTIONS
 
         .bss :
         {
+	. = ALIGN(4); 
+	_bstart = . ; 
         *(.bss)
+	_bend =  . ; 
 	} > ram
 /*        } > ram2 */
 
