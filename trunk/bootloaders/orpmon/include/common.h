@@ -14,6 +14,9 @@
 #define debug(fmt,args...) __printf (fmt ,##args)
 #endif
 
+/* Stack top */
+extern unsigned long _src_addr;
+
 /* A Board Information structure that is given to a program when
  * ppcboot starts it up. */
 typedef struct bd_info {

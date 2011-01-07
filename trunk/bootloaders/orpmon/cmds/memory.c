@@ -24,6 +24,25 @@ void testram(unsigned long start_addr, unsigned long stop_addr,
 	unsigned long err_addr = 0;
 	unsigned long err_no = 0;
 
+	unsigned long stack_top = (unsigned long) &_src_addr;
+
+	if (start_addr < stack_top)
+	{
+		printf("\n");
+		printf("Warning: RAM test will overwrite stack.\n");
+		printf("         Moving start of test to 0x%08x to avoid stack\n",
+		       stack_top);
+		start_addr = stack_top;
+	}
+
+	if (start_addr >= stop_addr)
+	{
+		printf("ram_test: Start of test must be after end (0x%08x !< 0x%08x)\n",
+		       start_addr, stop_addr);
+		printf("ram_test: Aborting.\n");
+		return;
+	}
+
 	/* Test 1: Write locations with their addresses */
 	if ((testno == 1) || (testno == 0)) {
 		printf("\n1. Writing locations with their addresses: ");

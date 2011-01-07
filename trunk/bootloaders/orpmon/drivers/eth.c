@@ -24,11 +24,6 @@ void (*receive)(volatile unsigned char *add, int len); /* Pointer to function to
                                         when frame is received */
 int eth_monitor_enabled;
 
-//unsigned long eth_data[((ETH_TXBD_NUM + ETH_RXBD_NUM) * ETH_MAXBUF_LEN)/4] = {0};
-//#undef ETH_DATA_BASE
-//#define ETH_DATA_BASE ((unsigned long)eth_data)
-
-
 static void
 print_packet(unsigned long add, int len)
 {
@@ -65,7 +60,8 @@ void init_tx_bd_pool(void)
 {
   eth_bd  *bd;
   int i;
-  
+  unsigned long eth_data_base = ETH_DATA_BASE;
+
   bd = (eth_bd *)ETH_BD_BASE;
 
   for(i = 0; i < ETH_TXBD_NUM; i++) {
@@ -73,7 +69,7 @@ void init_tx_bd_pool(void)
     bd[i].len_status = 0 << 16 | ETH_TX_BD_PAD | ETH_TX_BD_CRC | ETH_RX_BD_IRQ;
 
     /* Initialize Tx buffer pointer */
-    bd[i].addr = ETH_DATA_BASE + (i * ETH_MAXBUF_LEN);
+    bd[i].addr = eth_data_base + (i * ETH_MAXBUF_LEN);
   }
 
   bd[i-1].len_status |= ETH_TX_BD_WRAP; // Last Tx BD - Wrap
@@ -83,6 +79,8 @@ void init_rx_bd_pool(void)
 {
   eth_bd  *bd;
   int i;
+  /* Set ethernet data buffers just above that of stack */
+  unsigned long eth_data_base = ETH_DATA_BASE;
 
   bd = (eth_bd *)ETH_BD_BASE + ETH_TXBD_NUM;
 
@@ -92,7 +90,7 @@ void init_rx_bd_pool(void)
     bd[i].len_status = 0 << 16 | ETH_RX_BD_EMPTY | ETH_RX_BD_IRQ;
 
     /* Initialize Rx buffer pointer */
-    bd[i].addr = ETH_DATA_BASE + ((ETH_TXBD_NUM + i) * ETH_MAXBUF_LEN);
+    bd[i].addr = eth_data_base + ((ETH_TXBD_NUM + i) * ETH_MAXBUF_LEN);
   }
 
   bd[i-1].len_status |= ETH_RX_BD_WRAP; // Last Rx BD - Wrap

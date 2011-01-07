@@ -2,6 +2,7 @@
 #include "support.h"
 #include "flash.h"
 #include "net.h"
+#include "eth.h"
 #include "uart.h"
 #include "dosfs.h"
 #include "spr-defs.h"
@@ -9,6 +10,10 @@
 #ifndef MAX_IMAGES
 #define MAX_IMAGES 20
 #endif
+
+// Put the copyboot program at just before end of memory
+#define COPYBOOT_LOCATION (SDRAM_SIZE - (32*4))
+
 
 extern unsigned long fprog_addr;
 extern char *tftp_filename;
@@ -88,6 +93,7 @@ int copy_memory_run(register unsigned long src_addr,
 		    register unsigned long length,
 		    register int erase, register unsigned long start_addr)
 {
+#ifdef FLASH_BASE_ADDR
 	unsigned long i, flags;
 
 	register char *dst = (char *)dst_addr;
@@ -152,6 +158,9 @@ int copy_memory_run(register unsigned long src_addr,
 	/* Run the program */
 	((void (*)(void))start_addr) ();
 	return 0;		/* just to satisfy the cc */
+#else
+	return -1;
+#endif
 }
 
 void bf_jump(unsigned long addr)
@@ -162,6 +171,7 @@ void bf_jump(unsigned long addr)
 
 int boot_flash_cmd(int argc, char *argv[])
 {
+#ifdef FLASH_BASE_ADDR
 	unsigned long addr, val, jaddr;
 	addr = 17;
 	val = 0;
@@ -175,59 +185,19 @@ asm("l.mtspr %0,%1,0": :"r"(addr), "r"(val));
 		jaddr = strtoul(argv[0], 0, 0);
 		bf_jump(jaddr);
 	}
+#endif
 	return 0;
 }
 
 void init_load(void)
 {
-#if 0				// JB - removing flash stuff
-#  ifdef CFG_IN_FLASH
-	copy_memory_run((unsigned long)&fl_word_program,
-			(unsigned long)&fprog_addr, 95, 0, 0xffffffff);
-	copy_memory_run((unsigned long)&fl_block_erase,
-			(unsigned long)&fprog_addr + 96, 119, 0, 0xffffffff);
-	copy_memory_run((unsigned long)&fl_unlock_one_block,
-			(unsigned long)&fprog_addr + 96 + 120, 115, 0,
-			0xffffffff);
-
-	fl_ext_program = (t_fl_ext_program) & fprog_addr;
-	fl_ext_erase = (t_fl_erase) & fprog_addr + 96;
-	fl_ext_unlock = (t_fl_erase) & fprog_addr + 96 + 120;
-
-#    if 0
-	printf("fl_word_program(): 0x%x\tfl_ext_program(): 0x%x\n",
-	       &fl_word_program, fl_ext_program);
-	printf("fl_block_erase: 0x%x\tfl_ext_erase(): 0x%x\n",
-	       &fl_block_erase, fl_ext_erase);
-	printf("fl_unlock_one_block(): 0x%x\tfl_ext_unlock(): 0x%x\n",
-	       &fl_unlock_one_block, fl_ext_unlock);
-#    endif
-
-#  else	/* not CFG_IN_FLASH */
-	fl_ext_program = (t_fl_ext_program) & fl_word_program;
-	fl_ext_erase = (t_fl_erase) & fl_block_erase;
-	fl_ext_unlock = (t_fl_erase) & fl_unlock_one_block;
-#  endif /* CFG_IN_FLASH */
-#endif
-
-	/*
-	   global.ip = gcfg.eth_ip;
-	   global.gw_ip = gcfg.eth_gw;
-	   global.mask = gcfg.eth_mask;
-	   global.srv_ip = gcfg.tftp_srv_ip;
-	   global.src_addr = 0x100000;
-	   tftp_filename = "boot.img";
-	 */
-
 	global.ip = BOARD_DEF_IP;
 	global.gw_ip = BOARD_DEF_GW;
 	global.mask = BOARD_DEF_MASK;
 	global.srv_ip = BOARD_DEF_TBOOT_SRVR;
-	global.src_addr = BOARD_DEF_LOAD_SPACE;
+	global.src_addr = ((ETH_BUF_SPACE + ETH_DATA_BASE) + 8) & ~0x3;
 	tftp_filename = BOARD_DEF_IMAGE_NAME;
 
-	/*memcpy(tftp_filename, gcfg.tftp_filename, strlen(gcfg.tftp_filename));
-	   tftp_filename[strlen(gcfg.tftp_filename)] = '\0'; */
 }
 
 int tftp_cmd(int argc, char *argv[])
@@ -277,6 +247,7 @@ int tftp_conf_cmd(int argc, char *argv[])
 
 void save_global_cfg(flash_cfg_struct cfg)
 {
+#ifdef FLASH_BASE_ADDR
 	unsigned long dst = (unsigned long)&gcfg, src = (unsigned long)&cfg;
 	unsigned long i, end, flags;
 
@@ -308,6 +279,7 @@ void save_global_cfg(flash_cfg_struct cfg)
 
 	/* and than enable it back */
 	mtspr(SPR_SR, flags);
+#endif
 	return;
 }
 
@@ -362,6 +334,7 @@ void images_info(void)
  */
 unsigned long get_good_addr(unsigned int size)
 {
+#ifdef FLASH_BASE_ADDR
 	unsigned long start_addr[MAX_IMAGES], end_addr[MAX_IMAGES];
 	unsigned long free[MAX_IMAGES], st_addr[MAX_IMAGES];
 	unsigned long tmpval;
@@ -444,6 +417,9 @@ unsigned long get_good_addr(unsigned int size)
 
 	/* there is not enough space (in one segment) left */
 	return 0;
+#else
+	return -1;
+#endif
 }
 
 unsigned long prepare_img_data(unsigned int num, unsigned int size)
@@ -647,8 +623,6 @@ int tboot_cmd(int argc, char *argv[])
 	mtspr(SPR_SR, mfspr(SPR_SR) & ~SPR_SR_TEE);
 	mtspr(SPR_TTMR, 0);
 
-	// Put the copyboot program at 24MB mark in memory
-#define COPYBOOT_LOCATION (1024*1024*24)
 	printf("tboot: relocating copy loop to 0x%x ...\n",
 	       (unsigned long)COPYBOOT_LOCATION);
 	// Setup where we'll copy the relocation function to
@@ -743,8 +717,6 @@ int sdboot_cmd(int argc, char *argv[])
 	mtspr(SPR_SR, mfspr(SPR_SR) & ~SPR_SR_TEE);
 	mtspr(SPR_TTMR, 0);
 
-	// Put the copyboot program at 24MB mark in memory
-#define COPYBOOT_LOCATION (1024*1024*24)
 	printf("tboot: relocating copy loop to 0x%x ...\n",
 	       (unsigned long)COPYBOOT_LOCATION);
 	// Setup where we'll copy the relocation function to

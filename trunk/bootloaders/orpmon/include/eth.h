@@ -1,10 +1,12 @@
 #define ETH_REG_BASE  ETH_BASE 
 #define ETH_BD_BASE   (ETH_BASE + 0x400)
-#define ETH_TOTAL_BD  32
+#define ETH_TOTAL_BD  8
 #define ETH_MAXBUF_LEN 0x600
 
-#define ETH_TXBD_NUM      8
-#define ETH_RXBD_NUM      24
+#define ETH_TXBD_NUM      4
+#define ETH_RXBD_NUM      4
+
+#define ETH_BUF_SPACE (ETH_TOTAL_BD * ETH_MAXBUF_LEN)
 
 typedef unsigned int uint;
 

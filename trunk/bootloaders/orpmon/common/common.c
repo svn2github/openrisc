@@ -37,6 +37,8 @@ void putc(const char c)
 	case CT_SIM:
 		__printf("%c", c);
 		break;
+	default:
+		break;
 	}
 }
 
@@ -334,7 +336,11 @@ void mon_init(void)
 	/* Set defaults */
 	global.erase_method = 2;	/* as needed */
 	global.src_addr = (unsigned long)&_src_addr;
+#ifdef FLASH_BASE_ADDR
 	global.dst_addr = FLASH_BASE_ADDR;
+#else
+	global.dst_addr = 0;
+#endif
 	global.eth_add[0] = ETH_MACADDR0;
 	global.eth_add[1] = ETH_MACADDR1;
 	global.eth_add[2] = ETH_MACADDR2;
@@ -401,7 +407,7 @@ int main(int argc, char **argv)
 {
 	extern unsigned long calc_mycrc32(void);
 
-#if 0
+#if SELF_CHECK
 	extern unsigned long mycrc32, mysize;
 #endif
 
