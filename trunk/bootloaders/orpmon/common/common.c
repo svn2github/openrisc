@@ -4,15 +4,11 @@
 #include "support.h"
 #include "keyboard.h"
 #include "spr-defs.h"
-#include "spincursor.h"
 #include "int.h"
 
 #include "build.h"
 
 #define MAX_COMMANDS  100
-
-// Value from linker script
-extern unsigned long _src_addr;
 
 bd_t bd;
 
@@ -59,6 +55,7 @@ int getc()
 		break;
 	case CT_NONE:		/* just to satisfy the compiler */
 	case CT_SIM:
+	default:
 		break;
 	}
 	return -1;
@@ -80,6 +77,7 @@ int testc()
 		break;
 	case CT_NONE:		/* just to satisfy the compiler */
 	case CT_SIM:
+	default:
 		break;
 	}
 	return -1;
@@ -167,8 +165,10 @@ void change_console_type(enum bi_console_type_t con_type)
 	case CT_SIM:
 		break;
 	}
+	
 	bd.bi_console_type = con_type;
-	/* Initialize new */
+	
+        /* Initialize new */
 	switch (bd.bi_console_type) {
 	case CT_NONE:
 		break;
@@ -295,11 +295,11 @@ void mon_command(void)
 
 }
 
-#if HELP_ENABLED
-extern unsigned long _src_addr;	// Stack section ends here, will print it out
+
 /* Displays help screen */
 int help_cmd(int argc, char *argv[])
 {
+#if HELP_ENABLED	
 	int i;
 	for (i = 0; i < num_commands; i++)
 		printf("%-10s %-20s - %s\n", command[i].name, command[i].params,
@@ -311,12 +311,12 @@ int help_cmd(int argc, char *argv[])
 	printf("Frequency\t\t%dMHz\n", IN_CLK / 1000000);
 	print_or1k_cache_info();
 	printf("\n");
-	printf("Info: Stack section addr 0x%x\n", (unsigned long)&_src_addr);
+	printf("Info: Stack section addr 0x%x\n", (unsigned long)&_stack_top);
 	printf("Build tag: %s", BUILD_VERSION);
-
+#endif /* HELP_ENABLED */
 	return 0;
 }
-#endif /* HELP_ENABLED */
+
 
 void module_cpu_init(void);
 void module_memory_init(void);
@@ -335,7 +335,7 @@ void mon_init(void)
 {
 	/* Set defaults */
 	global.erase_method = 2;	/* as needed */
-	global.src_addr = (unsigned long)&_src_addr;
+	global.src_addr = 0;
 #ifdef FLASH_BASE_ADDR
 	global.dst_addr = FLASH_BASE_ADDR;
 #else
@@ -401,37 +401,28 @@ void mon_init(void)
 
 }
 
-int tboot_cmd(int argc, char *argv[]);
+
+
 /* Main shell loop */
 int main(int argc, char **argv)
 {
-	extern unsigned long calc_mycrc32(void);
-
-#if SELF_CHECK
-	extern unsigned long mycrc32, mysize;
-#endif
-
 	timestamp = 0;		// clear timer counter
 
-	int_init();
-
+	/* Init. interface */
 	change_console_type(CONSOLE_TYPE);
 
+	/* Init. processor interrupt handlers */
+	int_init();
+	
+	/* Enable interrupts in processor */
 	mtspr(SPR_SR, mfspr(SPR_SR) | SPR_SR_IEE);
 
-#if SELF_CHECK
-	printf("Self check... ");
-	if ((t = calc_mycrc32()))
-		printf("FAILED!!!\n");
-	else
-		printf("OK\n");
-#endif /* SELF_CHECK */
-
+	/* Initialise commands we'll handle */
 	num_commands = 0;
+
 	mon_init();
-
-	disable_spincursor();
-
+	
+	/* Init processor timers */
 	tick_init();
 
 	if (HELP_ENABLED)

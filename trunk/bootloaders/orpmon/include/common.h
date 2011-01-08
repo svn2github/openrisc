@@ -15,7 +15,7 @@
 #endif
 
 /* Stack top */
-extern unsigned long _src_addr;
+extern unsigned long _stack_top;
 
 /* A Board Information structure that is given to a program when
  * ppcboot starts it up. */

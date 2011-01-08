@@ -6,57 +6,19 @@
 #define EXIT_NOP_ON_ERROR 1
 #define PRINT_AND_RESET_ON_ERROR 1
 	
-        .extern _src_beg
-        .extern _dst_beg
-        .extern _dst_end        
         .extern int_main
 	.extern int_error
-        .extern tick_interrupt
-        .extern _crc32
         .extern _bstart
 	.extern _bend
-        .global _calc_mycrc32
-        .global _mycrc32
-        .global _mysize
 
         .section .stack, "aw", @nobits
 .space  STACK_SIZE
 _stack:
-        .section .crc
-_mycrc32:
-        .word   0xcccccccc
-_mysize:
-        .word 0xdddddddd
 
-.if SELF_CHECK
-_calc_mycrc32:
-        l.addi  r3,r0,0
-        l.movhi r4,hi(_calc_mycrc32)
-        l.ori   r4,r4,lo(_calc_mycrc32)
-        l.movhi r5,hi(_mysize)
-        l.ori   r5,r5,lo(_mysize)
-        l.lwz   r5,0(r5)
-        l.addi  r1,r1,-4
-        l.sw    0(r1),r9
-        
-        /* unsigned long crc32 (unsigned long crc, const unsigned char *buf, unsigned long len); */
-        l.jal           _crc32
-        l.nop
-                                
-        l.movhi r3,hi(_mycrc32)
-        l.ori   r3,r3,lo(_mycrc32)
-        l.lwz   r3,0(r3)
-        
-        l.xor     r11,r3,r11
-        l.lwz   r9,0(r1)
-        l.jr    r9
-        l.addi  r1,r1,4
-.endif
-
-        .org 0x100
 
         .section .vectors, "ax"
 
+        .org 0x100
 _reset:
 	l.movhi r0, 0
 	/* Clear status register, set supervisor mode */
@@ -274,6 +236,7 @@ _start:
         l.ori   r1,r1,lo(_stack-4)
         l.addi  r2,r0,-3
         l.and   r1,r1,r2
+	l.or 	r2,r1,r1
 
 	/* Clear BSS */
 	l.movhi r3, hi(_bstart)

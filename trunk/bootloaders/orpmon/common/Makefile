@@ -3,7 +3,7 @@
 
 LIB	= common_o.o
 
-OBJS	= common.o support.o cprintf.o screen.o font.o ctype.o string.o spincursor.o dosfs.o
+OBJS	= common.o support.o cprintf.o screen.o font.o ctype.o string.o dosfs.o
 SOBJS   = or32.o
 
 all:	$(LIB)

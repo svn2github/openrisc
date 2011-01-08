@@ -58,7 +58,6 @@
 #  define SDRAM_BANK_SIZE         0x00800000
 #  define IN_CLK		  20000000
 
-#  define FLASH_ORG_16_2          1
 #  define BOARD_DEF_NAME       	  "ORSoC devboard"
 #elif BOARD==3
 //ORSoC ordb1a3p1000
@@ -184,7 +183,7 @@
 /* Ethernet core defines */
 #define ETH_BASE        	0x92000000
 #define ETH_IRQ         	4
-#define ETH_DATA_BASE  ((((unsigned long)&_src_addr) + 16) & ~0x3)
+#define ETH_DATA_BASE  ((((unsigned long)&_stack_top) + 16) & ~0x3)
 #define SPI_BASE        	0xb0000000
 #define CRT_BASE_ADDR   	0x97000000
 #define ATA_BASE_ADDR   	0x9e000000
@@ -192,8 +191,6 @@
 #define KBD_IRQ         	5
 
 #define SDC_CONTROLLER_BASE     0x9e000000
-
-#define SANCHO_BASE_ADD         0x98000000
 
 #define CRT_ENABLED	    	0
 #define FB_BASE_ADDR    	0xa8000000

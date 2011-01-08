@@ -1,6 +1,8 @@
 #ifndef _FLASH_H
 #define _FLASH_H
 
+#ifdef FLASH_BASE_ADDR
+
 #ifdef FLASH_ORG_16_2
 /* INC_ADDR = for how many bytes address should be incremented */
 #define INC_ADDR             4
@@ -47,5 +49,7 @@ typedef void(*t_uart_putc)(unsigned char);
 
 t_fl_ext_program fl_ext_program;
 t_fl_erase fl_ext_erase, fl_ext_unlock;
+
+#endif
 
 #endif /* _FLASH_H */

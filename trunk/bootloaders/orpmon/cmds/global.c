@@ -69,9 +69,10 @@ int start_addr_cmd(int argc, char *argv[])
 		return -1;
 }
 
-#if HELP_ENABLED
+
 int globals_cmd(int argc, char *argv[])
 {
+#if HELP_ENABLED
 	const char *erase_method_desc[] =
 	    { "do not erase", "fully", "as needed" };
 	if (argc)
@@ -84,9 +85,12 @@ int globals_cmd(int argc, char *argv[])
 	printf("srv_ip = %08lx\n", global.srv_ip);
 	printf("erase_method = %i (%s)\n", (int)global.erase_method,
 	       erase_method_desc[global.erase_method]);
-	return 0;
-}
 #endif /* HELP_ENABLED */
+	return 0;
+
+}
+
+
 
 void module_global_init(void)
 {

@@ -31,7 +31,6 @@ SECTIONS
 {
         .vectors :
         {
-        *(.crc)
         *(.vectors)
         } > vectors
 
@@ -44,7 +43,6 @@ SECTIONS
 /*        } > ram2*/
 
         .data :
-/*	AT ( ADDR (.text) + SIZEOF(.text) + SIZEOF(.mytext))*/
         {
         *(.data)
         } > ram
@@ -55,7 +53,7 @@ SECTIONS
 	*(.rodata.*)
         } > ram
 
-        .bss :
+        .bss (NOLOAD):
         {
 	. = ALIGN(4); 
 	_bstart = . ; 
@@ -64,45 +62,11 @@ SECTIONS
 	} > ram
 /*        } > ram2 */
 
-        .stack :
+        .stack (NOLOAD):
         {
         *(.stack)
-        _src_addr = .;
+        _stack_top = .;
 	} > ram
 /*        } > ram2 */
-/*
-	.monitor :
-	{
-	*(.monitor)
-	} > ram
-*/
 
-/*
-	. += 0x100000;
-
-// This section was in cmds/load.c, but we don't need it -jb
-	.config :
-	{
-	_cfg_start = .;
-	*(.config)
-	_cfg_end = .;
-	} > ram
-*/
-/*
-	. = 0xf0000100;
-
-	.monitor ALIGN(0x40000) :
-	{
-	*(.monitor)
-	} > flash
-
-	. += 0x100000;
-
-	.config ALIGN(0x40000) :
-	{
-	_cfg_start = .;
-	*(.config)
-	_cfg_end = .;
-	} > flash
-*/
 }

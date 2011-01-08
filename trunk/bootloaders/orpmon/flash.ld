@@ -66,6 +66,7 @@ SECTIONS
         .stack :
         {
         *(.stack)
+	_stack_top = .;
         } > ram
 
 	.mytext :

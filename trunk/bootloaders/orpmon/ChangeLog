@@ -1,3 +1,33 @@
+2011-01-08  Julius Baxter  <julius@opencores.org>
+	* include/flash.h: Whole filed surrounded with #ifdef FLASH_BASE_ADDR
+	* include/spincursor: Deleted.
+	* include/board.h: FLASH_ORG define for board 2 removed.
+	<ETH_DATA_BASE>: Changed to reference _stack_top.
+	<SANCHO_BASE_ADD>: Unused, so removed.
+	* include/common.h: <_src_addr>: Extern define removed.
+	<_stack_top>: Extern define added.
+	* services/Makefile: Clean up commented-out things.
+	* reset.S: Removed several unused .extern.
+	<_mycrc32>: Removed.
+	<_mysize>: Ditto.
+	Removed SELF_CHECK section.
+	Shifted .org for reset section to after .section definition (bugfix.)
+	* cmds/global.c: 
+	(globals_cmd): Shifted #if HELP_ENABLED to surround contents of
+	function.
+	* cmds/memory.c: Changed references from _src_addr to _stack_top.
+	Remove all (were already commented out) spincursor references.
+	* sim.cfg: Add Ethernet TAP configuration settings.
+	* common/spincursos.c: Removed.
+	* common/common.c: Change references from _src_addr to _stack_top.
+	(main): Clean up.
+	* flash.ld: <_stack_top>: Added.
+	* ram.ld: <_src_addr>: Removed.
+	<_stack_top>: Added.
+	Removed reference to .crc section.
+	* drivers/uart.c: Some formatting.
+	
+	
 2011-01-07  Julius Baxter  <julius@opencores.org>
 	* ChangeLog: Created
 	* include/board.h: IP config 3 changes

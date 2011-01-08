@@ -33,14 +33,16 @@ void uart_init(void)
 	float float_divisor;
 
         /* Reset receiver and transmiter */
-        REG8(UART_BASE + UART_FCR) = UART_FCR_ENABLE_FIFO | UART_FCR_CLEAR_RCVR | UART_FCR_CLEAR_XMIT | UART_FCR_TRIGGER_4;
+        REG8(UART_BASE + UART_FCR) = UART_FCR_ENABLE_FIFO | UART_FCR_CLEAR_RCVR
+		| UART_FCR_CLEAR_XMIT | UART_FCR_TRIGGER_4;
  
         /* Disable all interrupts */
         REG8(UART_BASE + UART_IER) = 0x00;
  
         /* Set 8 bit char, 1 stop bit, no parity */
-        REG8(UART_BASE + UART_LCR) = UART_LCR_WLEN8 & ~(UART_LCR_STOP | UART_LCR_PARITY);
- 
+        REG8(UART_BASE + UART_LCR) = UART_LCR_WLEN8 & ~(UART_LCR_STOP | 
+							UART_LCR_PARITY);
+
         /* Set baud rate */
 	float_divisor = (float) IN_CLK/(16 * UART_BAUD_RATE);
 	float_divisor += 0.50f; // Ensure round up

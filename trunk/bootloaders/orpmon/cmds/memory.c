@@ -1,7 +1,6 @@
 #include "common.h"
 #include "support.h"
 #include "spr-defs.h"
-#include "spincursor.h"
 
 void show_mem(int start, int stop)
 {
@@ -24,7 +23,7 @@ void testram(unsigned long start_addr, unsigned long stop_addr,
 	unsigned long err_addr = 0;
 	unsigned long err_no = 0;
 
-	unsigned long stack_top = (unsigned long) &_src_addr;
+	unsigned long stack_top = (unsigned long) &_stack_top;
 
 	if (start_addr < stack_top)
 	{
@@ -133,21 +132,16 @@ void better_ram_test(unsigned long start_addr, unsigned long stop_addr,
 	unsigned long err_no = 0;
 	int b;
 	printf("\nSetting memory contents to all 1'b1  ");
-	//enable_spincursor();
 	for (addr = start_addr; addr <= stop_addr; addr += 1)
 		REG8(addr) = 0xff;
-	//disable_spincursor();
 	printf("\rVerifying memory contents all set to 1'b1:  ");
-	//enable_spincursor();
 	/* Verify */
 	for (addr = start_addr; addr <= stop_addr; addr += 1) {
 		if (REG8(addr) != 0xff) {
 			err_no++;
 			err_addr = addr;
-			//disable_spincursor();
 			printf("\n%04lx times failed. Last at location %08lx  ",
 			       err_no, err_addr);
-			//enable_spincursor();
 		}
 	}
 
