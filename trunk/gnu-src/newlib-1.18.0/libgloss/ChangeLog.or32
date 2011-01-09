@@ -1,3 +1,6 @@
+2011-01-09  Julius Baxter  <julius@opencores.org>
+	* or32/crt0.S (_start): Added clearing of GPR 0.
+	
 2010-10-29  Joern Rennecke  <joern.rennecke@embecosm.com>
 
 	* or32/crt0.S (_start): After main, call exit.

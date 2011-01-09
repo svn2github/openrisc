@@ -270,6 +270,8 @@ stack:	.space	4,0
         .type	_start,@function
 
 _start:
+	/* First, clear r0. */
+	l.movhi r0,0	
 	/* Finding the end of stack means we need to handle the bus
 	   error. Patch in some special handler code. */
 	l.movhi	r30,hi(__buserr)	/* Where to copy to */
