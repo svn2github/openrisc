@@ -1,3 +1,9 @@
+2011-01-12  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* config.or32/or32.h (CPP_SPEC): Add -D_XOPEN_SOURCE=600 for pthread.
+	(LIB_SPEC): Add --whole-archive -lpthread --no-whole-archive for
+	pthread.
+
 2010-12-19  Jeremy Bennett <jeremy.bennett@embecosm.com>
 
 	* config.gcc <or32-*-linux*>: Remove extra_parts.

@@ -21,53 +21,45 @@
 # You should have received a copy of the GNU General Public License along
 # with this program.  If not, see <http://www.gnu.org/licenses/>.          
 
-# This is a list of toolchains that are supported on this board.
-set_board_info target_install {or32-linux}
+# -----------------------------------------------------------------------------
+# For telnet targets we need to define some functions.
 
-# No multilib options needed by default.
-process_multilib_options ""
-
-# Load the generic configuration for this board. This will define a basic set
-# of routines needed by the tool to communicate with the board.
-load_generic_config "unix"
-
-# Set up remote target info
-set_board_info hostname "192.168.0.3"
-set_board_info username root
-
-# Use the installed compilers to ensure we get search paths that will find
-# uClibc.
-send_user "set_board_info compiler /opt/or32-new/bin/or32-linux-gcc\n"
-global GCC_UNDER_TEST
-set GCC_UNDER_TEST "/opt/or32-new/bin/or32-linux-gcc"
-set_board_info compiler /opt/or32-new/bin/or32-linux-gcc
-set_board_info c++compiler /opt/or32-new/bin/or32-linux-g++
-
-set_board_info connect telnet
-set_board_info shell_prompt    "~ # "
-set_board_info telnet_username "root"
-set_board_info telnet_password ""
-
-set_board_info file_transfer ftp
-set_board_info ftp_username  root
-set_board_info ftp_password  ""
-
+# -----------------------------------------------------------------------------
 # Custom proc to close a telnet session
+
+# @param[in] boardname  The board being closed.
+# -----------------------------------------------------------------------------
 proc telnet_close {boardname} {
+
+    # Make the telnet process associated with this board the current process
     set spawn_id [board_info $boardname fileid]
     verbose "Closing $boardname:$spawn_id"
 
+    # If we have a process, close it.
     if { $spawn_id >= 0 } {
-	catch {close -i $spawn_id}
+	catch close
 	catch wait
 	set spawn_id -1
 
-	set board_info($boardname,fileid) $spawn_id
+	set_board_info $boardname,fileid $spawn_id
     }
 }
 
 
+# -----------------------------------------------------------------------------
 # Custom proc to exec programs using telnet
+
+# We seem to only pass in the first of the arguments supplied to the command.
+
+# We seem to set the timeout to 30, no matter what. Not sure that is right
+# here.
+
+# @param[in] boardname  The board we are telnetting to
+# @param[in] cmd        The command to run
+# @param[in] args       Arguments to the command
+
+# @return  A list of the return code (-1 on failure) and any error message.
+# -----------------------------------------------------------------------------
 proc telnet_exec {boardname cmd args} {
     global timeout
     global verbose
@@ -75,12 +67,14 @@ proc telnet_exec {boardname cmd args} {
 
     verbose "Executing $boardname:$cmd $args"
 
+    # Get the first argument, if any.
     if { [llength $args] > 0 } {
 	set pargs [lindex $args 0];
     } else {
 	set pargs ""
     }
 
+    # Set the shell prompt
     if [board_info $boardname exists shell_prompt] {
 	set shell_prompt [board_info $boardname shell_prompt]
     }
@@ -89,7 +83,9 @@ proc telnet_exec {boardname cmd args} {
 	set shell_prompt ".*> "
     }
 
-    #Start a new telnet session if one dosen't already exist
+    # Start a new telnet session if one doesn't already exist. If sucessful
+    # the fileid field associated with $boardname will be set to the spawn_id
+    # of the new telnet process.
     if ![board_info $boardname exists fileid] {
 	if {[telnet_open $boardname] == -1} {
 	    return [list -1
@@ -98,17 +94,21 @@ telnet session"]
 	}
     }
 
+    # Make the telnet session the current process.
     set spawn_id [board_info $boardname fileid]
+    set old_timeout $timeout
     set timeout 30
 
     #Hit enter to make sure you get a shell prompt
     send -- "\r"
 
     expect {
+	# A prompt indicates the current session is alive
 	-re "$shell_prompt.*$" {
 	    verbose "Got a prompt"
 	}
 	default {
+	    # No response try closing the connection and reopening.
 	    telnet_close $boardname
 	    if {[telnet_open $boardname] != -1} {
 		verbose "started new telnet session, spawn_id is [board_info
@@ -116,13 +116,21 @@ $boardname fileid]"
 		send -- "\r"
 		exp_continue
 	    } else {
+		set timeout $old_timeout
 		return [list -1 "telnet to $boardname failed for $cmd, couldn't get
 a shell prompt"]
 	    }
-	    send -- "\r"
-	    exp_continue
+	    # I don't think we can get here. Comment out the old code and
+	    # trigger an error
+	    # send -- "\r"
+	    # exp_continue
+	    set timeout $old_timeout
+	    error "Problem reconnecting to telnet."
 	}
     }
+
+    # Shorter timeout for commands. Not sure why we only use the first of the
+    # arguments.
     set timeout 10
     send "$cmd $pargs\r"
 
@@ -134,11 +142,13 @@ a shell prompt"]
 		set execute_output_string $expect_out(buffer)
 	    }
 	    telnet_close $boardname
-	    return "fail timeout"
+	    set timeout $old_timeout
+	    return [list -1 "telnet to $boardname for $cmd $pargs failed (timeout)"
 	}
     }
-    #Remove unesesary strings from the output string
-    #
+
+    #Remove unnecessary strings from the output string
+
     #If the file path contains any "+" signs, it will mess things up when $cmd
     #is used as a regsub pattern (2 lines down), so we replace all "+"s with "."
     regsub -all "\\+" $cmd "." cmd
@@ -162,12 +172,47 @@ a shell prompt"]
 	set status 1
     }
 
+    set timeout $old_timeout
     if {$status == 0} {
 	return [list "0" "$output"]
     } else {
 	return [list "1" "$output"]
     }
 }
+
+# This is a list of toolchains that are supported on this board.
+set_board_info target_install {or32-linux}
+
+# No multilib options needed by default.
+process_multilib_options ""
+
+# Load the generic configuration for this board. This will define a basic set
+# of routines needed by the tool to communicate with the board.
+load_generic_config "unix"
+
+# Set up remote target info
+set_board_info hostname "192.168.0.3"
+set_board_info username root
+
+# Use the installed compilers to ensure we get search paths that will find
+# uClibc.
+send_user "set_board_info compiler /opt/or32-new/bin/or32-linux-gcc\n"
+global GCC_UNDER_TEST
+set GCC_UNDER_TEST "/opt/or32-new/bin/or32-linux-gcc"
+global GXX_UNDER_TEST
+set GXX_UNDER_TEST "/opt/or32-new/bin/or32-linux-g++"
+set_board_info compiler /opt/or32-new/bin/or32-linux-gcc
+set_board_info c++compiler /opt/or32-new/bin/or32-linux-g++
+set target_alias "or32-linux"
+
+set_board_info connect telnet
+set_board_info shell_prompt    "~ # "
+set_board_info telnet_username "root"
+set_board_info telnet_password ""
+
+set_board_info file_transfer ftp
+set_board_info ftp_username  root
+set_board_info ftp_password  ""
 
 # Options for the simulator
 # set cfg_file [lookfor_file ${srcdir} libgloss/or32/sim.cfg]
@@ -176,6 +221,10 @@ a shell prompt"]
 # We only support uClibc on this target.  We assume that all multilib options
 # have been specified before we get here.
 # set_board_info compiler  "[find_gcc]"
+
+# We need to define the right flags if pthreads is to work.
+set_board_info cflags    "-D_XOPEN_SOURCE=600"
+set_board_info cxxflags  "-D_XOPEN_SOURCE=600"
 
 # No linker script needed.
 set_board_info ldscript ""

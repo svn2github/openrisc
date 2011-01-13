@@ -47,7 +47,9 @@ Boston, MA 02111-1307, USA.  */
   { "target_prefix", TARGET_PREFIX }
 
 #undef CPP_SPEC
-#define CPP_SPEC "%{mor32-newlib*:-idirafter %(target_prefix)/newlib-include}"
+#define CPP_SPEC \
+  "%{!mor32-newlib*:%{pthread:-D_XOPEN_SOURCE=600}}" \
+  "%{mor32-newlib*:-idirafter %(target_prefix)/newlib-include}"
 
 /* Make sure we pick up the crti.o, crtbegin.o, crtend.o and crtn.o files. */
 #undef STARTFILE_SPEC
@@ -64,7 +66,10 @@ Boston, MA 02111-1307, USA.  */
 /* Override previous definitions (linux.h). Newlib doesn't have a profiling
    version of the library, but it does have a debugging version (libg.a) */
 #undef LIB_SPEC 
-#define LIB_SPEC "%{!mor32-newlib*:%{!p:%{!pg:-lc}}%{p:-lc_p}%{pg:-lc_p}} \
+#define LIB_SPEC "%{!mor32-newlib*:"					\
+		   "%{pthread:"						\
+		     "--whole-archive -lpthread --no-whole-archive} "	\
+		   "%{!p:%{!pg:-lc}}%{p:-lc_p}%{pg:-lc_p}} \
                   %{mor32-newlib:%{!g:-lc -lor32 -u free -lc}            \
                                  %{g:-lg -lor32 -u free -lg}}            \
                   %{mor32-newlib-uart:%{!g:-lc -lor32uart -u free -lc}   \

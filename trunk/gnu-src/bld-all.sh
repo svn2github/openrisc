@@ -607,7 +607,8 @@ function gnu_config {
 	langs=$1
 	shift
 
-	echo "bld-all.sh: gnu_config ${top_builddir} ${top_srcdir} ${langs} $*"
+	echo -n "bld-all.sh: gnu_config ${this_prefix} ${top_builddir} "
+	echo    "${top_srcdir} ${langs} $*"
 
 	verstr="OpenRISC 32-bit toolchain for ${target} (built `date +%Y%m%d`)"
 
@@ -817,7 +818,7 @@ sanity_check
 # directories we are actually building (see below).
 if [ "true" == "${force_flag}" ]
 then
-    echo -n "bld-all.sh: removing ${unisrc_dir}"
+    echo "bld-all.sh: removing ${unisrc_dir}"
     rm -rf ${unisrc_dir}
 fi
 
@@ -832,7 +833,7 @@ then
     # --force only applies to build directories we are using!
     if [ "true" == "${force_flag}" ]
     then
-	echo -n "bld-all.sh: removing ${bd_elf} ${bd_elf_gdb} "
+	echo "bld-all.sh: removing ${bd_elf} ${bd_elf_gdb}"
 	rm -rf ${bd_elf} ${bd_elf_gdb}
     fi
 
@@ -870,7 +871,7 @@ then
     # --force only applies to build directories we are using!
     if [ "true" == "${force_flag}" ]
     then
-	echo -n "bld-all.sh: removing ${bd_linux} ${bd_linux_gdb} "
+	echo "bld-all.sh: removing ${bd_linux} ${bd_linux_gdb}"
 	rm -rf ${bd_linux} ${bd_linux_gdb}
     fi
 
@@ -922,7 +923,8 @@ then
     then
 	echo "bld-all.sh: uClibc GCC stage 2"
 
-        # uClibc now supports POSIX threads, but not TLS
+        # uClibc now supports POSIX threads, but not TLS. uClibc
+	# linuxthreads.old is a POSIX98 compliant implementation.
 	thread_config="--enable-threads=posix --disable-tls"
 
 	gnu_config ${config_flag} ${prefix} ${bd_linux} ../${unisrc_dir} \
