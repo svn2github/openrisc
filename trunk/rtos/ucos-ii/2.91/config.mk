@@ -26,7 +26,7 @@ CFLAGS += -I$(TOPDIR)/include -I$(TOPDIR)/ucos -I$(TOPDIR)/common -Wall -Wstrict
 
 ASFLAGS += $(CFLAGS)
 
-LDFLAGS += -lgcc
+LDFLAGS += -lgcc -e 256
 
 #########################################################################
 

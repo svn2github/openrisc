@@ -1,3 +1,6 @@
+2011-01-14  Julius Baxter  <julius@opencores.org>
+	* config.mk: <LDFLAGS>: Added entry point at 0x100 (decimal 256).
+
 2011-01-11  Julius Baxter  <julius@opencores.org>
 	* ucos-port/: Created.
 	* tasks/: Likewise.
