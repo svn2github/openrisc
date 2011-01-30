@@ -357,55 +357,55 @@ function parse_args {
     recreated. Only build directories of targets being built are removed.
 
 --languages <str>
-    Specify the languages to be built (default c,c++).
+    Specify the languages to be built (default ${languages})
 
 --prefix <dir>
-    Specify the install directory (default /opt/or32-new)
+    Specify the install directory (default ${prefix})
 
 --prefix-tmp <dir>
-    Specify the temporary install directory (default /tmp/or32-tmp-${USER}).
+    Specify the temporary install directory (default ${prefix_tmp})
     Incorporating the user name avoid name clashes with other users
 
 --unisrc-dir <dir>
-    Specify the unified source directory (default unisrc)
+    Specify the unified source directory (default ${unisrc_dir})
 
 --build-dir-elf <dir>
     Specify the build directory for the newlib (or32-elf) tool chain
-    (default bd-elf).
+    (default ${bd_elf}).
 
 --build-dir-elf-gdb <dir>
     Specify the build directory for the newlib (or32-elf) GDB (default
-    bd-elf-gdb).
+    ${bd_elf_gdb}).
 
 --build-dir-linux <dir>
     Specify the build directory for the uClibc (or32-linux) tool chain
-    (default bd-linux)
+    (default ${bd_linux})
 
 --build-dir-linux-gdb <dir>
     Specify the build directory for the uClibc (or32-linux) GDB (default
-    bd-linux-gdb)
+    ${bd_linux_gdb})
 
 --or1ksim-dir <dir>
     Specify the Or1ksim installation directory. Used by GDB, which links in
-    the Or1ksim simulator (default /opt/or1ksim-new)
+    the Or1ksim simulator (default ${or1ksim_dir})
 
 --binutils-dir
-    Source directory for binutils (default binutils-2.20.1)
+    Source directory for binutils (default ${binutils_dir})
 
 --gcc-dir
-    Source directory for gcc (default gcc-4.5.1')
+    Source directory for gcc (default ${gcc_dir})
 
 --newlib-dir
-    Source directory for newlib (default newlib-1.18.0)
+    Source directory for newlib (default ${newlib_dir})
 
 --uclibc-dir
-    Source directory for uClibc (default uclibc-0.9.31)
+    Source directory for uClibc (default ${uclibc_dir})
 
 --gdb-dir
-    Source directory for gdb (default  gdb-7.2)
+    Source directory for gdb (default  ${gdb_dir})
 
 --linux-dir
-    Source directory for Linux (default linux-2.6.35)
+    Source directory for Linux (default $linux_dir))
 
 --no-or32-elf
     Don't configure, build and install the newlib (or32-elf) tool chain.
