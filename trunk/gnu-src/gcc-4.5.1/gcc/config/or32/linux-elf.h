@@ -58,4 +58,9 @@ Boston, MA 02111-1307, USA.  */
       fputc ('\n', (FILE));             \
     }                                   \
   while (0)
+
 #endif
+
+/* The GNU C++ standard library requires that these macros be defined.  */
+#undef CPLUSPLUS_CPP_SPEC
+#define CPLUSPLUS_CPP_SPEC "-D_GNU_SOURCE %(cpp)"

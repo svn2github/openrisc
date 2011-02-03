@@ -1,3 +1,7 @@
+2011-02-03  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* gcc.dg/c99-init-1.c: Xfail for target { ! wchar } .
+
 2010-10-29  Joern Rennecke  <joern.rennecke@embecosm.com>
 
 	* gcc.dg/tree-ssa/pr44258.c (struct val): Add warning marker for !or32.

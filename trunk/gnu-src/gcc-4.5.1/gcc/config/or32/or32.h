@@ -48,7 +48,7 @@ Boston, MA 02111-1307, USA.  */
 
 #undef CPP_SPEC
 #define CPP_SPEC \
-  "%{!mor32-newlib*:%{pthread:-D_XOPEN_SOURCE=600}}" \
+  "%{!mor32-newlib*:%{pthread:-D_XOPEN_SOURCE=700}}" \
   "%{mor32-newlib*:-idirafter %(target_prefix)/newlib-include}"
 
 /* Make sure we pick up the crti.o, crtbegin.o, crtend.o and crtn.o files. */
@@ -249,7 +249,7 @@ extern int target_flags;
    Aside from that, you can include as many other registers as you like.  */
 #define CALL_USED_REGISTERS { \
   1, 1, 0, 1, 1, 1, 1, 1, \
-  1, 1, 1, 1, 0, 1, 0, 1, \
+  1, 1, 1, 1, 1, 1, 0, 1, \
   0, 1, 0, 1, 0, 1, 0, 1, \
   0, 1, 0, 1, 0, 1, 0, 1, 1, 1, 1}
 

@@ -1,3 +1,7 @@
+2011-02-03  Jonas Bonn  <jonas@southpole.se>
+
+	* config/or32/or32.h (CALL_USED_REGS): Include r12.
+
 2011-01-12  Joern Rennecke  <joern.rennecke@embecosm.com>
 
 	* config.or32/or32.h (CPP_SPEC): Add -D_XOPEN_SOURCE=600 for pthread.

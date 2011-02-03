@@ -2,6 +2,7 @@
 /* Origin: Jakub Jelinek <jakub@redhat.com> */
 /* { dg-do run } */
 /* { dg-options "-std=iso9899:1999 -pedantic-errors" } */
+/* { dg-xfail-if "" { target { ! wchar }  } { "*" } { "" } } */
 
 typedef __SIZE_TYPE__ size_t;
 typedef __WCHAR_TYPE__ wchar_t;
