@@ -1,3 +1,17 @@
+2011-02-04  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* lib/target-supports.exp (check_missing_uclibc_feature):
+	Fix __UCLIBC__ spelling.
+
+2011-02-03  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* gcc.dg/c99-init-1.c: Don't xfail for ! wchar.
+	* gcc.dg/c99-stdint-1.c: xfail for ! wchar.
+	* gcc.dg/c99-stdint-2.c, gcc.dg/c99-stdint-7.c: Likewise.
+
+	* gcc.dg/glibc-uclibc-1.c: Expect different message for or32-*-*.
+	* gcc.dg/glibc-uclibc-2.c: Likewise.
+
 2011-02-03  Joern Rennecke  <joern.rennecke@embecosm.com>
 
 	* gcc.dg/c99-init-1.c: Xfail for target { ! wchar } .

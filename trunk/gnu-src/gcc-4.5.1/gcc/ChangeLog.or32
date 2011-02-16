@@ -1,3 +1,14 @@
+2011-02-15  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* config/or32/or32.md (frame_alloc_fp): New pattern.
+	* config/or32/or32.c (or32_expand_prologue): Use it if a frame pointer
+	is used.
+
+2011-02-03  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* config/uclibc-stdint.h: New file.
+	* config.gcc (or32-*linux*): Add uclibc-stdint.h to tm_file.
+
 2011-02-03  Jonas Bonn  <jonas@southpole.se>
 
 	* config/or32/or32.h (CALL_USED_REGS): Include r12.

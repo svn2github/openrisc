@@ -3,4 +3,5 @@
 /* { dg-do link { target *-*-linux* } } */
 /* { dg-options "-muclibc -mglibc" } */
 
-/* { dg-message "-mglibc and -muclibc used together" "" { target *-*-* } 0 } */
+/* { dg-message "-mglibc and -muclibc used together" "" { ! target or32-*-* } 0 } */
+/* { dg-message "unrecognized command line option" "" { target or32-*-* } 0 } */

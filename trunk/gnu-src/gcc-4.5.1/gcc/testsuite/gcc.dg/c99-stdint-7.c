@@ -3,6 +3,7 @@
    conditions.  */
 /* { dg-do compile } */
 /* { dg-options "-std=iso9899:1999 -fhosted" } */
+/* { dg-xfail-if "" { ! wchar } { "*" } { "" } } */
 
 #include <stdint.h>
 

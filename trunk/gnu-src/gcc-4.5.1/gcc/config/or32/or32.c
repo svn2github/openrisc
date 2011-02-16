@@ -689,11 +689,20 @@ or32_expand_prologue (void)
       rtx value_rtx = gen_rtx_REG (Pmode, PROLOGUE_TMP);
 
       or32_emit_set_const32 (value_rtx, GEN_INT (-total_size));
-      insn = emit_frame_insn (gen_add2_insn (stack_pointer_rtx, value_rtx));
+      if (frame_info.save_fp_p)
+	insn = gen_frame_alloc_fp (value_rtx);
+      else
+	insn = gen_add2_insn (stack_pointer_rtx, value_rtx);
+      insn = emit_frame_insn (insn);
       add_reg_note (insn, REG_FRAME_RELATED_EXPR, note);
     }
   else if (total_size)
-    emit_frame_insn (insn);
+    {
+      if (frame_info.save_fp_p)
+	emit_frame_insn (gen_frame_alloc_fp (GEN_INT (-total_size)));
+      else
+	emit_frame_insn (insn);
+    }
 
 }	/* or32_expand_prologue () */
 

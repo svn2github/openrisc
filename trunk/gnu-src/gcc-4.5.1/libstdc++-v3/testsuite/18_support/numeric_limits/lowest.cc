@@ -1,5 +1,6 @@
 // { dg-options "-std=gnu++0x" }
 // { dg-add-options ieee }
+// { dg-xfail-if "" { ! wchar } { "*" } { "" } }
 
 // 2010-02-25  Ed Smith-Rowland
 

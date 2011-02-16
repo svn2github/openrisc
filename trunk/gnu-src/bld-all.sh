@@ -179,7 +179,7 @@ function set_defaults {
     newlib_dir="newlib-1.18.0"
     uclibc_dir="uclibc-0.9.31"
     gdb_dir="gdb-7.2"
-    linux_dir="linux-2.6.36"
+    linux_dir="linux-2.6.37"
     or32_elf_flag="true"
     or32_linux_flag="true"
     link_flag="true"
@@ -357,55 +357,55 @@ function parse_args {
     recreated. Only build directories of targets being built are removed.
 
 --languages <str>
-    Specify the languages to be built (default ${languages})
+    Specify the languages to be built (default c,c++).
 
 --prefix <dir>
-    Specify the install directory (default ${prefix})
+    Specify the install directory (default /opt/or32-new)
 
 --prefix-tmp <dir>
-    Specify the temporary install directory (default ${prefix_tmp})
+    Specify the temporary install directory (default /tmp/or32-tmp-${USER}).
     Incorporating the user name avoid name clashes with other users
 
 --unisrc-dir <dir>
-    Specify the unified source directory (default ${unisrc_dir})
+    Specify the unified source directory (default unisrc)
 
 --build-dir-elf <dir>
     Specify the build directory for the newlib (or32-elf) tool chain
-    (default ${bd_elf}).
+    (default bd-elf).
 
 --build-dir-elf-gdb <dir>
     Specify the build directory for the newlib (or32-elf) GDB (default
-    ${bd_elf_gdb}).
+    bd-elf-gdb).
 
 --build-dir-linux <dir>
     Specify the build directory for the uClibc (or32-linux) tool chain
-    (default ${bd_linux})
+    (default bd-linux)
 
 --build-dir-linux-gdb <dir>
     Specify the build directory for the uClibc (or32-linux) GDB (default
-    ${bd_linux_gdb})
+    bd-linux-gdb)
 
 --or1ksim-dir <dir>
     Specify the Or1ksim installation directory. Used by GDB, which links in
-    the Or1ksim simulator (default ${or1ksim_dir})
+    the Or1ksim simulator (default /opt/or1ksim-new)
 
 --binutils-dir
-    Source directory for binutils (default ${binutils_dir})
+    Source directory for binutils (default binutils-2.20.1)
 
 --gcc-dir
-    Source directory for gcc (default ${gcc_dir})
+    Source directory for gcc (default gcc-4.5.1')
 
 --newlib-dir
-    Source directory for newlib (default ${newlib_dir})
+    Source directory for newlib (default newlib-1.18.0)
 
 --uclibc-dir
-    Source directory for uClibc (default ${uclibc_dir})
+    Source directory for uClibc (default uclibc-0.9.31)
 
 --gdb-dir
-    Source directory for gdb (default  ${gdb_dir})
+    Source directory for gdb (default  gdb-7.2)
 
 --linux-dir
-    Source directory for Linux (default $linux_dir))
+    Source directory for Linux (default linux-2.6.35)
 
 --no-or32-elf
     Don't configure, build and install the newlib (or32-elf) tool chain.
@@ -534,6 +534,14 @@ function link_unified {
     
 	for srcdir in ${component_dirs}
 	do
+	    case `dirname $0` in
+	      '.') ;;
+	      *)
+		case srcdir in
+		/* | [A-Za-z]:[\\/]*) ;;
+		*) srcdir="`dirname $0`/${srcdir}" ;;
+		esac ;;
+	    esac
 	    echo "Component: $srcdir"
 	    case srcdir
 		in
@@ -675,13 +683,23 @@ function gnu_make {
 
 
 # ------------------------------------------------------------------------------
+# Change directory to $1 as seen from $0.
+
+function cd_0rel {
+  case "$1" in
+    /*) cd "$1" ;;
+    *) cd "`dirname $0`/$1" ;;
+  esac
+}
+
+# ------------------------------------------------------------------------------
 # Conditionally configure and install the Linux headers
 
 # @param[in] $1       The prefix to use for installation.
 function install_linux_headers {
     this_prefix=$1
 
-    cd $linux_dir
+    cd_0rel  $linux_dir
 
     if [ "true" == "${config_flag}" ]
     then
@@ -729,7 +747,7 @@ function uclibc_config {
 	this_prefix=$1
 	echo "bld-all.sh: Configuring uClibc"
 
-	cd ${uclibc_dir}
+	cd_0rel ${uclibc_dir}
 
 	kheaders="KERNEL_HEADERS=\\\"${this_prefix}\\/or32-linux\\/include\\\""
 	devprefix="DEVEL_PREFIX=\\\"${this_prefix}\\/or32-linux\\\""
@@ -775,7 +793,7 @@ function uclibc_config {
 # ------------------------------------------------------------------------------
 # Conditionally build and install uClibc
 function uclibc_build_install {
-    cd ${uclibc_dir}
+    cd_0rel ${uclibc_dir}
 
     if [ "true" == "${build_flag}" ]
     then
@@ -840,8 +858,9 @@ then
     # Configure all
     gnu_config ${config_flag} ${prefix} ${bd_elf} ../${unisrc_dir} \
 	"${languages}" "${newlib_config}"
-    gnu_config ${config_flag} ${prefix} ${bd_elf_gdb} ../${gdb_dir} \
-	"${languages}"
+    # ??? should handle absolute pathnames.
+    gnu_config ${config_flag} ${prefix} ${bd_elf_gdb} \
+	../`dirname $0`/${gdb_dir} "${languages}"
 
     # Build all
     gnu_make ${build_flag} ${bd_elf} all-build all-binutils all-gas all-ld
@@ -951,8 +970,9 @@ then
 
     # Configure, build and install GDB (note we need to reconfigure in case
     # only stage1 has been run previously).
-    gnu_config ${config_flag} ${prefix} ${bd_linux_gdb} ../${gdb_dir} \
-	"${languages}"
+    # ??? should handle absolute pathnames.
+    gnu_config ${config_flag} ${prefix} ${bd_linux_gdb} \
+	../`dirname $0`/${gdb_dir} "${languages}"
     gnu_make ${build_flag} ${bd_linux_gdb} all-build all-sim all-gdb
     gnu_make ${install_flag} ${bd_linux_gdb} install-sim install-gdb
 fi

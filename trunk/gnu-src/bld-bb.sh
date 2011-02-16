@@ -20,7 +20,7 @@
 # with this program.  If not, see <http://www.gnu.org/licenses/>.          
 
 bb_dir=busybox-1.17.3
-linux_dir=linux-2.6.36
+linux_dir=linux-2.6.37
 
 # Clean, build and install BusyBox
 echo "bld-bb.sh: Rebuilding BusyBox"

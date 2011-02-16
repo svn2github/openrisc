@@ -29,20 +29,18 @@
 
 # @param[in] boardname  The board being closed.
 # -----------------------------------------------------------------------------
-proc telnet_close {boardname} {
+proc telnet_close {hostname} {
 
-    # Make the telnet process associated with this board the current process
-    set spawn_id [board_info $boardname fileid]
-    verbose "Closing $boardname:$spawn_id"
-
-    # If we have a process, close it.
-    if { $spawn_id >= 0 } {
-	catch close
-	catch wait
-	set spawn_id -1
-
-	set_board_info $boardname,fileid $spawn_id
+    # Get the connected host name, if it exists (actually, we think this can
+    # never be set, but it is for consistency with telnet_open
+    if {[board_info $hostname exists name]} {
+	set connhost [board_info $hostname name]
+    } else {
+	set connhost $hostname
     }
+
+    # Use the standard close proc from remote.exp
+    standard_close $hostname
 }
 
 
@@ -54,18 +52,18 @@ proc telnet_close {boardname} {
 # We seem to set the timeout to 30, no matter what. Not sure that is right
 # here.
 
-# @param[in] boardname  The board we are telnetting to
+# @param[in] hostname  The board we are telnetting to
 # @param[in] cmd        The command to run
 # @param[in] args       Arguments to the command
 
 # @return  A list of the return code (-1 on failure) and any error message.
 # -----------------------------------------------------------------------------
-proc telnet_exec {boardname cmd args} {
+proc telnet_exec {hostname cmd args} {
     global timeout
     global verbose
     set output "(no output)"
 
-    verbose "Executing $boardname:$cmd $args"
+    verbose "Executing $hostname $cmd $args"
 
     # Get the first argument, if any.
     if { [llength $args] > 0 } {
@@ -75,8 +73,8 @@ proc telnet_exec {boardname cmd args} {
     }
 
     # Set the shell prompt
-    if [board_info $boardname exists shell_prompt] {
-	set shell_prompt [board_info $boardname shell_prompt]
+    if [board_info $hostname exists shell_prompt] {
+	set shell_prompt [board_info $hostname shell_prompt]
     }
     if ![info exists shell_prompt] { # if no prompt, then set it to
 	something generic
@@ -84,18 +82,17 @@ proc telnet_exec {boardname cmd args} {
     }
 
     # Start a new telnet session if one doesn't already exist. If sucessful
-    # the fileid field associated with $boardname will be set to the spawn_id
+    # the fileid field associated with $hostname will be set to the spawn_id
     # of the new telnet process.
-    if ![board_info $boardname exists fileid] {
-	if {[telnet_open $boardname] == -1} {
+    if ![board_info $hostname exists fileid] {
+	if {[telnet_open $hostname] == -1} {
 	    return [list -1
-		    "telnet to $boardname failed for $cmd, couldn't begin
-telnet session"]
+		    "telnet to $hostname failed for $cmd, couldn't begin telnet session"]
 	}
     }
 
     # Make the telnet session the current process.
-    set spawn_id [board_info $boardname fileid]
+    set spawn_id [board_info $hostname fileid]
     set old_timeout $timeout
     set timeout 30
 
@@ -109,15 +106,15 @@ telnet session"]
 	}
 	default {
 	    # No response try closing the connection and reopening.
-	    telnet_close $boardname
-	    if {[telnet_open $boardname] != -1} {
+	    telnet_close $hostname
+	    if {[telnet_open $hostname] != -1} {
 		verbose "started new telnet session, spawn_id is [board_info
-$boardname fileid]"
+$hostname fileid]"
 		send -- "\r"
 		exp_continue
 	    } else {
 		set timeout $old_timeout
-		return [list -1 "telnet to $boardname failed for $cmd, couldn't get
+		return [list -1 "telnet to $hostname failed for $cmd, couldn't get
 a shell prompt"]
 	    }
 	    # I don't think we can get here. Comment out the old code and
@@ -129,9 +126,9 @@ a shell prompt"]
 	}
     }
 
-    # Shorter timeout for commands. Not sure why we only use the first of the
+    # Restore timeout for commands. Not sure why we only use the first of the
     # arguments.
-    set timeout 10
+    set timeout $old_timeout
     send "$cmd $pargs\r"
 
     expect {
@@ -141,10 +138,9 @@ a shell prompt"]
 	    if [info exists expect_out(buffer)] {
 		set execute_output_string $expect_out(buffer)
 	    }
-	    telnet_close $boardname
-	    set timeout $old_timeout
-	    return [list -1 "telnet to $boardname for $cmd $pargs failed (timeout)"
-	}
+	    telnet_close $hostname
+	    return [list -1 "telnet to $hostname for $cmd $pargs failed (timeout)"]
+	}		
     }
 
     #Remove unnecessary strings from the output string
@@ -156,7 +152,7 @@ a shell prompt"]
     regsub $shell_prompt $output {} output
     regsub -all "\[\r\n\]" $output {} output
 
-    #Check the return status
+    #Check the return status. Use a short timeout for this.
     set timeout 30
     send -- "echo \$?\r"
     expect -re "$shell_prompt.*$"
@@ -172,6 +168,7 @@ a shell prompt"]
 	set status 1
     }
 
+    # Restore timeout
     set timeout $old_timeout
     if {$status == 0} {
 	return [list "0" "$output"]
@@ -179,6 +176,84 @@ a shell prompt"]
 	return [list "1" "$output"]
     }
 }
+
+
+# -----------------------------------------------------------------------------
+# For FTP we need to redefine some existing functions to add additional
+# features.
+
+# -----------------------------------------------------------------------------
+# Download LOCALFILE to HOST as REMOTEFILE by FTP
+#
+# This version takes a user specified timeout, which we need for our slow
+# simulated connection.
+
+# @param[in] host        The host we are connected to.
+# @param[in] localfile   The local file to send
+# @param[in] remotefile  Name of file at remote end.
+# -----------------------------------------------------------------------------
+proc ftp_download {host localfile remotefile} {
+    set prompt "ftp>"
+
+    verbose "putting $localfile $remotefile"
+
+    if [board_info $host exists hostname] {
+	set remotehost [board_info $host hostname]
+    } else {
+	set remotehost $host
+    }
+
+    set spawn_id [ftp_open $host]
+    if {$spawn_id < 0} {
+	return ""
+    }
+    set loop 1
+
+    # JPB to set custom timeout (not marked global, so we don't need to save
+    # and restore)
+    if [board_info $host exists ftp_download_timeout] {
+	set timeout [board_info $host ftp_download_timeout]
+	verbose "FTP download timeout set to $timeout"
+    }
+
+    while {$loop} {
+	send -i $spawn_id "put $localfile $remotefile\n"
+	expect {
+	    -i $spawn_id -re ".*Too many open files.*$prompt" {
+		ftp_close $host
+	    }
+	    -i $spawn_id -re ".*No such file or directory.*$prompt" {
+		set loop 0
+		set remotefile ""
+	    }
+	    -re "(^|\[\r\n\])150.*connection for (.*) \[(\]\[0-9.,\]+\\)\[\r\n\]" {
+		set remotefile $expect_out(2,string)
+		exp_continue
+	    }
+	    -i $spawn_id -re "(^|\[\r\n\])226.*$prompt" {
+		set loop 0
+	    }
+	    -i $spawn_id -re "Timeout.*$prompt" {
+		ftp_close $host
+	    }
+	    -i $spawn_id -re "(^|\[\r\n\])\[0-9\]\[0-9\]\[0-9\].*$prompt" {
+		set loop 0
+		set remotefile ""
+	    }
+	    -i $spawn_id default {
+		ftp_close $host
+	    }
+	}
+	if {$loop} {
+	    set spawn_id [ftp_open $host]
+	    if {$spawn_id < 0} {
+		return ""
+	    }
+	}
+    }
+    return $remotefile
+}
+
 
 # This is a list of toolchains that are supported on this board.
 set_board_info target_install {or32-linux}
@@ -190,8 +265,12 @@ process_multilib_options ""
 # of routines needed by the tool to communicate with the board.
 load_generic_config "unix"
 
-# Set up remote target info
-set_board_info hostname "192.168.0.3"
+# Set up remote target info. We select the IP address using an external
+# program which knows about all available Linuxes.
+set linux_hostname [exec [file dirname $env(DEJAGNU)]/get-ip.sh]
+set_board_info hostname $linux_hostname
+send_user "OR32 target hostname is $linux_hostname"
+
 set_board_info username root
 
 # Use the installed compilers to ensure we get search paths that will find
@@ -206,25 +285,26 @@ set_board_info c++compiler /opt/or32-new/bin/or32-linux-g++
 set target_alias "or32-linux"
 
 set_board_info connect telnet
-set_board_info shell_prompt    "~ # "
+set_board_info shell_prompt    "# "
 set_board_info telnet_username "root"
 set_board_info telnet_password ""
 
-set_board_info file_transfer ftp
-set_board_info ftp_username  root
-set_board_info ftp_password  ""
+set_board_info file_transfer         ftp
+set_board_info ftp_username          root
+set_board_info ftp_password          ""
+set_board_info ftp_download_timeout  120
 
 # Options for the simulator
 # set cfg_file [lookfor_file ${srcdir} libgloss/or32/sim.cfg]
-# set_board_info sim,options "-a \"-f ${cfg_file}\""
+#set_board_info sim,options "-a \"-f ${cfg_file}\""
 
 # We only support uClibc on this target.  We assume that all multilib options
 # have been specified before we get here.
-# set_board_info compiler  "[find_gcc]"
+#set_board_info compiler  "[find_gcc]"
 
 # We need to define the right flags if pthreads is to work.
-set_board_info cflags    "-D_XOPEN_SOURCE=600"
-set_board_info cxxflags  "-D_XOPEN_SOURCE=600"
+# set_board_info cflags    "-D_XOPEN_SOURCE=600"
+# set_board_info cxxflags  "-D_XOPEN_SOURCE=600"
 
 # No linker script needed.
 set_board_info ldscript ""
