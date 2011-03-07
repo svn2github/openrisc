@@ -60,6 +60,8 @@ void gdb_close();
 
 extern int err;
 
+extern int kernel_debug;
+
 /* All JTAG chains.  */
 enum jtag_chains
   {

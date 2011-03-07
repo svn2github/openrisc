@@ -61,7 +61,7 @@
 #include "win_FTCJTAG_ptrs.h"
 #else
 #include <signal.h>
-void catch_sigint(int sig_num); // First param must be "int"
+void catch_sigint(int sig_num);	// First param must be "int"
 #endif
 
 #include "gdb.h"
@@ -77,13 +77,13 @@ void catch_sigint(int sig_num); // First param must be "int"
 #define ENDPOINT_TARGET_USB 1
 #define ENDPOINT_TARGET_OTHER 2
 
-static int endpoint_target; // Value to hold targeted endpoint
+static int endpoint_target;	// Value to hold targeted endpoint
 
 #define GDB_PROTOCOL_JTAG  1
 #define GDB_PROTOCOL_RSP   2
 #define GDB_PROTOCOL_NONE  3
 
-int err; // Global error value
+int err;			// Global error value
 
 /* Currently selected scan chain - just to prevent unnecessary transfers. */
 int current_chain = -1;
@@ -91,289 +91,330 @@ int current_chain = -1;
 /* The chain that should be currently selected. */
 int dbg_chain = -1;
 
-int main(int argc,  char *argv[]) {
+int main(int argc, char *argv[])
+{
 
-  char *s;
-  int gdb_protocol = GDB_PROTOCOL_NONE;
-  endpoint_target = ENDPOINT_TARGET_NONE;
-  int inp_arg = 1;
+	char *s;
+	int gdb_protocol = GDB_PROTOCOL_NONE;
+	endpoint_target = ENDPOINT_TARGET_NONE;
+	int inp_arg = 1;
 
-  // Check we were compiled with at least one endpoint enabled
+	// Check we were compiled with at least one endpoint enabled
 #ifndef USB_ENDPOINT_ENABLED
-  printf("No endpoints enabled.\nRecompile the proxy with at least one endpoint enabled\n");
-  exit(0);
+	printf
+	    ("No endpoints enabled.\nRecompile the proxy with at least one endpoint enabled\n");
+	exit(0);
 #endif
 
-  // init our global error number
-  err = DBG_ERR_OK;
+	// init our global error number
+	err = DBG_ERR_OK;
 
-  // Parse input options
-  if (argc < 3)
-    {
-      print_usage();
-      exit(1);
-    }
-
-  err = DBG_ERR_OK;
-  srand(getpid());
-
-  // Parse through the input, check what we've been given
-
-  while ( argv[inp_arg] != NULL )
-    {
-      if(strcmp(argv[inp_arg], "-r") == 0) 
-	{
-	  gdb_protocol = GDB_PROTOCOL_RSP;
-	  endpoint_target = ENDPOINT_TARGET_USB;
+	// Parse input options
+	if (argc < 3) {
+		print_usage();
+		exit(1);
 	}
-      else if(strcmp(argv[inp_arg], "-o") == 0) 
-	{
-	  gdb_protocol = GDB_PROTOCOL_RSP;
-	  endpoint_target = ENDPOINT_TARGET_OTHER;
-	}
-      else
-	{
-	  serverPort = strtol(argv[2],&s,10);
-	}
-      
-      inp_arg++;
-    }
 
-  if(endpoint_target == ENDPOINT_TARGET_NONE || gdb_protocol == GDB_PROTOCOL_NONE || serverPort > 65535 || *s != '\0')
-    {
-      print_usage();
-      exit(1);
-    }
+	err = DBG_ERR_OK;
+	srand(getpid());
 
+	// Parse through the input, check what we've been given
+
+	while (argv[inp_arg] != NULL) {
+		if (strcmp(argv[inp_arg], "-r") == 0) {
+			gdb_protocol = GDB_PROTOCOL_RSP;
+			endpoint_target = ENDPOINT_TARGET_USB;
+		} else if (strcmp(argv[inp_arg], "-o") == 0) {
+			gdb_protocol = GDB_PROTOCOL_RSP;
+			endpoint_target = ENDPOINT_TARGET_OTHER;
+		} else if (strcmp(argv[inp_arg], "-k") == 0) {
+			kernel_debug = 1;
+		} else {
+			serverPort = strtol(argv[2], &s, 10);
+		}
+
+		inp_arg++;
+	}
+
+	if (endpoint_target == ENDPOINT_TARGET_NONE ||
+	    gdb_protocol == GDB_PROTOCOL_NONE ||
+	    serverPort > 65535 || *s != '\0') {
+		print_usage();
+		exit(1);
+	}
 #ifdef CYGWIN_COMPILE
-  // Load the FTCJTAG DLL function pointers
-  if (getFTDIJTAGFunctions() < 0){
-    exit(-1);
-  }
+	// Load the FTCJTAG DLL function pointers
+	if (getFTDIJTAGFunctions() < 0) {
+		exit(-1);
+	}
 #endif
 
 #ifndef CYGWIN_COMPILE
-  // Install a signal handler to exit gracefully
-  // when we receive a sigint
-  signal(SIGINT, catch_sigint);
+	// Install a signal handler to exit gracefully
+	// when we receive a sigint
+	signal(SIGINT, catch_sigint);
 #endif
-  
-  /* Initialise connection to our OR1k system */
-  current_chain = -1;
-#ifdef USB_ENDPOINT_ENABLED
-  /* USB Endpoint */
-  if (endpoint_target == ENDPOINT_TARGET_USB)
-    {
-      printf("\nConnecting to OR1k via USB debug cable\n\n");
-      if ((err = usb_dbg_reset())) goto JtagIfError;
-      dbg_test(); // Perform some tests
-    }
-#endif
-  
-  /* We have a connection to the target system.  Now establish server connection. */
-  if(gdb_protocol == GDB_PROTOCOL_RSP)
-    { // Connect to RSP server
-      /* RSP always starts stalled as though we have just reset the processor. */
-      // rsp_exception (EXCEPT_TRAP);
-      handle_rsp ();
-    // if((server_fd = GetServerSocket("or1ksim","tcp", serverPort))) {
-    }else {
-    fprintf(stderr,"Cannot start RSP Proxy server on port %d\n", serverPort);
-    exit(-1);
-  }
 
+	/* Initialise connection to our OR1k system */
+	current_chain = -1;
+#ifdef USB_ENDPOINT_ENABLED
+	/* USB Endpoint */
+	if (endpoint_target == ENDPOINT_TARGET_USB) {
+		printf("\nConnecting to OR1k via USB debug cable\n\n");
+		if ((err = usb_dbg_reset()))
+			goto JtagIfError;
+		dbg_test();	// Perform some tests
+	}
+#endif
+
+	/* We have a connection to the target system.  Now establish server 
+	   connection. */
+	if (gdb_protocol == GDB_PROTOCOL_RSP) {	// Connect to RSP server
+		/* RSP always starts stalled as though we have just reset the 
+		   processor. */
+		// rsp_exception (EXCEPT_TRAP);
+		handle_rsp();
+	} else {
+		fprintf(stderr, "Cannot start RSP Proxy server on port %d\n",
+			serverPort);
+		exit(-1);
+	}
 
 JtagIfError:
-  fprintf(stderr,"Connection via USB debug cable failed (err = %d).\nPlease ensure the device is attached and correctly installed\n\n", err);
-  exit(-1);
-  return 0;
+	fprintf(stderr,
+		"Connection via USB debug cable failed (err = %d).\nPlease ensure the device is attached and correctly installed\n\n",
+		err);
+	exit(-1);
+	return 0;
 }
-
 
 int dbg_reset()
 {
 #ifdef USB_ENDPOINT_ENABLED
-  if (endpoint_target == ENDPOINT_TARGET_USB) return usb_dbg_reset();
+	if (endpoint_target == ENDPOINT_TARGET_USB)
+		return usb_dbg_reset();
 #endif
-  return DBG_ERR_INVALID_ENDPOINT;
+	return DBG_ERR_INVALID_ENDPOINT;
 }
 
-void dbg_test() {
+void dbg_test()
+{
 #ifdef USB_ENDPOINT_ENABLED
-  if (endpoint_target == ENDPOINT_TARGET_USB) usb_dbg_test();
+	if (endpoint_target == ENDPOINT_TARGET_USB)
+		usb_dbg_test();
 #endif
 }
 
 /* Set TAP instruction register */
-int dbg_set_tap_ir(uint32_t ir) {
+int dbg_set_tap_ir(uint32_t ir)
+{
 #ifdef USB_ENDPOINT_ENABLED
-  if (endpoint_target == ENDPOINT_TARGET_USB) usb_set_tap_ir(ir);
+	if (endpoint_target == ENDPOINT_TARGET_USB)
+		usb_set_tap_ir(ir);
 #endif
-  return DBG_ERR_INVALID_ENDPOINT;
+	return DBG_ERR_INVALID_ENDPOINT;
 }
 
 /* Sets scan chain.  */
-int dbg_set_chain(uint32_t chain) {
+int dbg_set_chain(uint32_t chain)
+{
 #ifdef USB_ENDPOINT_ENABLED
-  if (endpoint_target == ENDPOINT_TARGET_USB) return usb_dbg_set_chain(chain);
+	if (endpoint_target == ENDPOINT_TARGET_USB)
+		return usb_dbg_set_chain(chain);
 #endif
-  return DBG_ERR_INVALID_ENDPOINT;
-} 
+	return DBG_ERR_INVALID_ENDPOINT;
+}
 
 /* sends out a command with 32bit address and 16bit length, if len >= 0 */
-int dbg_command(uint32_t type, uint32_t adr, uint32_t len) {
-  // This is never called by any of the VPI functions, so only USB endpoint
+int dbg_command(uint32_t type, uint32_t adr, uint32_t len)
+{
+	// This is never called by any of the VPI functions, so only USB 
+	// endpoint
 #ifdef USB_ENDPOINT_ENABLED
- if (endpoint_target == ENDPOINT_TARGET_USB) return usb_dbg_command(type,adr,len);
+	if (endpoint_target == ENDPOINT_TARGET_USB)
+		return usb_dbg_command(type, adr, len);
 #endif
- return DBG_ERR_INVALID_ENDPOINT;
+	return DBG_ERR_INVALID_ENDPOINT;
 }
 
 /* writes a ctrl reg */
-int dbg_ctrl(uint32_t reset, uint32_t stall) {
+int dbg_ctrl(uint32_t reset, uint32_t stall)
+{
 #ifdef USB_ENDPOINT_ENABLED
-  if (endpoint_target == ENDPOINT_TARGET_USB) return usb_dbg_ctrl(reset, stall);
+	if (endpoint_target == ENDPOINT_TARGET_USB)
+		return usb_dbg_ctrl(reset, stall);
 #endif
-  return DBG_ERR_INVALID_ENDPOINT;
+	return DBG_ERR_INVALID_ENDPOINT;
 }
 
 /* reads control register */
-int dbg_ctrl_read(uint32_t *reset, uint32_t *stall) {
+int dbg_ctrl_read(uint32_t * reset, uint32_t * stall)
+{
 #ifdef USB_ENDPOINT_ENABLED
-    if (endpoint_target == ENDPOINT_TARGET_USB) return usb_dbg_ctrl_read(reset, stall);
+	if (endpoint_target == ENDPOINT_TARGET_USB)
+		return usb_dbg_ctrl_read(reset, stall);
 #endif
-    return DBG_ERR_INVALID_ENDPOINT;
+	return DBG_ERR_INVALID_ENDPOINT;
 }
 
 /* issues a burst read/write */
-int dbg_go(unsigned char *data, uint16_t len, uint32_t read) {
-  // Only USB endpouint32_t option here
+int dbg_go(unsigned char *data, uint16_t len, uint32_t read)
+{
+	// Only USB endpouint32_t option here
 #ifdef USB_ENDPOINT_ENABLED
-  if (endpoint_target == ENDPOINT_TARGET_USB) return usb_dbg_go(data, len, read);
+	if (endpoint_target == ENDPOINT_TARGET_USB)
+		return usb_dbg_go(data, len, read);
 #endif
-  return DBG_ERR_INVALID_ENDPOINT;
+	return DBG_ERR_INVALID_ENDPOINT;
 }
 
 /* read a byte from wishbone */
-int dbg_wb_read8(uint32_t adr, uint8_t *data) {
+int dbg_wb_read8(uint32_t adr, uint8_t * data)
+{
 #ifdef USB_ENDPOINT_ENABLED
-  if (endpoint_target == ENDPOINT_TARGET_USB) return usb_dbg_wb_read8(adr, data);
+	if (endpoint_target == ENDPOINT_TARGET_USB)
+		return usb_dbg_wb_read8(adr, data);
 #endif
-  return DBG_ERR_INVALID_ENDPOINT;
+	return DBG_ERR_INVALID_ENDPOINT;
 }
-
 
 /* read a word from wishbone */
-int dbg_wb_read32(uint32_t adr, uint32_t *data) {
+int dbg_wb_read32(uint32_t adr, uint32_t * data)
+{
 #ifdef USB_ENDPOINT_ENABLED
-  if (endpoint_target == ENDPOINT_TARGET_USB) return usb_dbg_wb_read32(adr, data);
+	if (endpoint_target == ENDPOINT_TARGET_USB)
+		return usb_dbg_wb_read32(adr, data);
 #endif
-  return DBG_ERR_INVALID_ENDPOINT;
+	return DBG_ERR_INVALID_ENDPOINT;
 }
 
 /* write a word to wishbone */
-int dbg_wb_write8(uint32_t adr, uint8_t data) {
+int dbg_wb_write8(uint32_t adr, uint8_t data)
+{
 #ifdef USB_ENDPOINT_ENABLED
-  if (endpoint_target == ENDPOINT_TARGET_USB) return usb_dbg_wb_write8( adr, data);
+	if (endpoint_target == ENDPOINT_TARGET_USB)
+		return usb_dbg_wb_write8(adr, data);
 #endif
-  return DBG_ERR_INVALID_ENDPOINT;
+	return DBG_ERR_INVALID_ENDPOINT;
 }
 
 /* write a word to wishbone */
-int dbg_wb_write32(uint32_t adr, uint32_t data) {
+int dbg_wb_write32(uint32_t adr, uint32_t data)
+{
 #ifdef USB_ENDPOINT_ENABLED
-  if (endpoint_target == ENDPOINT_TARGET_USB) return usb_dbg_wb_write32( adr, data);
+	if (endpoint_target == ENDPOINT_TARGET_USB)
+		return usb_dbg_wb_write32(adr, data);
 #endif
-  return DBG_ERR_INVALID_ENDPOINT;
+	return DBG_ERR_INVALID_ENDPOINT;
 }
 
 /* read a block from wishbone */
-int dbg_wb_read_block32(uint32_t adr, uint32_t *data, uint32_t len) {
+int dbg_wb_read_block32(uint32_t adr, uint32_t * data, uint32_t len)
+{
 #ifdef USB_ENDPOINT_ENABLED
-  if (endpoint_target == ENDPOINT_TARGET_USB) return usb_dbg_wb_read_block32( adr, data, len);
+	if (endpoint_target == ENDPOINT_TARGET_USB)
+		return usb_dbg_wb_read_block32(adr, data, len);
 #endif
-  return DBG_ERR_INVALID_ENDPOINT;
+	return DBG_ERR_INVALID_ENDPOINT;
 }
 
 /* write a block to wishbone */
-int dbg_wb_write_block32(uint32_t adr, uint32_t *data, uint32_t len) {
+int dbg_wb_write_block32(uint32_t adr, uint32_t * data, uint32_t len)
+{
 #ifdef USB_ENDPOINT_ENABLED
-  if (endpoint_target == ENDPOINT_TARGET_USB) return usb_dbg_wb_write_block32( adr, data, len);
+	if (endpoint_target == ENDPOINT_TARGET_USB)
+		return usb_dbg_wb_write_block32(adr, data, len);
 #endif
-  return DBG_ERR_INVALID_ENDPOINT;
+	return DBG_ERR_INVALID_ENDPOINT;
 }
 
 /* read a register from cpu */
-int dbg_cpu0_read(uint32_t adr, uint32_t *data, uint32_t length) {
+int dbg_cpu0_read(uint32_t adr, uint32_t * data, uint32_t length)
+{
 #ifdef USB_ENDPOINT_ENABLED
-  if (endpoint_target == ENDPOINT_TARGET_USB) return usb_dbg_cpu0_read( adr, data, length);
+	if (endpoint_target == ENDPOINT_TARGET_USB)
+		return usb_dbg_cpu0_read(adr, data, length);
 #endif
-  return DBG_ERR_INVALID_ENDPOINT;
+	return DBG_ERR_INVALID_ENDPOINT;
 }
 
 /* write a cpu register */
-int dbg_cpu0_write(uint32_t adr, uint32_t *data, uint32_t length) {
+int dbg_cpu0_write(uint32_t adr, uint32_t * data, uint32_t length)
+{
 #ifdef USB_ENDPOINT_ENABLED
-  if (endpoint_target == ENDPOINT_TARGET_USB) return usb_dbg_cpu0_write( adr, data, length);
+	if (endpoint_target == ENDPOINT_TARGET_USB)
+		return usb_dbg_cpu0_write(adr, data, length);
 #endif
-  return DBG_ERR_INVALID_ENDPOINT;
+	return DBG_ERR_INVALID_ENDPOINT;
 }
 
 /* write a cpu module register */
-int dbg_cpu0_write_ctrl(uint32_t adr, unsigned char data) {
+int dbg_cpu0_write_ctrl(uint32_t adr, unsigned char data)
+{
 #ifdef USB_ENDPOINT_ENABLED
-  if (endpoint_target == ENDPOINT_TARGET_USB) return usb_dbg_cpu0_write_ctrl( adr, data);
+	if (endpoint_target == ENDPOINT_TARGET_USB)
+		return usb_dbg_cpu0_write_ctrl(adr, data);
 #endif
-  return DBG_ERR_INVALID_ENDPOINT;
+	return DBG_ERR_INVALID_ENDPOINT;
 }
-
 
 /* read a register from cpu module */
-int dbg_cpu0_read_ctrl(uint32_t adr, unsigned char *data) {
+int dbg_cpu0_read_ctrl(uint32_t adr, unsigned char *data)
+{
 #ifdef USB_ENDPOINT_ENABLED
-  if (endpoint_target == ENDPOINT_TARGET_USB) return usb_dbg_cpu0_read_ctrl( adr, data);
+	if (endpoint_target == ENDPOINT_TARGET_USB)
+		return usb_dbg_cpu0_read_ctrl(adr, data);
 #endif
-  return DBG_ERR_INVALID_ENDPOINT;
+	return DBG_ERR_INVALID_ENDPOINT;
 }
 
-
-void test_sdram(void) {
+void test_sdram(void)
+{
 	return;
 }
 
 // Close down gracefully when we receive any kill signals
 void catch_sigint(int sig_num)
 {
-  // Close down any potentially open sockets and USB handles
-  if (server_fd) close(server_fd);
-  gdb_close();
+	// Close down any potentially open sockets and USB handles
+	if (server_fd)
+		close(server_fd);
+	gdb_close();
 #ifdef USB_ENDPOINT_ENABLED
-  usb_close_device_handle();
+	usb_close_device_handle();
 #endif
-  printf("\nInterrupt signal received. Closing down connections and exiting\n\n");
-  exit(0);
+	printf
+	    ("\nInterrupt signal received. Closing down connections and exiting\n\n");
+	exit(0);
 }
 
 void print_usage()
 {
-  printf("Invalid or insufficient arguments\n");
-  printf("\n");
-  printf("OpenRISC GDB proxy server usage: or_debug_proxy -server_type port\n");
-  printf("\n");
-  printf("server_type:\n");
+	printf("\n");
+	printf("Usage: or_debug_proxy <SERVERTYPE> <PORT> <OPTIONS>\n");
+	printf("OpenRISC GDB Proxy Server\n");
+	printf("\n");
+	printf("\tServer Type:\n");
 #ifdef USB_ENDPOINT_ENABLED
-  printf("\t-r Start a server using RSP, connection to hadware target via\n\t   USB\n");
-  printf("\t-j Start a server using legacy OR remote JTAG protocol, to\n\t   hardware target via USB\n");
+	printf
+	    ("\t-r\tStart a server using RSP, connection to hadware target via\n\t\tUSB\n");
+	printf
+	    ("\t-j\tStart a server using legacy OR remote JTAG protocol, to\n\t\thardware target via USB (DEPRECATED)\n");
+	printf("\n");
 #endif
-  printf("\n");
-  printf("port:\n");
-  printf("\tAny free port within the usable range of 0 - 65535\n");
-  printf("\n");
-  printf("Example:\n");
+	printf("\tPort:\n");
+	printf("\t\tAny free port within the usable range of 0 - 65535\n");
+	printf("\n");
+	printf("\tOptions:\n");
+	printf
+	    ("\t-k\tAccesses to 0xC0000000 map to 0x0. Useful for kernel debugging.\n");
+	printf("\n");
+	printf("\tExample:\n");
 #ifdef USB_ENDPOINT_ENABLED
-  printf("\tStart a GDB server on port 5555, using RSP, connecting to\n\thardware target via USB\n");
-  printf("\tor_debug_proxy -r 5555\n");
-  printf("\n");
+	printf
+	    ("\t\tStart a GDB server on port 50001, using RSP, connecting to\n\t\thardware target via USB:\n\n");
+	printf("\t\t./or_debug_proxy -r 50001\n");
+	printf("\n");
 #endif
-  fflush (stdout);
+	fflush(stdout);
 }

@@ -1,3 +1,17 @@
+2011-03-07 Julius Baxter, ORSoC AB <julius@orsoc.se>
+	* src/or_debug_proxy.c: Ran indent on code to neaten.
+	Added -k option to enable kernel debugging option which remaps 0xc0 
+	high address to 0x00.
+	* include/gdb.h:(kernel_debug): Declared as extern int.
+	* src/gdb.c: Ran indent on code to neaten.
+	(kernel_debug): Added, initialise to 0.
+	<gdb_write_byte>: Also check kernel_debug with IS_VM_ADDR.
+	<gdb_read_byte>: Ditto.
+	<gdb_write_reg>: Ditto.
+	<gdb_read_reg>: Ditto.
+	<gdb_read_block>: Ditto.
+	<gdb_write_block>: Ditto.
+
 2010-11-23  Julius Baxter  <julius@opencores.org>
 	* src/gdb.c <rsp_query>: qTStatus packet now returns empty packet.
 	
