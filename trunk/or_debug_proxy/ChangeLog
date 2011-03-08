@@ -1,4 +1,10 @@
 2011-03-07 Julius Baxter, ORSoC AB <julius@orsoc.se>
+	* Makefile:(STATIC_LDFLAGS): Added -lrt as required by new libftd2xx.
+	Updated example of downloading static library.
+	* README: Updated to contain information about latest FTDI libftd2xx
+	drivers.
+
+2011-03-07 Julius Baxter, ORSoC AB <julius@orsoc.se>
 	* src/or_debug_proxy.c: Ran indent on code to neaten.
 	Added -k option to enable kernel debugging option which remaps 0xc0 
 	high address to 0x00.

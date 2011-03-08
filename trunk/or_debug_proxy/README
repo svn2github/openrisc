@@ -6,7 +6,7 @@
 -- Description --
 ===============================================================================
 A console application implementing a GDB stub and and communication with an 
-OpenRISC processor system via a USB debug cable.
+OpenRISC processor system via the OpenCores USB debug cable.
 ===============================================================================
 -- Versions --
 ===============================================================================
@@ -17,6 +17,7 @@ OpenRISC processor system via a USB debug cable.
 0.1.4 090828 jb@orsoc.se
 0.1.5 090903 jb@orsoc.se
 0.1.6 110307 jb@orsoc.se
+0.1.7 110308 jb@orsoc.se
 ===============================================================================
 -- Installation --
 ===============================================================================
@@ -99,9 +100,7 @@ specialised drivers from FTDI called the D2XX drivers.
 
 The Linux driver can be obtained from FTDI Chip's website,
 http://www.ftdichip.com, and is found under the links to "Drivers" and then
-"D2XX". At the time of writing, the latest version was libftd2xx 0.4.16 and
-could be downloaded directly off their site from
-http://www.ftdichip.com/Drivers/D2XX/Linux/libftd2xx0.4.16.tar.gz
+"D2XX".
 
 Statically linked driver:
 
@@ -121,7 +120,7 @@ in the the lib/ folder.
 
 Dynamically linked driver install directions:
 
-Uncompress the driver package (tar xzvf libftd2xx0.4.16.tar.gz) and read the
+Uncompress the driver package (tar xzvf libftd2xxX.Y.Z.tar.gz) and read the
 file "readme.dat" located inside, but don't complete their way of installing
 yet. Their installation method should be modified slightly to allow easier use
 of the USB device by users. Read the following before performing the install
