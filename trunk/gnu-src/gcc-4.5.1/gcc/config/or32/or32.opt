@@ -61,13 +61,9 @@ mror
 Target Mask(MASK_ROR)
 Emit ROR instructions
 
-mor32-newlib
-Target RejectNegative
-Link with the OR32 newlib library
-
-mor32-newlib-uart
-Target RejectNegative
-Link with the OR32 newlib UART library
+mboard=
+Target RejectNegative Joined
+Link with libgloss configuration suitable for this board
 
 mnewlib
 Target Report RejectNegative Var(or32_libc,or32_libc_newlib) Init(OR32_LIBC_DEFAULT)

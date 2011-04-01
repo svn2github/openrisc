@@ -1,9 +1,9 @@
-/* Newlib board descriptions for Or1ksim
+/* OR1K support defines
   
-   Copyright (C)
+   Copyright (C) 2011, ORSoC AB
    Copyright (C) 2008, 2010 Embecosm Limited
   
-   Contributor
+   Contributor Julius Baxter  <julius.baxter@orsoc.se>
    Contributor Jeremy Bennett <jeremy.bennett@embecosm.com>
   
    This file is part of Newlib.
@@ -28,34 +28,24 @@
 /* This machine configuration matches the Or1ksim configuration file in this
    directory. */
 
-#ifndef OR1KSIM_BOARD__H
-#define OR1KSIM_BOARD__H
+#ifndef OR1K_SUPPORT__H
+#define OR1K_SUPPORT__H
 
-/* Cache information (no longer used, cache configured through UPR and CCFGRs)*/
-#define IC_ENABLE 	    1
-#define IC_SIZE          8192
+/* External symbols from each board's object file */
+extern unsigned long _board_clk_freq;
 
-#define DC_ENABLE 	    0
-#define DC_SIZE          8192
+extern unsigned long _board_uart_base;
+extern unsigned long _board_uart_baud;
+extern unsigned long _board_uart_irq;
 
-#define SDRAM_BASE_ADDR 0x00000000
-#define SDRAM_TMS_VAL   0x07248230
-
-/* UART information */
-#define IN_CLK  	  25000000	/*!< 25 MHz */
-#define UART_BAUD_RATE 	    115200	/*!< 115.2 kHz */
-
-#define UART_BASE  	0x90000000
-#define UART_IRQ                19
+/* Check if board has UART - test base address */
+#define BOARD_HAS_UART (_board_uart_base)
 
 /* l.nop constants */
 #define NOP_EXIT        0x0001      /*!< End of simulation */
 #define NOP_PUTC        0x0004      /*!< Put a character */
 
-/*! Define UART_AUTO_ECHO to have the UART echo reads. */
-#undef UART_AUTO_ECHO
-
 /*! 8-bit register access macro */
 #define REG8(add) *((volatile unsigned char *) (add))
 
-#endif	/* OR1KSIM_BOARD__H */
+#endif	/* OR1K_SUPPORT__H */

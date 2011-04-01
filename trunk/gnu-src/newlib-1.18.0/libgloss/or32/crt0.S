@@ -1,9 +1,11 @@
-/* crt0.S. C Runtime startup file.
+/* crt0.S. C design runtime startup file.
 
    Copyright (C) 2004, Jacob Bower
    Copyright (C) 2010, Embecosm Limited <info@embecosm.com>
+   Copyright (C) 2011, ORSoC AB
 
    Contributor Jeremy Bennett <jeremy.bennett@embecosm.com>
+   Contributor Julius Baxter  <julius.baxter@orsoc.se>
 
    This file is part of Newlib.
 
@@ -30,79 +32,36 @@
 /* -------------------------------------------------------------------------- */
 
 #include "spr-defs.h"
-#include "or1ksim-board.h"
 
-	
 /* -------------------------------------------------------------------------- */
-/*!Macro for expressions which do not have their own handler.
+/*!Macro to load a symbol's address into a register.         
   
-   Construct the arguments for a call to printf, then exit. Being varargs, the
-   arguments to printf must be on the stack, which we update using the
-   standard prologue.
-  
-  @param[in] str  Label for a string describing the macro, suitable for
-                  printf.                                                     */
+  @param[in] gpr  General purpose register to load address into.       
+  @param[in] symbol Name of symbol to load.                                   */
 /* -------------------------------------------------------------------------- */
-#define UNHANDLED_EXCEPTION(str)					 \
-	l.addi	r1,r1,-20		/* Standard prologue */		;\
-	l.sw	16(r1),r2						;\
-	l.addi	r2,r1,20						;\
-	l.sw	12(r1),r9						;\
-									;\
-	l.movhi	r3,hi(.Lfmt)		/* printf format string */	;\
-	l.ori	r3,r3,lo(.Lfmt)						;\
-	l.sw	0(r1),r3						;\
-	l.movhi	r4,hi(str)		/* Name of exception */		;\
-	l.ori	r4,r4,lo(str)						;\
-	l.sw	4(r1),r4						;\
-	l.mfspr r5,r0,SPR_EPCR_BASE	/* Source of the interrupt */	;\
-	l.jal	printf							;\
-	l.sw	8(r1),r5						;\
-									;\
-	l.ori	r3,r0,0xffff		/* Failure RC */		;\
-	l.jal	exit							;\
-	l.nop								;\
-									;\
-	l.rfe				/* Never executed we hope */
-
+#define LOAD_SYMBOL_2_GPR(gpr,symbol)  \
+	.global symbol ;               \
+	l.movhi gpr, hi(symbol) ;      \
+	l.ori   gpr, gpr, lo(symbol)
 
 /* -------------------------------------------------------------------------- */
-/*!Text strings for the different exceptions                                  */
-/* -------------------------------------------------------------------------- */
-	.section .rodata
-.Lfmt:	.string	"Unhandled %s exception at address %08p\n"
-.L200:	.string	"bus error"
-.L300:	.string	"data page fault"
-.L400:	.string	"instruction page fault"
-.L500:	.string	"timer"
-.L600:	.string	"alignment"
-.L700:	.string	"illegal instruction"
-.L800:	.string	"external interrupt"
-.L900:	.string	"data TLB"
-.La00:	.string	"instruction TLB"
-.Lb00:	.string	"range"
-.Lc00:	.string	"syscall"
-.Ld00:	.string	"floating point"
-.Le00:	.string	"trap"
-.Lf00:	.string	"undefined 0xf00"
-.L1000:	.string	"undefined 0x1000"
-.L1100:	.string	"undefined 0x1100"
-.L1200:	.string	"undefined 0x1200"
-.L1300:	.string	"undefined 0x1300"
-.L1400:	.string	"undefined 0x1400"
-.L1500:	.string	"undefined 0x1500"
-.L1600:	.string	"undefined 0x1600"
-.L1700:	.string	"undefined 0x1700"
-.L1800:	.string	"undefined 0x1800"
-.L1900:	.string	"undefined 0x1900"
-.L1a00:	.string	"undefined 0x1a00"
-.L1b00:	.string	"undefined 0x1b00"
-.L1c00:	.string	"undefined 0x1c00"
-.L1d00:	.string	"undefined 0x1d00"
-.L1e00:	.string	"undefined 0x1e00"
-.L1f00:	.string	"undefined 0x1f00"
+/*!Macro to handle exceptions.                               
 
+  Load NPC into r3, EPCR into r4
+                                                                              */
+/* -------------------------------------------------------------------------- */
+// Size of redzone + size of space required to store state
+// This value must match that in _exception_handler.S
+#define EXCEPTION_STACK_SIZE 128
 	
+#define CALL_EXCEPTION_HANDLER            		\
+	l.addi  r1, r1, -EXCEPTION_STACK_SIZE;          \
+	l.sw    4(r1), r3;             			\
+	l.sw    8(r1), r4;             			\
+	l.mfspr r3,r0,SPR_NPC;          		\
+	l.j 	_exception_handler; 			\
+	l.mfspr r4,r0,SPR_EPCR_BASE
+
 /* -------------------------------------------------------------------------- */
 /*!Exception vectors                                                          */
 /* -------------------------------------------------------------------------- */
@@ -111,133 +70,151 @@
 	/* 0x100: RESET exception */
         .org	0x100 	
 __reset:
+	l.movhi r0, 0
+	l.movhi r1, 0
+	l.movhi r2, 0
+	l.movhi r3, 0
+	l.movhi r4, 0
+	l.movhi r5, 0
+	l.movhi r6, 0
+	l.movhi r7, 0
+	l.movhi r8, 0
+	l.movhi r9, 0
+	l.movhi r10, 0
+	l.movhi r11, 0
+	l.movhi r12, 0
+	l.movhi r13, 0
+	l.movhi r14, 0
+	l.movhi r15, 0
+	l.movhi r16, 0
+	l.movhi r17, 0
+	l.movhi r18, 0
+	l.movhi r19, 0
+	l.movhi r20, 0
+	l.movhi r21, 0
+	l.movhi r22, 0
+	l.movhi r23, 0
+	l.movhi r24, 0
+	l.movhi r25, 0
+	l.movhi r26, 0
+	l.movhi r27, 0
+	l.movhi r28, 0
+	l.movhi r29, 0
+	l.movhi r30, 0
+	l.movhi r31, 0
+
+	/* Clear status register, set supervisor mode */
+	l.ori r1, r0, SPR_SR_SM
+	l.mtspr r0, r1, SPR_SR
+	/* Clear timer mode register*/
+	l.mtspr r0, r0, SPR_TTMR
 	/* Jump to program initialisation code */
-	l.j	_start
+	LOAD_SYMBOL_2_GPR(r4, _start)
+	l.jr    r4
 	l.nop
 
-	/* 0x200: BUS exception is special, because during startup we use it
-	   to detect where the stack should go. So we need some special code
-	   before we return, which wel will later overwrite with l.nop. We
-	   need to deal with the case when _start is called multiple times, so
-	   this code must be copied into the bus error vector each time. It is
-	   position independent to allow this copying.
-
-	   We use registers we know will not interfere in this case. */
 	.org	0x200
-__buserr:
-	l.nop				/* Will be overwritten */
-	l.nop
-	l.nop
-	l.nop
-
-__buserr_std:
-	UNHANDLED_EXCEPTION (.L200)
-
-__buserr_special:	
-	l.mfspr	r24,r0,SPR_EPCR_BASE
-	l.addi	r24,r24,4		/* Return one instruction on */
-	l.mtspr	r0,r24,SPR_EPCR_BASE
-	l.rfe
+	CALL_EXCEPTION_HANDLER
 
 	/* 0x300: Data Page Fault exception */
 	.org	0x300
-	UNHANDLED_EXCEPTION (.L300)
+	CALL_EXCEPTION_HANDLER
 	
 	/* 0x400: Insn Page Fault exception */
 	.org	0x400
-	UNHANDLED_EXCEPTION (.L400)
+	CALL_EXCEPTION_HANDLER
 
 	/* 0x500: Timer exception */
 	.org	0x500
-	UNHANDLED_EXCEPTION (.L500)
+	CALL_EXCEPTION_HANDLER
 
 	/* 0x600: Aligment exception */
 	.org	0x600
-	UNHANDLED_EXCEPTION (.L600)
+	CALL_EXCEPTION_HANDLER
 	
 	/* 0x700: Illegal insn exception */
 	.org	0x700
-	UNHANDLED_EXCEPTION (.L700)
+	CALL_EXCEPTION_HANDLER
 
 	/* 0x800: External interrupt exception */
 	.org	0x800
-	UNHANDLED_EXCEPTION (.L800)
+	CALL_EXCEPTION_HANDLER
 
 	/* 0x900: DTLB miss exception */
 	.org	0x900
-	UNHANDLED_EXCEPTION (.L900)
+	CALL_EXCEPTION_HANDLER
 	
 	/* 0xa00: ITLB miss exception */
 	.org	0xa00
-	UNHANDLED_EXCEPTION (.La00)
+	CALL_EXCEPTION_HANDLER
 	
 	/* 0xb00: Range exception */
 	.org	0xb00
-	UNHANDLED_EXCEPTION (.Lb00)
+	CALL_EXCEPTION_HANDLER
 	
 	/* 0xc00: Syscall exception */
 	.org	0xc00
-	UNHANDLED_EXCEPTION (.Lc00)
+	CALL_EXCEPTION_HANDLER
 	
 	/* 0xd00: floating point exception */
 	.org	0xd00
-	UNHANDLED_EXCEPTION (.Ld00)
+	CALL_EXCEPTION_HANDLER
 	
 	/* 0xe00: Trap exception */
 	.org	0xe00
-	UNHANDLED_EXCEPTION (.Le00)
+	CALL_EXCEPTION_HANDLER
 	
 	/* 0xf00: Reserved exceptions */
 	.org	0xf00
-	UNHANDLED_EXCEPTION (.Lf00)
+	CALL_EXCEPTION_HANDLER
 	
 	.org	0x1000
-	UNHANDLED_EXCEPTION (.L1000)
+	CALL_EXCEPTION_HANDLER
 	
 	.org	0x1100
-	UNHANDLED_EXCEPTION (.L1100)
+	CALL_EXCEPTION_HANDLER
 	
 	.org	0x1200
-	UNHANDLED_EXCEPTION (.L1200)
+	CALL_EXCEPTION_HANDLER
 	
 	.org	0x1300
-	UNHANDLED_EXCEPTION (.L1300)
+	CALL_EXCEPTION_HANDLER
 	
 	.org	0x1400
-	UNHANDLED_EXCEPTION (.L1400)
+	CALL_EXCEPTION_HANDLER
 	
 	.org	0x1500
-	UNHANDLED_EXCEPTION (.L1500)
+	CALL_EXCEPTION_HANDLER
 	
 	.org	0x1600
-	UNHANDLED_EXCEPTION (.L1600)
+	CALL_EXCEPTION_HANDLER
 	
 	.org	0x1700
-	UNHANDLED_EXCEPTION (.L1700)
+	CALL_EXCEPTION_HANDLER
 	
 	.org	0x1800
-	UNHANDLED_EXCEPTION (.L1800)
+	CALL_EXCEPTION_HANDLER
 	
 	.org	0x1900
-	UNHANDLED_EXCEPTION (.L1900)
+	CALL_EXCEPTION_HANDLER
 	
 	.org	0x1a00
-	UNHANDLED_EXCEPTION (.L1a00)
+	CALL_EXCEPTION_HANDLER
 	
 	.org	0x1b00
-	UNHANDLED_EXCEPTION (.L1b00)
+	CALL_EXCEPTION_HANDLER
 	
 	.org	0x1c00
-	UNHANDLED_EXCEPTION (.L1c00)
+	CALL_EXCEPTION_HANDLER
 	
 	.org	0x1d00
-	UNHANDLED_EXCEPTION (.L1d00)
+	CALL_EXCEPTION_HANDLER
 	
 	.org	0x1e00
-	UNHANDLED_EXCEPTION (.L1e00)
+	CALL_EXCEPTION_HANDLER
 	
 	.org	0x1f00
-	UNHANDLED_EXCEPTION (.L1f00)
+	CALL_EXCEPTION_HANDLER
 
 	/* Pad to the end */
 	.org	0x1ffc
@@ -255,194 +232,47 @@ __buserr_special:
    - clear BSS
    - call global and static constructors
    - set up destructors to be called from exit
-   - initialize the UART (may be dummy, if no UART supported)
    - jump to the main function
    - call exit if the main function ever returns.
    - loop forever (should never get here)                                     */
 /* -------------------------------------------------------------------------- */
 	/* The stack grows down from the top of writable memory. */
 	.section .data
-	.global	stack
-stack:	.space	4,0
+	.global stack
+stack:	.space	4,0	
 
 	.section .text
 	.global	_start
         .type	_start,@function
 
+
+	/* Following externs from board-specific object passed at link time */
+	.extern _board_mem_base
+	.extern _board_mem_size
+	.extern _board_uart_base
+	
 _start:
-	/* First, clear r0. */
-	l.movhi r0,0	
-	/* Finding the end of stack means we need to handle the bus
-	   error. Patch in some special handler code. */
-	l.movhi	r30,hi(__buserr)	/* Where to copy to */
-	l.ori	r30,r30,lo(__buserr)
-	l.movhi	r28,hi(__buserr_std)	/* Where to stop copying */
-	l.ori	r28,r28,lo(__buserr_std)
-	l.movhi	r26,hi(__buserr_special)/* Where to copy from */
-	l.ori	r26,r26,lo(__buserr_special)
+	/* Initialise stack and frame pointer (set to same value) */
+	l.movhi	r1,hi(_board_mem_base)
+	l.ori	r1,r1,lo(_board_mem_base)
+	l.lwz	r1,0(r1)
+	l.movhi	r2,hi(_board_mem_size)
+	l.ori	r2,r2,lo(_board_mem_size)
+	l.lwz	r2,0(r2)
+	l.add	r1,r1,r2
+	l.or	r2,r1,r1
 
-.L11:	l.sfeq	r28,r30
-	l.bf	.L12
-	l.nop
-
-	l.lwz	r24,0(r26)		/* Get the instruction */
-	l.sw	0(r30),r24		/* Patch the instruction */
-	l.addi	r26,r26,4		/* Next source instruction */
-	l.j	.L11
-	l.addi	r30,r30,4		/* Delay slot: next dest location */
-	
-	/* Determine where the stack should end. Must be somewhere above the
-	   end of loaded memory. We look in blocks of 64KB. */
-.L12:	l.movhi r30,hi(end)
-	l.ori   r30,r30,lo(end)
-	l.srli	r30,r30,16		/* Round down to 64KB boundary */
-	l.slli	r30,r30,16
-
-	l.addi	r28,r0,1		/* Constant 64KB in register */
-	l.slli	r28,r28,16
-
-	l.add	r30,r30,r28
-	l.addi	r30,r30,-4		/* SP one word inside next 64KB? */
-
-	l.movhi	r26,0xaaaa		/* Test pattern to store in memory */
-	l.ori	r26,r26,0xaaaa
-
-	/* Is this a writeable location? */
-.L3:	l.sw	0(r30),r26
-	l.lwz	r24,0(r30)
-	l.sfeq	r24,r26
-	l.bnf	.L4
-	l.nop
-	
-	l.j	.L3
-	l.add	r30,r30,r28		/* Try 64KB higher */
-
-.L4:	l.sub	r30,r30,r28		/* Previous value was wanted */
+	/* Store stack address in stack variable */
 	l.movhi	r26,hi(stack)
 	l.ori	r26,r26,lo(stack)
-	l.sw	0(r26),r30
-
-	/* Initialise stack and frame pointer (set to same value) */
-	l.add	r1,r30,r0
-	l.add	r2,r30,r0
-
-	/* Clear out the bus error vector special code. */
-	l.movhi	r30,hi(__buserr)
-	l.ori	r30,r30,lo(__buserr)
-	l.movhi	r28,hi(__buserr_std)
-	l.ori	r28,r28,lo(__buserr_std)
-	l.movhi	r26,0x1500		/* l.nop 0 */
-	l.ori	r26,r26,0x0000
-
-.L5:	l.sfeq	r28,r30
-	l.bf	.L6
-	l.nop
-
-	l.sw	0(r30),r26		/* Patch the instruction */
-	l.j	.L5
-	l.addi	r30,r30,4		/* Delay slot: next instruction */
-
-	/* Instruction cache enable */
-	/* Check if IC present and skip enabling otherwise */
-.L6:	l.mfspr r24,r0,SPR_UPR
-	l.andi  r26,r24,SPR_UPR_ICP
-	l.sfeq  r26,r0
-	l.bf    .L8
+	l.sw	0(r26),r1
+	
+	/* Initialise cache */
+	/* TODO - potentially make this optional for simulation targets to save
+	time during startup */
+	l.jal 	_cache_init
 	l.nop
 	
-	/* Disable IC */
-	l.mfspr r6,r0,SPR_SR
-	l.addi  r5,r0,-1
-	l.xori  r5,r5,SPR_SR_ICE
-	l.and   r5,r6,r5
-	l.mtspr r0,r5,SPR_SR
-	
-	/* Establish cache block size
-	If BS=0, 16;
-	If BS=1, 32;
-	r14 contain block size
-	*/
-	l.mfspr r24,r0,SPR_ICCFGR
-	l.andi  r26,r24,SPR_ICCFGR_CBS
-	l.srli  r28,r26,7
-	l.ori   r30,r0,16
-	l.sll   r14,r30,r28
-	
-	/* Establish number of cache sets
-	r16 contains number of cache sets
-	r28 contains log(# of cache sets)
-	*/
-	l.andi  r26,r24,SPR_ICCFGR_NCS
-	l.srli  r28,r26,3
-	l.ori   r30,r0,1
-	l.sll   r16,r30,r28
-	
-	/* Invalidate IC */
-	l.addi  r6,r0,0
-	l.sll   r5,r14,r28
-	
-.L7:	l.mtspr r0,r6,SPR_ICBIR
-	l.sfne  r6,r5
-	l.bf    .L7
-	l.add   r6,r6,r14
-	
-	/* Enable IC */
-	l.mfspr r6,r0,SPR_SR
-	l.ori   r6,r6,SPR_SR_ICE
-	l.mtspr r0,r6,SPR_SR
-	l.nop
-	l.nop
-	l.nop
-	l.nop
-	l.nop
-	l.nop
-	l.nop
-	l.nop
-
-	/* Data cache enable */
-        /* Check if DC present and skip enabling otherwise */
-.L8:    l.mfspr r24,r0,SPR_UPR
-        l.andi  r26,r24,SPR_UPR_DCP
-        l.sfeq  r26,r0
-        l.bf    .L10
-        l.nop
-        /* Disable DC */
-        l.mfspr r6,r0,SPR_SR
-        l.addi  r5,r0,-1
-        l.xori  r5,r5,SPR_SR_DCE
-	l.and   r5,r6,r5
-        l.mtspr r0,r5,SPR_SR
-        /* Establish cache block size
-           If BS=0, 16;
-           If BS=1, 32;
-           r14 contain block size
-        */
-        l.mfspr r24,r0,SPR_DCCFGR
-        l.andi  r26,r24,SPR_DCCFGR_CBS
-        l.srli  r28,r26,7
-        l.ori   r30,r0,16
-        l.sll   r14,r30,r28
-        /* Establish number of cache sets
-           r16 contains number of cache sets
-           r28 contains log(# of cache sets)
-        */
-	l.andi  r26,r24,SPR_DCCFGR_NCS
-	l.srli  r28,r26,3
-        l.ori   r30,r0,1
-        l.sll   r16,r30,r28
-        /* Invalidate DC */
-        l.addi  r6,r0,0
-        l.sll   r5,r14,r28
-
-.L9:    l.mtspr r0,r6,SPR_DCBIR
-        l.sfne  r6,r5
-        l.bf    .L9
-	l.add   r6,r6,r14
-        /* Enable DC */
-        l.mfspr r6,r0,SPR_SR
-        l.ori   r6,r6,SPR_SR_DCE
-        l.mtspr r0,r6,SPR_SR
-
 	/* Clear BSS */
 .L10:	l.movhi r28,hi(__bss_start)
 	l.ori   r28,r28,lo(__bss_start)
@@ -463,11 +293,17 @@ _start:
 	l.jal	atexit
 	l.ori	r3,r3,lo(__fini)	/* Delay slot */
 
-	/* Initialise UART in a C function. If the UART isn't present, we'll */
-	/* link against a dummy function. */
-	l.jal    __uart_init
+	/* Check if UART is to be initialised */
+	l.movhi	r4,hi(_board_uart_base)
+	l.ori	r4,r4,lo(_board_uart_base)
+	l.lwz	r4,0(r4)
+	l.sfne	r4,r0		/* Is base set? If not, no UART */
+	l.bnf	.L2
+	l.or	r3,r0,r0
+	l.jal	__uart_init
 	l.nop
 
+.L2:	
 	/* Jump to main program entry point (argc = argv = envp = 0) */
 	l.or	r3,r0,r0
 	l.or	r4,r0,r0
@@ -479,7 +315,7 @@ _start:
 	l.addi  r3,r11,0		/* Delay slot */
 
 	/* Loop forever */
-.L2:	l.j	.L2
+.L3:	l.j	.L3
 	l.nop
 	
 	.size	_start, .-_start

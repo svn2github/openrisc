@@ -32,6 +32,7 @@
 #include <errno.h>
 #include <unistd.h>
 
+#include "or1k-support.h"
 
 #undef errno
 extern int  errno;
@@ -40,14 +41,13 @@ extern int  errno;
 /* -------------------------------------------------------------------------- */
 /*!Read from a file.
 
-   We don't support reading. However for stdin, it's better if we return 0
-   (indicating EOF) rather than fail.
+   Depending on board support, we may attempt to read from UART.
 
    Remember that this function is *not* reentrant, so no static state should
    be held.
 
    @param[in] file  The fileno to read.
-   @param[in] ptr   Buffer into which to read.
+   @param[in] buf   Buffer into which to read.
    @param[in] len   Number of bytes to read.
 
    @return  0 to indicate EOF if the file is stdin, otherwise -1 to indicate
@@ -55,16 +55,42 @@ extern int  errno;
 /* -------------------------------------------------------------------------- */
 int
 _read (int   file,
-       char *ptr,
+       char *buf,
        int   len)
 {
-  if (STDIN_FILENO == file)
-    {
-      return  0;			/* EOF */
-    }
-  else
-    {
-      errno = EBADF;
-      return  -1;
-    }
+	if (STDIN_FILENO == file)
+	{
+		
+		if (BOARD_HAS_UART)
+		{
+			/* UART supported. Read from it */
+
+
+			int  i;
+			
+			for (i = 0; i < len; i++)
+			{
+				buf[i] = __uart_getc ();
+#ifdef UART_AUTO_ECHO
+				__uart_putc (buf[i]);
+#endif
+				/* Return partial buffer if we get EOL */
+				if ('\n' == buf[i])
+				{
+					return  i;
+				}
+			}
+			
+			return  i;			/* Filled the buffer */
+		}
+		else
+		{
+			return  0;			/* EOF */
+		}
+	}
+	else
+	{
+		errno = EBADF;
+		return  -1;
+	}
 }	/* _read () */

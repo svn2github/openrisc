@@ -48,11 +48,11 @@ process_multilib_options ""
 # doesn't work with the standard expect commands, and will end up generating a
 # blank -isystem option, which confuses things severely.
 
-# It's sufficient just to specify -mor32-newlib. Bit of a shame to specify it
-# both in cflags, which are also used when linking, so we'll get the libraries
-# OK as well.
+# It's sufficient just to specify -mnewlib. Bit of a shame to 
+# specify it both in cflags, which are also used when linking, so we'll get 
+# the libraries OK as well.
 set_board_info compiler  "[find_gcc]"
-set_board_info cflags    "-mor32-newlib"
+set_board_info cflags    "-mnewlib -mboard=or1ksim"
 
 # No linker script needed.
 set_board_info ldscript ""

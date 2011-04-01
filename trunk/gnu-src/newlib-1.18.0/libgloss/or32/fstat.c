@@ -1,4 +1,4 @@
-/* fstat.c. Implementation of the _fstat syscall for newlib
+/* fstat-uart.c. Implementation of the _fstat syscall for newlib with UART
 
    Copyright (C) 2004, Jacob Bower
    Copyright (C) 2010, Embecosm Limited <info@embecosm.com>
@@ -33,16 +33,17 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
+#include "or1k-support.h"
 
 #undef errno
 extern int  errno;
 
 
 /* -------------------------------------------------------------------------- */
-/*!Status of an open file.
+/*!Status of an open file when using a UART
 
-   We only know about stdout and stderr, and treat these as character special
-   files. All other files are erroneous.
+   We only know about stdin, stdout and stderr, and treat these as character
+   special files. All other files are erroneous.
 
    Remember that this function is *not* reentrant, so no static state should
    be held.
@@ -54,7 +55,9 @@ int
 _fstat (int          file,
 	struct stat *st)
 {
-  if ((STDOUT_FILENO == file) || (STDERR_FILENO == file))
+  if ((BOARD_HAS_UART && (STDIN_FILENO  == file)) ||
+      (STDERR_FILENO == file) ||
+      (STDOUT_FILENO == file))
     {
       st->st_mode = S_IFCHR;
       return  0;

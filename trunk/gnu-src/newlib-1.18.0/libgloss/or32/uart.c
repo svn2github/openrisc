@@ -29,12 +29,11 @@
    with Doxygen.                                                              */
 /* -------------------------------------------------------------------------- */
 
-#include "or1ksim-board.h"
+#include "or1k-support.h"
 #include "uart.h"
 
-
 /*! Macro to access a UART register */
-#define UREG8(reg) REG8 (UART_BASE + reg)
+#define UREG8(reg) REG8 (_board_uart_base + reg)
 
 /*! Macro to check if transmit and transmit holding registers are both empty. */
 #define BOTH_EMPTY (UART_LSR_TEMT | UART_LSR_THRE)
@@ -86,7 +85,7 @@ __uart_init ()
 	UREG8 (UART_LCR) = UART_LCR_WLEN8 & ~(UART_LCR_STOP | UART_LCR_PARITY);
 
 	/* Set baud rate */
-	divisor = IN_CLK / (16 * UART_BAUD_RATE);
+	divisor = _board_clk_freq / (16 * _board_uart_baud);
 
 	UREG8 (UART_LCR) |= UART_LCR_DLAB;
 	UREG8 (UART_DLL)  = divisor & 0x000000ff;

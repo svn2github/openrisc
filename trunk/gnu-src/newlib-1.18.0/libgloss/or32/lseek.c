@@ -1,4 +1,4 @@
-/* lseek.c. Implementation of the _lseek syscall for newlib
+/* lseek-uart.c. Implementation of the _lseek syscall for newlib with UART
 
    Copyright (C) 2004, Jacob Bower
    Copyright (C) 2010, Embecosm Limited <info@embecosm.com>
@@ -32,13 +32,14 @@
 #include <errno.h>
 #include <unistd.h>
 
+#include "or1k-support.h"
 
 #undef errno
 extern int  errno;
 
 
 /* -------------------------------------------------------------------------- */
-/*!Set a position in a file.
+/*!Set a position in a file when using a UART.
 
    We only support stdin, stdout and stderr for which positioning is always to
    offset 0.
@@ -57,13 +58,15 @@ _lseek (int   file,
 	int   offset,
 	int   whence)
 {
-  if ((STDOUT_FILENO == file) || (STDERR_FILENO == file))
+  if ((BOARD_HAS_UART && (STDIN_FILENO  == file)) ||
+      (STDOUT_FILENO == file) ||
+      (STDERR_FILENO == file))
     {
       return  0;
     }
   else
     {
       errno = EBADF;
-      return  (long) -1;
+      return (long) -1;
     }
 }	/* _lseek () */

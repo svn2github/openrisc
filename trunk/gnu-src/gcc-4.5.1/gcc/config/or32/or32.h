@@ -48,32 +48,34 @@ Boston, MA 02111-1307, USA.  */
 
 #undef CPP_SPEC
 #define CPP_SPEC \
-  "%{!mor32-newlib*:%{pthread:-D_XOPEN_SOURCE=700}}" \
-  "%{mor32-newlib*:-idirafter %(target_prefix)/newlib-include}"
+  "%{!mnewlib*:%{pthread:-D_XOPEN_SOURCE=700}}" \
+  "%{mnewlib*:-idirafter %(target_prefix)/newlib-include}"
 
 /* Make sure we pick up the crti.o, crtbegin.o, crtend.o and crtn.o files. */
 #undef STARTFILE_SPEC
-#define STARTFILE_SPEC "%{!shared:%{mor32-newlib*:%(target_prefix)/lib/crt0.o} \
-                        %{!mor32-newlib*:crt0.o%s} crti.o%s crtbegin.o%s}"
+#define STARTFILE_SPEC "%{!shared:%{mnewlib:%(target_prefix)/lib/crt0.o} \
+			 %{!mnewlib:crt0.o%s} crti.o%s crtbegin.o%s}"
 
 #undef ENDFILE_SPEC
 #define ENDFILE_SPEC "crtend.o%s crtn.o%s"
 
 /* Specify the newlib library path if necessary */
 #undef LINK_SPEC
-#define LINK_SPEC "%{mor32-newlib*:-L%(target_prefix)/newlib}"
+#define LINK_SPEC "%{mnewlib:-L%(target_prefix)/newlib}"
 
 /* Override previous definitions (linux.h). Newlib doesn't have a profiling
    version of the library, but it does have a debugging version (libg.a) */
+
 #undef LIB_SPEC 
-#define LIB_SPEC "%{!mor32-newlib*:"					\
+#define LIB_SPEC "%{!mnewlib:"						\
 		   "%{pthread:"						\
 		     "--whole-archive -lpthread --no-whole-archive} "	\
 		   "%{!p:%{!pg:-lc}}%{p:-lc_p}%{pg:-lc_p}} \
-                  %{mor32-newlib:%{!g:-lc -lor32 -u free -lc}            \
-                                 %{g:-lg -lor32 -u free -lg}}            \
-                  %{mor32-newlib-uart:%{!g:-lc -lor32uart -u free -lc}   \
-                                 %{g:-lg -lor32uart -u free -lg}}"
+                  %{mnewlib:%{!g:-lc -lor32 -lboard -u free -lc}	\
+                            %{g:-lg -lor32 -lboard -u free -lg}		\
+                              %{mboard=*:-L%(target_prefix)/lib/boards/%*} \
+			      %{!mboard=*:-L%(target_prefix)/lib/boards/or1ksim}}"
+
 
 #define TARGET_VERSION fprintf (stderr, " (OpenRISC 1000) Mask 0x%x", MASK_HARD_MUL);
 

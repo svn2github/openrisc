@@ -32,7 +32,7 @@
 #include <errno.h>
 #include <unistd.h>
 
-#include "or1ksim-board.h"
+#include "or1k-support.h"
 
 
 #undef errno
@@ -47,10 +47,18 @@ extern int  errno;
 static void
 outbyte (char  c)
 {
-  register char  t1 asm ("r3") = c;
-
-  asm volatile ("\tl.nop\t%0" : : "K" (NOP_PUTC), "r" (t1));
-
+	
+	if (BOARD_HAS_UART)
+	{
+		__uart_putc (c);
+	}
+	else
+	{
+		register char  t1 asm ("r3") = c;
+		
+		asm volatile ("\tl.nop\t%0" : : "K" (NOP_PUTC), "r" (t1));
+	}
+	
 }	/* outbyte () */
 
 

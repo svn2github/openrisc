@@ -3,8 +3,10 @@
 # Copyright (c) 1998 Cygnus Support
 # Copyright (C) 2004, Jacob Bower
 # Copyright (C) 2010, Embecosm Limited <info@embecosm.com>
+# Copyright (C) 2011, ORSoC AB
 
 # Contributor Jeremy Bennett <jeremy.bennett@embecosm.com>
+# Contributor Julius Baxter  <julius.baxter@orsoc.se>
 
 # This file is part of Newlib.
 
@@ -70,72 +72,61 @@ OBJCOPY = `if [ -f ${objroot}/../binutils/objcopy ] ; \
 # Add our own flags for C compilation
 CFLAGS =  -g
 
+# List new boards here - should be accompanied by own <board>.[cS]
+BOARDS   = or1ksim or1ksim-uart orpsocrefdesign ordb1a3pe1500 ml501
+
+BOARD_OBJS = $(addsuffix .o,$(BOARDS))
+BOARD_LIBS = $(addsuffix .a,$(BOARDS))
+
+# Generic name, used after install for each of these libraries
+LIBBOARD = libboard.a
+
 # Our own C runtime startup and BSPs
-CRT0     = crt0.o
-BSP      = libor32.a
-BSP_UART = libor32uart.a
+CRT0     	= crt0.o
+LIBOR32      	= libor32.a
 
-OUTPUTS  = $(CRT0) $(BSP) $(BSP_UART)
+OUTPUTS  = $(CRT0) $(LIBOR32)
 
-# The object files for each BSP
-OBJS = _exit.o      \
-       close.o      \
-       environ.o    \
-       execve.o     \
-       fork.o       \
-       fstat.o      \
-       getpid.o     \
-       isatty.o     \
-       kill.o       \
-       link.o       \
-       lseek.o      \
-       open.o       \
-       read.o       \
-       sbrk.o       \
-       stat.o       \
-       times.o      \
-       uart-dummy.o \
-       unlink.o     \
-       wait.o       \
-       write.o
-
-UART_OBJS = _exit.o       \
-            close.o       \
-            environ.o     \
-            execve.o      \
-            fork.o        \
-            fstat-uart.o  \
-            getpid.o      \
-            isatty-uart.o \
-            kill.o        \
-            link.o        \
-            lseek-uart.o  \
-            open.o        \
-            read-uart.o   \
-            sbrk.o        \
-            stat.o        \
-            times.o       \
-	    uart.o        \
-            unlink.o      \
-            wait.o        \
-            write-uart.o
+# The standard object files for the library
+LIBOR32_OBJS = _exception_handler.o 	\
+	_cache.o		\
+	_exit.o      		\
+	_interrupt_handler.o	\
+	close.o      		\
+	environ.o    		\
+	execve.o     		\
+	fork.o       		\
+	fstat.o 		\
+	getpid.o     		\
+	isatty.o 		\
+	kill.o       		\
+	link.o       		\
+	lseek.o 		\
+	open.o       		\
+	read.o  		\
+	sbrk.o       		\
+	stat.o       		\
+	times.o      		\
+	uart.o       		\
+	unlink.o     		\
+	wait.o       		\
+	write.o
 
 # Host specific makefile fragment specifies the automatic rules
 @host_makefile_frag@
 
-# Build crt0.o and all the BSPs
-all: ${CRT0} ${BSP} ${BSP_UART}
+# Build what we need out
+all: $(OUTPUTS) $(BOARD_LIBS)
 
 # Rules to build the BSPs from their objects. No need for a rule to build
 # crt0.o, that happens autmatically from .S
-$(BSP): $(OBJS)
-	${AR} ${ARFLAGS} $@ $(OBJS)
+$(LIBOR32): $(LIBOR32_OBJS)
+	${AR} ${ARFLAGS} $@ $^
 	${RANLIB} $@
 
-$(BSP_UART): $(UART_OBJS)
-	${AR} ${ARFLAGS} $@ $(UART_OBJS)
+%.a: %.o
+	${AR} ${ARFLAGS} $@ $^
 	${RANLIB} $@
-
 
 # Standard clean up rules.
 clean mostlyclean:
@@ -144,13 +135,22 @@ clean mostlyclean:
 distclean maintainer-clean realclean: clean
 	rm -f Makefile config.status *~
 
-# Standard install rules
+# Standard install rules for libor32 and crt0
+# Boards installed into lib/board/$${board} and named board.a. GCC links against with
+# board specified by -mboard=whichboard and adds 
+#   -lboard -L<path_to_or32_newlib_sysroot>/lib/board/whichboard
+#
 .PHONY: install info install-info clean-info
 install:
 	@for outputs in ${OUTPUTS}; do\
 	     mkdir -p $(DESTDIR)$(tooldir)/lib${MULTISUBDIR}; \
 	     $(INSTALL_PROGRAM) $${outputs} \
 				$(DESTDIR)$(tooldir)/lib${MULTISUBDIR}; \
+	done; \
+	for board in ${BOARDS}; do\
+	     mkdir -p $(DESTDIR)$(tooldir)/lib${MULTISUBDIR}/boards/$${board}; \
+	     $(INSTALL_PROGRAM) $${board}.a \
+			$(DESTDIR)$(tooldir)/lib${MULTISUBDIR}/boards/$${board}/$(LIBBOARD); \
 	done
 
 # Deal with info if we had any.
