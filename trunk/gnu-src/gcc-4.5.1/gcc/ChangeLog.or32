@@ -2,6 +2,14 @@
 
 	* BASE_VER: Updated for gcc-4.5.1-or32-1.0rc3.
 
+2011-03-22  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* config/or32/or32.h (LEGITIMATE_CONSTANT_P): Allow VOIDmode
+	CONST_DOUBLE.
+	* config/or32/or32.md (movsi_insn_big): Enable splitting of CONST_INT.
+	(movdi): Now a define_insn_and_split.
+	* config/or32/or32.c (or32_output_move_double): Abort for CONST_INT.
+
 2011-02-17  Joern Rennecke  <joern.rennecke@embecosm.com>
 
 	* gcc.c (do_spec_1) <%*>: Don't append a space unless the next

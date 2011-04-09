@@ -850,7 +850,8 @@ enum reg_class
 /* Is this suitable for an immediate operand.
 
    JPB 1-Sep-10: Is this correct. We can only do 16-bit immediates directly. */
-#define LEGITIMATE_CONSTANT_P(x) (GET_CODE(x) != CONST_DOUBLE)
+#define LEGITIMATE_CONSTANT_P(x) \
+  (GET_CODE(x) != CONST_DOUBLE || GET_MODE (x) == VOIDmode)
 
 /* Specify the machine mode that this machine uses for the index in the
    tablejump instruction.  */
