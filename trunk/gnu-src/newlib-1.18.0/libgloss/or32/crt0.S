@@ -59,7 +59,7 @@
 	l.sw    4(r1), r3;             			\
 	l.sw    8(r1), r4;             			\
 	l.mfspr r3,r0,SPR_NPC;          		\
-	l.j 	_exception_handler; 			\
+	l.j 	or1k_exception_handler;			\
 	l.mfspr r4,r0,SPR_EPCR_BASE
 
 /* -------------------------------------------------------------------------- */
@@ -263,32 +263,32 @@ _start:
 	l.or	r2,r1,r1
 
 	/* Store stack address in stack variable */
-	l.movhi	r26,hi(stack)
-	l.ori	r26,r26,lo(stack)
-	l.sw	0(r26),r1
+	l.movhi	r3,hi(stack)
+	l.ori	r3,r3,lo(stack)
+	l.sw	0(r3),r1
 	
 	/* Initialise cache */
 	/* TODO - potentially make this optional for simulation targets to save
 	time during startup */
-	l.jal 	_cache_init
+	l.jal 	or1k_cache_init
 	l.nop
 	
 	/* Clear BSS */
-.L10:	l.movhi r28,hi(__bss_start)
-	l.ori   r28,r28,lo(__bss_start)
-	l.movhi r30,hi(end)
-	l.ori   r30,r30,lo(end)
+.L10:	l.movhi r3,hi(__bss_start)
+	l.ori   r3,r3,lo(__bss_start)
+	l.movhi r4,hi(end)
+	l.ori   r4,r4,lo(end)
 
-.L1:    l.sw    (0)(r28),r0
-        l.sfltu r28,r30
+.L1:    l.sw    (0)(r3),r0
+        l.sfltu r3,r4
         l.bf    .L1
-        l.addi  r28,r28,4		/* Delay slot */
+        l.addi  r3,r3,4		/* Delay slot */
 
 	/* Call global and static constructors */
 	l.jal	__init
 	l.nop
 	
-	/* Set up destructors to be called from exit if main never returns */
+	/* Set up destructors to be called from exit if main ever returns */
 	l.movhi	r3,hi(__fini)
 	l.jal	atexit
 	l.ori	r3,r3,lo(__fini)	/* Delay slot */

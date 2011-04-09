@@ -299,6 +299,11 @@
 #define SPR_DTLBTR_SWE	   0x00000200  /* Supervisor Write Enable */
 #define SPR_DTLBTR_PPN	   0xfffff000  /* Physical Page Number */
 
+#define DTLB_PR_NOLIMIT  ( SPR_DTLBTR_URE  | \
+			   SPR_DTLBTR_UWE  | \
+			   SPR_DTLBTR_SRE  | \
+			   SPR_DTLBTR_SWE  )
+
 /*
  * Bit definitions for the Instruction TLB Match Register
  *
@@ -322,6 +327,10 @@
 #define SPR_ITLBTR_SXE	   0x00000040  /* User Read Enable */
 #define SPR_ITLBTR_UXE	   0x00000080  /* User Write Enable */
 #define SPR_ITLBTR_PPN	   0xfffff000  /* Physical Page Number */
+
+#define ITLB_PR_NOLIMIT  ( SPR_ITLBTR_SXE  |	\
+			   SPR_ITLBTR_UXE  )
+
 
 /*
  * Bit definitions for Data Cache Control register
@@ -616,20 +625,5 @@
 #define FPCSR_RM_RZ (1<<1)
 #define FPCSR_RM_RIP (2<<1)
 #define FPCSR_RM_RIN (3<<1)
-
-/*
- * l.nop constants
- *
- */
-#define NOP_NOP          0x0000      /* Normal nop instruction */
-#define NOP_EXIT         0x0001      /* End of simulation */
-#define NOP_REPORT       0x0002      /* Simple report */
-/*#define NOP_PRINTF       0x0003       Simprintf instruction (obsolete)*/
-#define NOP_PUTC         0x0004      /* JPB: Simputc instruction */
-#define NOP_CNT_RESET    0x0005	     /* Reset statistics counters */
-#define NOP_GET_TICKS    0x0006	     /* JPB: Get # ticks running */
-#define NOP_GET_PS       0x0007      /* JPB: Get picosecs/cycle */
-#define NOP_REPORT_FIRST 0x0400      /* Report with number */
-#define NOP_REPORT_LAST  0x03ff      /* Report with number */
 
 #endif	/* SPR_DEFS__H */

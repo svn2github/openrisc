@@ -83,7 +83,8 @@ LIBRARIES = $(noinst_LIBRARIES)
 ARFLAGS = cru
 lib_a_AR = $(AR) $(ARFLAGS)
 lib_a_LIBADD =
-am_lib_a_OBJECTS = lib_a-longjmp.$(OBJEXT) lib_a-setjmp.$(OBJEXT)
+am_lib_a_OBJECTS = lib_a-longjmp.$(OBJEXT) lib_a-setjmp.$(OBJEXT) \
+	lib_a-or1k-support.$(OBJEXT) lib_a-or1k-support-asm.$(OBJEXT)
 lib_a_OBJECTS = $(am_lib_a_OBJECTS)
 DEFAULT_INCLUDES = -I. -I$(srcdir)
 depcomp =
@@ -212,7 +213,7 @@ AUTOMAKE_OPTIONS = cygnus
 INCLUDES = $(NEWLIB_CFLAGS) $(CROSS_CFLAGS) $(TARGET_CFLAGS)
 AM_CCASFLAGS = $(INCLUDES)
 noinst_LIBRARIES = lib.a
-lib_a_SOURCES = longjmp.S setjmp.S
+lib_a_SOURCES = longjmp.S setjmp.S or1k-support.c or1k-support-asm.S
 lib_a_CCASFLAGS = $(AM_CCASFLAGS)
 lib_a_CFLAGS = $(AM_CFLAGS)
 ACLOCAL_AMFLAGS = -I ../../.. -I ../../../..
@@ -285,6 +286,19 @@ lib_a-setjmp.o: setjmp.S
 
 lib_a-setjmp.obj: setjmp.S
 	$(CCAS) $(lib_a_CCASFLAGS) $(CCASFLAGS) -c -o lib_a-setjmp.obj `if test -f 'setjmp.S'; then $(CYGPATH_W) 'setjmp.S'; else $(CYGPATH_W) '$(srcdir)/setjmp.S'; fi`
+
+lib_a-or1k-support-asm.o: or1k-support-asm.S
+	$(CCAS) $(lib_a_CCASFLAGS) $(CCASFLAGS) -c -o lib_a-or1k-support-asm.o `test -f 'or1k-support-asm.S' || echo '$(srcdir)/'`or1k-support-asm.S
+
+lib_a-or1k-support-asm.obj: or1k-support-asm.S
+	$(CCAS) $(lib_a_CCASFLAGS) $(CCASFLAGS) -c -o lib_a-or1k-support-asm.obj `if test -f 'or1k-support-asm.S'; then $(CYGPATH_W) 'or1k-support-asm.S'; else $(CYGPATH_W) '$(srcdir)/or1k-support-asm.S'; fi`
+
+lib_a-or1k-support.o: or1k-support.c
+	$(CC) $(lib_a_CFLAGS) $(CFLAGS) -c -o lib_a-or1k-support.o `test -f 'or1k-support.c' || echo '$(srcdir)/'`or1k-support.c
+
+lib_a-or1k-support.obj: or1k-support.c
+	$(CC) $(lib_a_CFLAGS) $(CFLAGS) -c -o lib_a-or1k-support.obj `if test -f 'or1k-support.c'; then $(CYGPATH_W) 'or1k-support.c'; else $(CYGPATH_W) '$(srcdir)/or1k-support.c'; fi`
+
 uninstall-info-am:
 
 ID: $(HEADERS) $(SOURCES) $(LISP) $(TAGS_FILES)

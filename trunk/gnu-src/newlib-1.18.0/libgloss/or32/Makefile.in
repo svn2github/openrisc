@@ -88,10 +88,7 @@ LIBOR32      	= libor32.a
 OUTPUTS  = $(CRT0) $(LIBOR32)
 
 # The standard object files for the library
-LIBOR32_OBJS = _exception_handler.o 	\
-	_cache.o		\
-	_exit.o      		\
-	_interrupt_handler.o	\
+LIBOR32_OBJS =	_exit.o      		\
 	close.o      		\
 	environ.o    		\
 	execve.o     		\
