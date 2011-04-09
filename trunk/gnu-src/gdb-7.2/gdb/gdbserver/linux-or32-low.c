@@ -35,77 +35,12 @@
 
 #include <asm/ptrace.h> /* For openrisc kernel ptrace register offsets */
 
+/* Defined in auto-generated file reg-or32.c.  */
+void init_registers_or32 (void);
+
 #ifdef HAVE_SYS_REG_H
 #include <sys/reg.h>
 #endif
-
-
-/* -------------------------------------------------------------------------- */
-/*!Global register map
-
-   This should be in GDB order (r0-r1, ppc, npc, sr) to ptrace offset.
-
-   ptrace does not support r0 (so we use r31 for now), nor ppc (so we use npc
-   for now).
-
-   @note This must be a global variable.
-
-   @todo Fix r0 and ppc (needs ptrace changes).                               */
-/* -------------------------------------------------------------------------- */
-struct reg regs_or32[] = {
-  { "r0",  GPR31 * 8, 32 },
-  { "sp",  SP    * 8, 32 },
-  { "fp",  GPR2  * 8, 32 },
-  { "r3",  GPR3  * 8, 32 },
-  { "r4",  GPR4  * 8, 32 },
-  { "r5",  GPR5  * 8, 32 },
-  { "r6",  GPR6  * 8, 32 },
-  { "r7",  GPR7  * 8, 32 },
-  { "r8",  GPR8  * 8, 32 },
-  { "lr",  GPR9  * 8, 32 },
-  { "r10", GPR10 * 8, 32 },
-  { "r11", GPR11 * 8, 32 },
-  { "r12", GPR12 * 8, 32 },
-  { "r13", GPR13 * 8, 32 },
-  { "r14", GPR14 * 8, 32 },
-  { "r15", GPR15 * 8, 32 },
-  { "r16", GPR16 * 8, 32 },
-  { "r17", GPR17 * 8, 32 },
-  { "r18", GPR18 * 8, 32 },
-  { "r19", GPR19 * 8, 32 },
-  { "r20", GPR20 * 8, 32 },
-  { "r21", GPR21 * 8, 32 },
-  { "r22", GPR22 * 8, 32 },
-  { "r23", GPR23 * 8, 32 },
-  { "r24", GPR24 * 8, 32 },
-  { "r25", GPR25 * 8, 32 },
-  { "r26", GPR26 * 8, 32 },
-  { "r27", GPR27 * 8, 32 },
-  { "r28", GPR28 * 8, 32 },
-  { "r29", GPR29 * 8, 32 },
-  { "r30", GPR30 * 8, 32 },
-  { "r31", GPR31 * 8, 32 },
-  { "ppc", PC    * 8, 32 },
-  { "npc", PC    * 8, 32 },
-  { "sr",  SR    * 8, 32 }
-};
-
-/* -------------------------------------------------------------------------- */
-/*!Initialize the register data.
-  
-  Should be automagically created from a data file in gdb/regformats, but for
-  now we do it manually.                                                      */
-/* -------------------------------------------------------------------------- */
-static void
-init_registers_or32 ()
-{
-  
-  static const char *expedite_regs_or32[] = { "sp", "lr", "npc", 0 };
-
-  set_register_cache (regs_or32, sizeof (regs_or32) / sizeof (regs_or32[0]));
-  gdbserver_expedite_regs = expedite_regs_or32;
-  gdbserver_xmltarget     = NULL;
-}
 
 
 /*! Some useful GDB register numbers. */
@@ -261,8 +196,8 @@ struct linux_target_ops the_low_target = {
   NULL,					/* Breakpoint reinsertion (unused) */
   0,					/* Decrement PC after break (FALSE) */
   or32_breakpoint_at,			/* Predicate to check for breakpoint */
-  NULL,					/* Insert matchpoint (unused) */
-  NULL,					/* Remove matchpoint (unused) */
+  NULL,					/* Insert watchpoint (unused) */
+  NULL,					/* Remove watchpoint (unused) */
   NULL,					/* Predicate if stopped by watchpoint */
   NULL,					/* Data address for watchpoint stop */
   NULL,					/* ptrace PEEKUSR hook */

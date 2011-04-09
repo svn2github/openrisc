@@ -1,6 +1,20 @@
 		    What has changed in GDB for OpenRISC?
 			(Organized release by release)
 
+*** Changes in GDB 7.2 release 1.0rc3 for the 32-bit OpenRISC 1000
+
+* GDBserver has been implemented.
+
+* New target
+
+or32-linux is now a target for GDB to be used with OpenRISC Linux applications.
+
+* Outstanding issues
+
+Frame handling is still not working correctly, so all frame analysis functions
+are potentially incorrect.
+
+
 *** Changes in GDB 7.1 for the 32-bit OpenRISC 1000
 
 * OpenRISC Remote JTAG Protocol dropped

@@ -585,6 +585,7 @@ Absolute 8-bit relocation, but used to form an address like 0xFFnn.
 @deffn {} BFD_RELOC_32_PCREL_S2
 @deffnx {} BFD_RELOC_16_PCREL_S2
 @deffnx {} BFD_RELOC_23_PCREL_S2
+@deffnx {} BFD_RELOC_28_PCREL_S2
 These PC-relative relocations are stored as word displacements --
 i.e., byte displacements shifted right two bits.  The 30-bit word
 displacement (<<32_PCREL_S2>> -- 32 bits, shifted 2) is used on the

@@ -439,6 +439,9 @@ mips-linux.c : $(srcdir)/../regformats/mips-linux.dat $(regdat_sh)
 mips64-linux.o : mips64-linux.c $(regdef_h)
 mips64-linux.c : $(srcdir)/../regformats/mips64-linux.dat $(regdat_sh)
 	$(SHELL) $(regdat_sh) $(srcdir)/../regformats/mips64-linux.dat mips64-linux.c
+reg-or32.o : reg-or32.c $(regdef_h)
+reg-or32.c : $(srcdir)/../regformats/reg-or32.dat $(regdat_sh)
+	$(SHELL) $(regdat_sh) $(srcdir)/../regformats/reg-or32.dat reg-or32.c
 powerpc-32l.o : powerpc-32l.c $(regdef_h)
 powerpc-32l.c : $(srcdir)/../regformats/rs6000/powerpc-32l.dat $(regdat_sh)
 	$(SHELL) $(regdat_sh) $(srcdir)/../regformats/rs6000/powerpc-32l.dat powerpc-32l.c
