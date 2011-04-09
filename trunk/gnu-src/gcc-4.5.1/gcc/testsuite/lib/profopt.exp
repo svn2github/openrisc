@@ -214,7 +214,7 @@ proc profopt-get-options { src } {
 #
 proc profopt-execute { src } {
     global srcdir tmpdir
-    global prof_option_list
+    global prof_option_list additional_sources
     global tool profile_option feedback_option prof_ext perf_ext perf_delta
     global generate_final_code use_final_code
     global verbose
@@ -270,6 +270,19 @@ proc profopt-execute { src } {
 	    verbose "$src not supported on this target, skipping it" 3
 	    return
 	}
+	# $additional_sources is cleared by dg-additional-files-options,
+	# thus we must save the information from there now in order to
+	# be able to delete / upload the associated profiling result files.
+	set sources $base
+	foreach source "$additional_sources" {
+	    set source [file tail $source]
+	    set source [file rootname $source]
+	    lappend sources $source
+	    # Remove old profiling and performance data files.
+	    foreach ext $prof_ext {
+		remote_file target delete $tmpdir/$source.$ext
+	    }
+	}
 
         set extra_options [dg-additional-files-options "" "$src"]
 
@@ -277,7 +290,9 @@ proc profopt-execute { src } {
 
 	set options "$extra_options"
 	lappend options "additional_flags=$option $extra_flags $profile_option"
-	set optstr "$option $profile_option"
+	# for remote targets, having an absolute profile dir from the host
+	# causes grief.
+	set optstr "$option $profile_option -fprofile-dir=."
 	set comp_output [${tool}_target_compile "$src" "$execname1" executable $options]
 	if ![${tool}_check_compile "$testcase compilation" $optstr $execname1 $comp_output] {
  	    unresolved "$testcase execution,   $optstr"
@@ -294,12 +309,14 @@ proc profopt-execute { src } {
 	# Make sure the profile data was generated, and fail if not.
 	if { $status == "pass" } {
 	    foreach ext $prof_ext {
-		remote_upload target $tmpdir/$base.$ext
-		set files [glob -nocomplain $base.$ext]
-		if { $files == "" } {
-		    set status "fail"
-		    set missing_file 1
-		    fail "$testcase execution: file $base.$ext does not exist, $option $profile_option"
+		foreach source "$sources" {
+		    remote_upload target $tmpdir/$source.$ext
+		    set files [glob -nocomplain $source.$ext]
+		    if { $files == "" } {
+			set status "fail"
+			set missing_file 1
+			fail "$testcase execution: file $source.$ext does not exist, $option $profile_option"
+		    }
 		}
 	    }
 	}
@@ -346,7 +363,9 @@ proc profopt-execute { src } {
 
 	# Remove the profiling data files.
 	foreach ext $prof_ext {
-	    remote_file target delete $tmpdir/$base.$ext
+	    foreach source "$sources" {
+		remote_file target delete $tmpdir/$source.$ext
+	    }
 	}
 
 	if { $status != "pass" } {

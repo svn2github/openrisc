@@ -1,3 +1,14 @@
+2011-04-09  Jeremy Bennett  <jeremy.bennett@embecosm.com>
+
+	* BASE_VER: Updated for gcc-4.5.1-or32-1.0rc3.
+
+2011-02-17  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* gcc.c (do_spec_1) <%*>: Don't append a space unless the next
+	character is '}'.
+	* config/or32/or32.h (STARTFILE_SPEC): For mor32-newlib-*,
+	add crtparam-%*.o.
+
 2011-02-15  Joern Rennecke  <joern.rennecke@embecosm.com>
 
 	* config/or32/or32.md (frame_alloc_fp): New pattern.

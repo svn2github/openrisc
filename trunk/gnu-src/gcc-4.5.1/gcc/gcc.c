@@ -5868,7 +5868,12 @@ do_spec_1 (const char *spec, int inswitch, const char *soft_matched_part)
 	    if (soft_matched_part)
 	      {
 		do_spec_1 (soft_matched_part, 1, NULL);
-		do_spec_1 (" ", 0, NULL);
+		/* ??? Emitting a space after soft_matched_part gets in
+		   is undocumented and gets in the way of doing useful
+		   file name pasting; but for backward compatibility, we
+		   keep this behaviour when the next character is '}'.  */
+		if (p[1] == '}')
+		  do_spec_1 (" ", 0, NULL);
 	      }
 	    else
 	      /* Catch the case where a spec string contains something like

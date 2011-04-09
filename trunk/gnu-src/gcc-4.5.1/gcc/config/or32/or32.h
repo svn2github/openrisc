@@ -53,8 +53,11 @@ Boston, MA 02111-1307, USA.  */
 
 /* Make sure we pick up the crti.o, crtbegin.o, crtend.o and crtn.o files. */
 #undef STARTFILE_SPEC
-#define STARTFILE_SPEC "%{!shared:%{mnewlib:%(target_prefix)/lib/crt0.o} \
-			 %{!mnewlib:crt0.o%s} crti.o%s crtbegin.o%s}"
+#define STARTFILE_SPEC \
+  "%{!shared:"\
+    "%{mnewlib*:%(target_prefix)/lib/crt0.o} "\
+    "%{mnewlib-*:%(target_prefix)/lib/crtparam-%*.o} "\
+    "%{!mnewlib*:crt0.o%s} crti.o%s crtbegin.o%s}"
 
 #undef ENDFILE_SPEC
 #define ENDFILE_SPEC "crtend.o%s crtn.o%s"
@@ -65,17 +68,15 @@ Boston, MA 02111-1307, USA.  */
 
 /* Override previous definitions (linux.h). Newlib doesn't have a profiling
    version of the library, but it does have a debugging version (libg.a) */
-
 #undef LIB_SPEC 
-#define LIB_SPEC "%{!mnewlib:"						\
-		   "%{pthread:"						\
-		     "--whole-archive -lpthread --no-whole-archive} "	\
-		   "%{!p:%{!pg:-lc}}%{p:-lc_p}%{pg:-lc_p}} \
-                  %{mnewlib:%{!g:-lc -lor32 -lboard -u free -lc}	\
-                            %{g:-lg -lor32 -lboard -u free -lg}		\
-                              %{mboard=*:-L%(target_prefix)/lib/boards/%*} \
-			      %{!mboard=*:-L%(target_prefix)/lib/boards/or1ksim}}"
-
+#define LIB_SPEC "%{!mnewlib:"					         \
+		   "%{pthread:"						 \
+		     "--whole-archive -lpthread --no-whole-archive} "	 \
+		   "%{!p:%{!pg:-lc}}%{p:-lc_p}%{pg:-lc_p}}               \
+                  %{mnewlib:%{!g:-lc -lor32 -lboard -u free -lc}         \
+                            %{g:-lg -lor32 -lboard -u free -lg}	         \
+                            %{mboard=*:-L%(target_prefix)/lib/boards/%*} \
+			    %{!mboard=*:-L%(target_prefix)/lib/boards/or1ksim}}"
 
 #define TARGET_VERSION fprintf (stderr, " (OpenRISC 1000) Mask 0x%x", MASK_HARD_MUL);
 

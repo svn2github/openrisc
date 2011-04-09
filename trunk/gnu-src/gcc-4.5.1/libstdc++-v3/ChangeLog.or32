@@ -1,3 +1,13 @@
+2011-02-25  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* testsuite/21_strings/basic_string/requirements/typedefs.cc:
+	xfail for ! wchar.
+
+	* testsuite/18_support/numeric_limits/lowest.cc: Use dg-do run / xfail
+	to indicate ! wchar expected failure is for running.
+
+	* testsuite/ext/profile/mh.cc: No supported for uclibc.
+
 2011-02-04  Joern Rennecke  <joern.rennecke@embecosm.com>
 
 	* testsuite/18_support/numeric_limits/lowest.cc: xfail for ! wchar.

@@ -1,5 +1,5 @@
 // { dg-options "-D_GLIBCXX_PROFILE" }
-// { dg-do compile { target *-*-linux* } }
+// { dg-do compile { target { { *-*-linux* } && { ! { uclibc } } } } }
 
 // -*- C++ -*-
 

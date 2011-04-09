@@ -1,3 +1,17 @@
+2011-02-25  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* gcc.dg/c99-stdint-2.c: Don't xfail for wchar.
+
+	* lib/profopt.exp (profopt-execute): Add -fprofile-dir=. to optstr.
+	Manage profiling result files for $additional_sources.
+
+2011-02-24  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* gcc.dg/c99-stdint-1.c: Use dg-skip-if instead of dg-xfail-if.
+
+	* lib/target-supports.exp (check_gc_sections_available):
+	Return 0 for or32.
+
 2011-02-04  Joern Rennecke  <joern.rennecke@embecosm.com>
 
 	* lib/target-supports.exp (check_missing_uclibc_feature):

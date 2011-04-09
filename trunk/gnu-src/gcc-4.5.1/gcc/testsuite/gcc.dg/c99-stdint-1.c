@@ -9,7 +9,7 @@
    version).  */
 /* { dg-do compile } */
 /* { dg-options "-std=iso9899:1999 -pedantic-errors -fhosted" } */
-/* { dg-xfail-if "" { ! wchar } { "*" } { "" } } */
+/* { dg-skip-if "" { ! wchar } { "*" } { "" } } */
 
 #include <limits.h>
 #include <stdint.h>

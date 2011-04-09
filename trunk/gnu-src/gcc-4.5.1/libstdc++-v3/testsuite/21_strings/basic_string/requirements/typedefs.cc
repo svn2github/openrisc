@@ -1,5 +1,6 @@
 // { dg-options "-std=gnu++0x" }
 // { dg-do compile }
+// { dg-xfail-if "" { ! wchar } { "*" } { "" } }
 
 // Copyright (C) 2009 Free Software Foundation, Inc.
 //
