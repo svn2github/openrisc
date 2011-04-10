@@ -922,16 +922,6 @@ or32_output_move_double (rtx *operands)
 	  else
 	    abort ();
 	}
-      else if (GET_CODE (operands[1]) == CONST_INT)
-	{
-	  if (INTVAL (operands[1]) < 0)
-	    output_asm_insn ("\tl.addi  \t%0, r0, -1", operands);
-	  else
-	    output_asm_insn ("\tl.or    \t%0, r0, r0", operands);
-	  output_asm_insn ("\tl.movhi \t%H0, hi(%1)", operands);
-	  output_asm_insn ("\tl.ori   \t%H0, %H0, lo(%1)", operands);
-	  return "";
-	}
       else
 	abort ();
     case MEM:
