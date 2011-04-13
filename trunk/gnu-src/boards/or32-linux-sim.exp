@@ -49,8 +49,9 @@ proc telnet_close {hostname} {
 
 # We seem to only pass in the first of the arguments supplied to the command.
 
-# We seem to set the timeout to 30, no matter what. Not sure that is right
-# here.
+# The timeout is a mess. It seems to always be 10, not the timeout needed to
+# execute a regression test (typicall 300 seconds). Fixed by using our onw
+# timeout data.
 
 # @param[in] hostname  The board we are telnetting to
 # @param[in] cmd        The command to run
@@ -60,8 +61,11 @@ proc telnet_close {hostname} {
 # -----------------------------------------------------------------------------
 proc telnet_exec {hostname cmd args} {
     global timeout
-    global verbose
+    global verbos
     set output "(no output)"
+
+    # Save the old timeout, since its global, and we'll want to restore it.
+    set old_timeout $timeout
 
     verbose "Executing $hostname $cmd $args"
 
@@ -91,10 +95,9 @@ proc telnet_exec {hostname cmd args} {
 	}
     }
 
-    # Make the telnet session the current process.
+    # Make the telnet session the current process. Short timeout for this.
     set spawn_id [board_info $hostname fileid]
-    set old_timeout $timeout
-    set timeout 30
+    set timeout 10
 
     #Hit enter to make sure you get a shell prompt
     send -- "\r"
@@ -126,9 +129,17 @@ a shell prompt"]
 	}
     }
 
-    # Restore timeout for commands. Not sure why we only use the first of the
-    # arguments.
-    set timeout $old_timeout
+    # JPB to set custom timeout. Old timeout saved, so we can restore it,
+    # since it's global. Not sure why we only use the first of the arguments.
+    if [board_info $hostname exists telnet_exec_timeout] {
+	set timeout [board_info $hostname telnet_exec_timeout]
+	verbose "Telnet exec timeout set to $timeout"
+    } else {
+	# Appropriate default
+	set timeout 300
+	verbose "Telnet exec timeout set to default value $timeout"
+    }
+
     send "$cmd $pargs\r"
 
     expect {
@@ -138,6 +149,7 @@ a shell prompt"]
 	    if [info exists expect_out(buffer)] {
 		set execute_output_string $expect_out(buffer)
 	    }
+	    set timeout $old_timeout
 	    telnet_close $hostname
 	    return [list -1 "telnet to $hostname for $cmd $pargs failed (timeout)"]
 	}		
@@ -183,8 +195,72 @@ a shell prompt"]
 # features.
 
 # -----------------------------------------------------------------------------
+# Upload REMOTEFILE from HOST as LOCALFILE by FTP
+
+# This version swaps the argument order, which is what the regression test
+# seems to expect.
+
+# Also allows a custom timeout to be set.
+
+# @param[in] host        The host we are connected to.
+# @param[in] localfile   The local file to send
+# @param[in] remotefile  Name of file at remote end.
+# -----------------------------------------------------------------------------
+proc ftp_upload {host localfile remotefile} {
+    set prompt "ftp>"
+
+    verbose "ftping $remotefile from $host to $localfile"
+
+    # JPB to set custom timeout (not marked global, so we don't need to save
+    # and restore)
+    if [board_info $host exists ftp_upload_timeout] {
+	set timeout [board_info $host ftp_upload_timeout]
+	verbose "FTP upload timeout set to $timeout"
+    } else {
+	# Appropriate default
+	set timeout 15
+	verbose "FTP upload timeout set to default value $timeout"
+    }
+
+    set spawn_id [ftp_open $host]
+    if {$spawn_id < 0} {
+	return ""
+    }
+    set loop 1
+
+    while {$loop} {
+	send -i $spawn_id "get $remotefile $localfile\n"
+	expect {
+	    -i $spawn_id -re ".*Too many open files.*$prompt" {
+		ftp_close $host
+	    }
+	    -i $spawn_id -re ".*No such file or directory.*$prompt" {
+		set loop 0
+		set remotefile ""
+	    }
+	    -i $spawn_id -re "(^|\[\r\n\])226.*$prompt" {set loop 0}
+	    -i $spawn_id -re "(^|\[\r\n\])\[0-9\]\[0-9\]\[0-9\].*$prompt" {
+		set loop 0
+		set remotefile ""
+	    }
+	    -i $spawn_id default {
+		ftp_close $host
+	    }
+	}
+	if {$loop} {
+	    set spawn_id [ftp_open $host]
+	    if {$spawn_id < 0} {
+		return ""
+	    }
+	}
+    }
+    return $localfile
+}
+
+
+# -----------------------------------------------------------------------------
 # Download LOCALFILE to HOST as REMOTEFILE by FTP
-#
+
 # This version takes a user specified timeout, which we need for our slow
 # simulated connection.
 
@@ -214,6 +290,10 @@ proc ftp_download {host localfile remotefile} {
     if [board_info $host exists ftp_download_timeout] {
 	set timeout [board_info $host ftp_download_timeout]
 	verbose "FTP download timeout set to $timeout"
+    } else {
+	# Appropriate default
+	set timeout 15
+	verbose "FTP download timeout set to default value $timeout"
     }
 
     while {$loop} {
@@ -267,9 +347,9 @@ load_generic_config "unix"
 
 # Set up remote target info. We select the IP address using an external
 # program which knows about all available Linuxes.
-set linux_hostname [exec [file dirname $env(DEJAGNU)]/get-ip.sh]
+set linux_hostname [exec [file dirname $env(DEJAGNU)]/get-ip.sh --rotate]
 set_board_info hostname $linux_hostname
-send_user "OR32 target hostname is $linux_hostname"
+send_user "OR32 target hostname is $linux_hostname\n"
 
 set_board_info username root
 
@@ -285,14 +365,16 @@ set_board_info c++compiler /opt/or32-new/bin/or32-linux-g++
 set target_alias "or32-linux"
 
 set_board_info connect telnet
-set_board_info shell_prompt    "# "
-set_board_info telnet_username "root"
-set_board_info telnet_password ""
+set_board_info shell_prompt          "# "
+set_board_info telnet_username       "root"
+set_board_info telnet_password       ""
+set_board_info telnet_exec_timeout   300
 
 set_board_info file_transfer         ftp
 set_board_info ftp_username          root
 set_board_info ftp_password          ""
 set_board_info ftp_download_timeout  120
+set_board_info ftp_upload_timeout    120
 
 # Options for the simulator
 # set cfg_file [lookfor_file ${srcdir} libgloss/or32/sim.cfg]
@@ -302,9 +384,11 @@ set_board_info ftp_download_timeout  120
 # have been specified before we get here.
 #set_board_info compiler  "[find_gcc]"
 
-# We need to define the right flags if pthreads is to work.
-# set_board_info cflags    "-D_XOPEN_SOURCE=600"
-# set_board_info cxxflags  "-D_XOPEN_SOURCE=600"
+# We need to define this flag to generate default .gcda files if we are using
+# a stock compiler, without the profopt.exp changes. No problem with doubling
+# up the argument in normal circumstances.
+set_board_info cflags    "-fprofile-dir=."
+set_board_info cxxflags  "-fprofile-dir=."
 
 # No linker script needed.
 set_board_info ldscript ""

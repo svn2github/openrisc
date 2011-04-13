@@ -48,9 +48,8 @@ process_multilib_options ""
 # doesn't work with the standard expect commands, and will end up generating a
 # blank -isystem option, which confuses things severely.
 
-# It's sufficient just to specify -mnewlib. Bit of a shame to 
-# specify it both in cflags, which are also used when linking, so we'll get 
-# the libraries OK as well.
+# It's sufficient just to specify -mnewlib, but we explicitly specify
+# -mboard=or1ksim, althoug at present that is the default anyway.
 set_board_info compiler  "[find_gcc]"
 set_board_info cflags    "-mnewlib -mboard=or1ksim"
 

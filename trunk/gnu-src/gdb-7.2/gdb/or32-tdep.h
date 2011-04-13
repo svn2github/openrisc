@@ -442,8 +442,10 @@ struct gdbarch_tdep
   int           bytes_per_address;
 };
 
-/* Global disassembly instructions */
+/* Global variable controlling frame debug messages */
+extern int  frame_debug;
 
+/* Global disassembly instructions */
 extern int  print_insn_big_or32 (bfd_vma                  memaddr,
 				 struct disassemble_info *info);
 extern int  print_insn_little_or32 (bfd_vma                  memaddr,

@@ -1,3 +1,9 @@
+2011-04-09 Jeremy Bennett  <jeremy.bennett@embecosm.com>
+
+	* or32-tdep.c (or32_register_name): Use the sp, fp, lr and pc as
+	register names in lieu of r1, r2, r9 and npc.
+	* regformats/reg-or32.dat: use pc in lieu of npc.
+
 2011-03-27 Jeremy Bennett  <jeremy.bennett@embecosm.com>
 
 	* NEWS.or32, version.in: Updated for release 7.2-or32-1.0rc3.

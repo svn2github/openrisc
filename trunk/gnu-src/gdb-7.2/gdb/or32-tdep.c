@@ -24,19 +24,41 @@
 
 /*-----------------------------------------------------------------------------
    This version for the OpenRISC 1000 architecture is a rewrite by Jeremy
-   Bennett of the old GDB 5.3 interface to make use of gdbarch for GDB 6.8.
+   Bennett of the old GDB 5.3 interface to make use of gdbarch for GDB 6.8. It
+   has since been updated for GDB 7.2.
 
    The code tries to follow the GDB coding style.
 
    Commenting is Doxygen compatible.
 
+   Notes on the GDB 7.2 version
+   ============================
+
+   The primary change is to support the new GCC 4.5.1 compiler, which no
+   longer adds preceding underscores to global values and uses DWARF2 as its
+   default debug format.
+
+   This version now supports Or1ksim integrated as a simulator library, so
+   "target sim" will work. It does require Or1ksim to be available as a
+   library at configuration time, with the Or1ksim installation directory
+   specified by the argument --with-or1ksim.
+
+   The ad-hoc prologue analysis, which was always a weak point has been
+   stripped out and replaced with code based on the generic approach in
+   prologue-value.c and prologue-value.h.
+
+   The objective with this version is to get reasonable results on regression
+   testing. Something the older versions never achieved.
+
+   Notes on the GDB 6.8 version
+   ============================
+
    Much has been stripped out in the interests of getting a basic working
    system. This is described as the OpenRISC 1000 target architecture, so
-   should work with 16, 32 and 64 bit versions of that architecture and should
-   work whether or not they have floating point and/or vector registers.
-
-   There was never a capability to run simulator commands (no remote target
-   implemented the required function), so that has been removed.
+   should work with 32 and 64 bit versions of that architecture and should
+   work whether or not they have floating point and/or vector registers,
+   although to date it has only been tested with the 32-bit integer
+   archtiecture.
 
    The info trace command has been removed. The meaning of this is not clear -
    it relies on a value in register 255 of the debug group, which is
@@ -47,7 +69,7 @@
    this functionality.
 
    Support for multiple contexts (which was rudimentary, and not working) has
-   been removed. */
+   been removed.                                                             */
 /*---------------------------------------------------------------------------*/
 
 #include "demangle.h"
@@ -578,13 +600,13 @@ or32_register_name (struct gdbarch *gdbarch,
   static char *or32_gdb_reg_names[OR32_TOTAL_NUM_REGS] =
     {
       /* general purpose registers */
-      "r0",  "r1",  "r2",  "r3",  "r4",  "r5",  "r6",  "r7",
-      "r8",  "r9",  "r10", "r11", "r12", "r13", "r14", "r15",
+      "r0",  "sp",  "fp",  "r3",  "r4",  "r5",  "r6",  "r7",
+      "r8",  "lr",  "r10", "r11", "r12", "r13", "r14", "r15",
       "r16", "r17", "r18", "r19", "r20", "r21", "r22", "r23",
       "r24", "r25", "r26", "r27", "r28", "r29", "r30", "r31",
 
       /* previous program counter, next program counter and status register */
-      "ppc",   "npc",   "sr"
+      "ppc",   "pc",   "sr"
 
       /* Floating point and vector registers may appear as pseudo registers in
 	 the future. */
@@ -951,6 +973,13 @@ or32_unwind_pc (struct gdbarch    *gdbarch,
 {
   CORE_ADDR pc = frame_unwind_register_unsigned (next_frame, OR32_NPC_REGNUM);
 
+  if (frame_debug)
+    {
+      fprintf_unfiltered (gdb_stdlog,
+			  "or32_unwind_pc, next_frame = 0x%p, pc = 0x%p\n",
+			  next_frame, (void *) pc);
+    }
+
   return pc;
 
 }	/* or32_unwind_pc() */
@@ -972,6 +1001,13 @@ or32_unwind_sp (struct gdbarch    *gdbarch,
 		struct frame_info *next_frame) 
 {
   CORE_ADDR sp = frame_unwind_register_unsigned (next_frame, OR32_SP_REGNUM);
+
+  if (frame_debug)
+    {
+      fprintf_unfiltered (gdb_stdlog,
+			  "or32_unwind_sp, next_frame = 0x%p, sp = 0x%p\n",
+			  next_frame, (void *) sp);
+    }
 
   return sp;
 
@@ -1293,6 +1329,13 @@ or32_frame_cache (struct frame_info  *this_frame,
   CORE_ADDR                start_addr;
   CORE_ADDR                end_addr;
   
+  if (frame_debug)
+    {
+      fprintf_unfiltered (gdb_stdlog,
+			  "or32_frame_cache, prologue_cache = 0x%p\n",
+			  *prologue_cache);
+    }
+
   /* Nothing to do if we already have this info */
   if (NULL != *prologue_cache)
     {
@@ -1311,6 +1354,11 @@ or32_frame_cache (struct frame_info  *this_frame,
   /* Return early if GDB couldn't find the function.  */
   if (start_addr == 0)
     {
+      if (frame_debug)
+	{
+	  fprintf_unfiltered (gdb_stdlog, "  couldn't find function\n");
+	}
+
       return  info;
     }
 
@@ -1473,6 +1521,14 @@ or32_frame_cache (struct frame_info  *this_frame,
   /* Build the frame ID */
   trad_frame_set_id (info, frame_id_build (this_sp_for_id, start_addr));
 
+  if (frame_debug)
+    {
+      fprintf_unfiltered (gdb_stdlog, "  this_sp_for_id = 0x%p\n",
+			  (void *) this_sp_for_id);
+      fprintf_unfiltered (gdb_stdlog, "  start_addr     = 0x%p\n",
+			  (void *) start_addr);
+    }
+
   return info;
 
 }	/* or32_frame_cache() */
@@ -1560,6 +1616,7 @@ static const struct frame_unwind or32_frame_unwind = {
 };
 
 
+#if 0
 /*----------------------------------------------------------------------------*/
 /*!Return the base address of the frame
 
@@ -1608,6 +1665,7 @@ or32_frame_base_sniffer (struct frame_info *this_frame)
   return &or32_frame_base;
 
 }	/* or32_frame_base_sniffer () */
+#endif
 
 
 /* -------------------------------------------------------------------------- */
@@ -1716,10 +1774,12 @@ or32_gdbarch_init (struct gdbarch_info  info,
   set_gdbarch_push_dummy_call       (gdbarch, or32_push_dummy_call);
   set_gdbarch_dummy_id              (gdbarch, or32_dummy_id);
 
+#if 0
   /* Set up sniffers for the frame base. Use DWARF debug info if available,
      otherwise use our own sniffer. */
   frame_base_append_sniffer (gdbarch, dwarf2_frame_base_sniffer);
   frame_base_append_sniffer (gdbarch, or32_frame_base_sniffer);
+#endif
 
   /* Frame unwinders. Use DWARF debug info if available, otherwise use our
      own unwinder. */

@@ -1,5 +1,5 @@
 name:or32
-expedite:sp,lr,npc
+expedite:sp,lr,pc
 32:r0
 32:sp
 32:fp
@@ -33,5 +33,5 @@ expedite:sp,lr,npc
 32:r30
 32:r31
 32:ppc
-32:npc
+32:pc
 32:sr

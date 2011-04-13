@@ -48,16 +48,14 @@ Boston, MA 02111-1307, USA.  */
 
 #undef CPP_SPEC
 #define CPP_SPEC \
-  "%{!mnewlib*:%{pthread:-D_XOPEN_SOURCE=700}}" \
-  "%{mnewlib*:-idirafter %(target_prefix)/newlib-include}"
+  "%{!mnewlib:%{pthread:-D_XOPEN_SOURCE=700}}"
 
 /* Make sure we pick up the crti.o, crtbegin.o, crtend.o and crtn.o files. */
 #undef STARTFILE_SPEC
 #define STARTFILE_SPEC \
   "%{!shared:"\
-    "%{mnewlib*:%(target_prefix)/lib/crt0.o} "\
-    "%{mnewlib-*:%(target_prefix)/lib/crtparam-%*.o} "\
-    "%{!mnewlib*:crt0.o%s} crti.o%s crtbegin.o%s}"
+    "%{mnewlib:%(target_prefix)/lib/crt0.o} "\
+    "%{!mnewlib:crt0.o%s} crti.o%s crtbegin.o%s}"
 
 #undef ENDFILE_SPEC
 #define ENDFILE_SPEC "crtend.o%s crtn.o%s"
@@ -789,7 +787,6 @@ enum reg_class
 #define RETURN_ADDR_RTX(COUNT, FP) \
   ((COUNT) ? NULL_RTX : get_hard_reg_initial_val (Pmode, LINK_REGNUM))
 
-
 /* Addressing modes, and classification of registers for them.  */
 
 /* #define HAVE_POST_INCREMENT */
@@ -1005,12 +1002,8 @@ enum reg_class
 #undef  DWARF2_FRAME_INFO
 #define DWARF2_FRAME_INFO 1
 
-/* Macro to idenfity where the incoming return address is on a function call
-   before the start of the prologue (i.e. the link register). Used to produce
-   DWARF2 frame debug info when DWARF2_UNWIND_INFO is non-zero. Override any
-   default value. */
-#undef  INCOMING_RETURN_ADDR_RTX
-#define INCOMING_RETURN_ADDR_RTX gen_rtx_REG (Pmode, LINK_REGNUM)
+/* Macro specifying which register holds the return address */
+#define DWARF_FRAME_RETURN_COLUMN DWARF_FRAME_REGNUM (LINK_REGNUM)
 
 /* Where is the start of our stack frame in relation to the end of the
    previous stack frame at the start of a function, before the prologue */
