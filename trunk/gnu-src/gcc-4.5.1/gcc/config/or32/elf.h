@@ -30,3 +30,5 @@ Boston, MA 02111-1307, USA.  */
 /* or32 debug info support is controlled by tm.h header files we include:
    dbxelf.h enables optional stabs debug info.
    elfos.h sets PREFERRED_DEBUGGING_TYPE to DWARF2_DEBUG .  */
+
+#define DRIVER_SELF_SPECS "%{!mno-newlib:-mnewlib}"

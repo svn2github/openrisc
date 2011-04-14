@@ -64,3 +64,5 @@ Boston, MA 02111-1307, USA.  */
 /* The GNU C++ standard library requires that these macros be defined.  */
 #undef CPLUSPLUS_CPP_SPEC
 #define CPLUSPLUS_CPP_SPEC "-D_GNU_SOURCE %(cpp)"
+
+#undef DRIVER_SELF_SPECS
