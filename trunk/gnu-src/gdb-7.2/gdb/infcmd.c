@@ -2050,14 +2050,20 @@ registers_info (char *addr_exp, int fpregs)
 	  {
 	    /* User registers lie completely outside of the range of
 	       normal registers.  Catch them early so that the target
-	       never sees them.  */
+	       never sees them.
+
+	       13-Apr-11 Jeremy Bennett: Formatting works for multiple
+	       register names on the command line and matches the default
+	       register printing. */
 	    if (regnum >= gdbarch_num_regs (gdbarch)
 			  + gdbarch_num_pseudo_regs (gdbarch))
 	      {
 		struct value_print_options opts;
 		struct value *val = value_of_user_reg (regnum, frame);
+		int regname_len = (int) (end - start);
 
-		printf_filtered ("%s: ", start);
+		printf_filtered ("%.*s", regname_len, start);
+		print_spaces_filtered (15 - regname_len, gdb_stdout);
 		get_formatted_print_options (&opts, 'x');
 		print_scalar_formatted (value_contents (val),
 					check_typedef (value_type (val)),

@@ -51,7 +51,7 @@ process_multilib_options ""
 # It's sufficient just to specify -mnewlib, but we explicitly specify
 # -mboard=or1ksim, althoug at present that is the default anyway.
 set_board_info compiler  "[find_gcc]"
-set_board_info cflags    "-mnewlib -mboard=or1ksim"
+set_board_info cflags    "-mboard=or1ksim"
 
 # No linker script needed.
 set_board_info ldscript ""

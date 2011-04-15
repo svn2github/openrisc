@@ -1,3 +1,12 @@
+2011-04-13 Jeremy Bennett  <jeremy.bennett@embecosm.com>
+
+	* or32-tdep.c (or32_register_name): revert to use r1, r2, r9 and
+	npc.
+	(or32_unwind_sp, or32_unwind_pc): Added frame debug support.
+	* regformats/reg-or32.dat: revert to use npc in lieu of pc.
+	* infcmd.c (registers_info): print only the register under
+	consideration in a field width of 15.
+
 2011-04-09 Jeremy Bennett  <jeremy.bennett@embecosm.com>
 
 	* or32-tdep.c (or32_register_name): Use the sp, fp, lr and pc as

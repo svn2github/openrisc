@@ -600,13 +600,13 @@ or32_register_name (struct gdbarch *gdbarch,
   static char *or32_gdb_reg_names[OR32_TOTAL_NUM_REGS] =
     {
       /* general purpose registers */
-      "r0",  "sp",  "fp",  "r3",  "r4",  "r5",  "r6",  "r7",
-      "r8",  "lr",  "r10", "r11", "r12", "r13", "r14", "r15",
+      "r0",  "r1",  "r2",  "r3",  "r4",  "r5",  "r6",  "r7",
+      "r8",  "r9",  "r10", "r11", "r12", "r13", "r14", "r15",
       "r16", "r17", "r18", "r19", "r20", "r21", "r22", "r23",
       "r24", "r25", "r26", "r27", "r28", "r29", "r30", "r31",
 
       /* previous program counter, next program counter and status register */
-      "ppc",   "pc",   "sr"
+      "ppc",   "npc",   "sr"
 
       /* Floating point and vector registers may appear as pseudo registers in
 	 the future. */
@@ -971,13 +971,17 @@ static CORE_ADDR
 or32_unwind_pc (struct gdbarch    *gdbarch,
 		struct frame_info *next_frame) 
 {
+  if (frame_debug)
+    {
+      fprintf_unfiltered (gdb_stdlog, "or32_unwind_pc, next_frame=%d\n",
+			  frame_relative_level (next_frame));
+    }
+
   CORE_ADDR pc = frame_unwind_register_unsigned (next_frame, OR32_NPC_REGNUM);
 
   if (frame_debug)
     {
-      fprintf_unfiltered (gdb_stdlog,
-			  "or32_unwind_pc, next_frame = 0x%p, pc = 0x%p\n",
-			  next_frame, (void *) pc);
+      fprintf_unfiltered (gdb_stdlog, "or32_unwind_pc, pc=0x%p\n", (void *) pc);
     }
 
   return pc;
@@ -1000,13 +1004,17 @@ static CORE_ADDR
 or32_unwind_sp (struct gdbarch    *gdbarch,
 		struct frame_info *next_frame) 
 {
+  if (frame_debug)
+    {
+      fprintf_unfiltered (gdb_stdlog, "or32_unwind_sp, next_frame=%d\n",
+			  frame_relative_level (next_frame));
+    }
+
   CORE_ADDR sp = frame_unwind_register_unsigned (next_frame, OR32_SP_REGNUM);
 
   if (frame_debug)
     {
-      fprintf_unfiltered (gdb_stdlog,
-			  "or32_unwind_sp, next_frame = 0x%p, sp = 0x%p\n",
-			  next_frame, (void *) sp);
+      fprintf_unfiltered (gdb_stdlog, "or32_unwind_sp, sp=0x%p\n", (void *) sp);
     }
 
   return sp;

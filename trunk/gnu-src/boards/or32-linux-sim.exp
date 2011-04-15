@@ -161,7 +161,7 @@ a shell prompt"]
     #is used as a regsub pattern (2 lines down), so we replace all "+"s with "."
     regsub -all "\\+" $cmd "." cmd
     regsub -all $cmd "$expect_out(buffer)" {} output
-    regsub $shell_prompt $output {} output
+    regsub "\(~ \)?$shell_prompt" $output {} output
     regsub -all "\[\r\n\]" $output {} output
 
     #Check the return status. Use a short timeout for this.
@@ -171,7 +171,7 @@ a shell prompt"]
 
     #Regsub the output to get the status number
     regsub -all {echo \$\?} $expect_out(buffer) {} status
-    regsub $shell_prompt $status {} status
+    regsub "\(~ \)?$shell_prompt" $status {} status
     regsub -all "\[\r\n \]" $status {} status
 
     #This probably isn't neccessary..
@@ -368,7 +368,7 @@ set_board_info connect telnet
 set_board_info shell_prompt          "# "
 set_board_info telnet_username       "root"
 set_board_info telnet_password       ""
-set_board_info telnet_exec_timeout   300
+set_board_info telnet_exec_timeout   1200
 
 set_board_info file_transfer         ftp
 set_board_info ftp_username          root
