@@ -1,6 +1,9 @@
 2011-04-20  Julius Baxter  <julius@opencores.org>
 	* ucos-port/os_cpu_c.c: 
 	(OSTaskStkInit): Made stack initialisation skip red zone (128 bytes).
+	* ucos-port/os_cpu_a.S:
+	(UserISR): Fix register used on entry. (submitted by user keviny)
+
 2011-01-14  Julius Baxter  <julius@opencores.org>
 	* config.mk: <LDFLAGS>: Added entry point at 0x100 (decimal 256).
 

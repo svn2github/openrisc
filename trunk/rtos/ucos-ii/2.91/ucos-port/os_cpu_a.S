@@ -19,13 +19,17 @@
 		_reset		Boot code installed at interrupt vector 0x100
 		_start      	Start up sequence
 
-		_OSTickISR  	Operating system timer tick interrupt service routine
-		_OSStartHighRdy	Starts the highest priority task that is available to run
+		_OSTickISR  	Operating system timer tick interrupt service
+	                        routine
+		_OSStartHighRdy	Starts the highest priority task that is
+	                        available to run
 		_OSCtxSwBP
 		_OSCtxSw	Task switch
 		_OSIntCtxSw 	Task switch after interrupt
-		_UserISR    	Interrupt service routine template - requires code
-		_align		Attempts to recover from memory alignment errors
+		_UserISR    	Interrupt service routine template - requires
+	                        code
+		_align		Attempts to recover from memory alignment
+	                        errors
 		nest_not_one
 	
 	External Routines	:
@@ -72,7 +76,8 @@ Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 
 #define RED_ZONE_SIZE 128
 #define STK_FRAME_SIZE (128+RED_ZONE_SIZE)
-#define SPR_TTMR_LOAD  (SPR_TTMR_IE | SPR_TTMR_RT | ((IN_CLK/TICKS_PER_SEC) & SPR_TTMR_PERIOD))
+#define SPR_TTMR_LOAD  (SPR_TTMR_IE | SPR_TTMR_RT | \
+	((IN_CLK/TICKS_PER_SEC) & SPR_TTMR_PERIOD))
 
 /* function prototypes */
 
@@ -414,9 +419,11 @@ OSCtxSw:
 	/* l.sys exception for now so we are in supervisor mode */
 	/* exception  - recover pc from epcr */
 
-        l.mfspr r3,r0,SPR_EPCR_BASE	/* save program counter that was put in exception register */
+        l.mfspr r3,r0,SPR_EPCR_BASE	/* save program counter that was put in
+						exception register */
         l.sw    0(r1),r3
-        l.mfspr r3,r0,SPR_ESR_BASE	/* save status register that was put in exception register */
+        l.mfspr r3,r0,SPR_ESR_BASE	/* save status register that was put in
+						exception register */
         l.sw    4(r1),r3
 
         store_context
@@ -473,15 +480,16 @@ OSCtxSwBP:
 */
 OSStartHighRdy:
 
-        l.jal   OSTaskSwHook           /* call OSTaskSwHook */
+        l.jal   OSTaskSwHook            /* call OSTaskSwHook */
         l.nop
 
-        load32i r3,OSRunning           /* r3= &OSRunning */
+        load32i r3,OSRunning            /* r3= &OSRunning */
 
         l.ori   r4,r0, 0x01             /* set OSRunning == TRUE */
         l.sb    0(r3), r4
-                                        /* load stack pointer from next task's TCB area  */
-        load32i r3,OSTCBHighRdy        /* r3 = &OSTCBHighRdy */
+                                        /* load stack pointer from next task's
+	                                   TCB area  */
+        load32i r3,OSTCBHighRdy         /* r3 = &OSTCBHighRdy */
         l.lwz   r3,0(r3)                /* r3 = &OS_TCB */
         l.lwz   r1, 0(r3)               /* stack is the first element */
 
@@ -507,9 +515,11 @@ OSStartHighRdy:
 ------------------------------
 */
 OSTickISR:
-        l.mfspr r3,r0,SPR_EPCR_BASE	/* save program counter that was put in exception register */
+        l.mfspr r3,r0,SPR_EPCR_BASE	/* save program counter that was put
+	                                   in exception register */
         l.sw    0(r1),r3
-        l.mfspr r3,r0,SPR_ESR_BASE	/* save status register that was put in exception register */
+        l.mfspr r3,r0,SPR_ESR_BASE	/* save status register that was put in
+	                                   exception register */
         l.sw    4(r1),r3
 
         store_context
@@ -551,8 +561,9 @@ nest_not_one:
         /*Call OSIntExit()*/
         l.jal   OSIntExit
         l.nop
-                                        /* load stack pointer from next task's TCB area  */
-        load32i r3,OSTCBHighRdy        /* r3 = &OSTCBHighRdy */
+                                        /* load stack pointer from next task's
+	                                   TCB area  */
+        load32i r3,OSTCBHighRdy         /* r3 = &OSTCBHighRdy */
         l.lwz   r3,0(r3)                /* r3 = &OS_TCB */
         l.lwz   r1, 0(r3)               /* stack is the first element */
 
@@ -579,10 +590,12 @@ nest_not_one:
 ------------------------------
 */
 UserISR:
-        l.mfspr r2,r0,SPR_EPCR_BASE	/* save program counter that was put in exception register */
-        l.sw    0(r1),r2
-        l.mfspr r2,r0,SPR_ESR_BASE	/* save status register that was put in exception register */
-        l.sw    4(r1),r2
+        l.mfspr r3,r0,SPR_EPCR_BASE	/* save program counter that was put in
+						exception register */
+        l.sw    0(r1),r3
+        l.mfspr r3,r0,SPR_ESR_BASE	/* save status register that was put
+						in exception register */
+        l.sw    4(r1),r3
 
         store_context
 /* either call OSIntEnter or Increment OSIntNesting */
