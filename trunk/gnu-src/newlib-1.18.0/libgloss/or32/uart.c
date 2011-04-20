@@ -29,7 +29,7 @@
    with Doxygen.                                                              */
 /* -------------------------------------------------------------------------- */
 
-#include "or1k-newlib-support.h"
+#include "or1k-support.h"
 #include "uart.h"
 
 /*! Macro to access a UART register */

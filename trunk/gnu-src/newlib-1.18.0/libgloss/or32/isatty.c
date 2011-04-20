@@ -1,4 +1,4 @@
-/* isatty-uart.c. Implementation of the _isatty syscall for newlib with UART
+/* isatty.c. Implementation of the _isatty syscall for newlib
 
    Copyright (C) 2004, Jacob Bower
    Copyright (C) 2010, Embecosm Limited <info@embecosm.com>
@@ -32,7 +32,7 @@
 #include <errno.h>
 #include <unistd.h>
 
-#include "or1k-newlib-support.h"
+#include "or1k-support.h"
 
 #undef ERRNO
 extern int  errno;

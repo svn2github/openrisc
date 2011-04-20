@@ -32,7 +32,7 @@
 #include <errno.h>
 #include <unistd.h>
 
-#include "or1k-newlib-support.h"
+#include "or1k-support.h"
 
 
 #undef errno
