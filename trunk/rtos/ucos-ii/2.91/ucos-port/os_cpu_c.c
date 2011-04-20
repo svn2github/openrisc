@@ -287,7 +287,8 @@ void  OSTaskStatHook (void)
 *********************************************************************************************************
 */
 
-OS_STK  *OSTaskStkInit (void (*task)(void *pd), void *pdata, OS_STK *ptos, INT16U opt)
+OS_STK  *OSTaskStkInit (void (*task)(void *pd), void *pdata, OS_STK *ptos, 
+			INT16U opt)
 {
   OS_STK *stk;
   OS_STK *fp;
@@ -298,6 +299,7 @@ OS_STK  *OSTaskStkInit (void (*task)(void *pd), void *pdata, OS_STK *ptos, INT16
 
   opt    = opt;                           /* 'opt' is not used, prevent warning */
   stk    = ptos;                          /* Load stack pointer */
+  stk    -=32;                            /* Skip over red zone, 32 words */
   stk--;
 
   *stk-- = (OS_STK)(pdata);               /* fp+0 -> parameter 0    */
