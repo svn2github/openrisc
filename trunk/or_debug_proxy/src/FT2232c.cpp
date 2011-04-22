@@ -446,7 +446,13 @@ FTC_STATUS FT2232c::FTC_OpenSpecifiedDevice(LPSTR lpDeviceName, DWORD dwLocation
         {
 
           // To open a device in Linux the FT_OPEN_BY_DESCRIPTION	has to be used. Rene	 
-          Status = FT_OpenEx((PVOID)lpDeviceName, FT_OPEN_BY_DESCRIPTION, &ftHandle);
+	  Status = FT_OpenEx((PVOID)lpDeviceName, FT_OPEN_BY_DESCRIPTION, &ftHandle);
+
+#ifdef DEBUG_USB_DRVR_FUNCS
+	  printf("FT_OpenEx status: %d\n", (int)Status);
+#endif
+
+	  //Status = FT_OpenEx((PVOID)lpDeviceName, FT_OPEN_BY_SERIAL_NUMBER, &ftHandle);
           // Linux das not return the LocationID
           // Status = FT_OpenEx((PVOID)dwLocationID, FT_OPEN_BY_LOCATION, &ftHandle);
 

@@ -1,5 +1,4 @@
-#
-#****************************************************************************#
+##****************************************************************************#
 #                                                                            #
 #                    H E A D E R   I N F O R M A T I O N                     #
 #                                                                            #
@@ -41,12 +40,12 @@
 
 # Common Flags
 COMMON_CPPFLAGS = -I./includes
-COMMON_CXXFLAGS = -O3
+COMMON_CXXFLAGS = -O2 -g
 COMMON_LDFLAGS  = 
 
 # Flags for static library
 STATIC_LIBDIR   = lib
-STATIC_LIB      = libftd2xx.a
+STATIC_LIB      = libftd2xx.a.0.4.16
 STATIC_LDFLAGS  = $(COMMON_LDFLAGS) $(STATIC_LIBDIR)/$(STATIC_LIB) \
                   -lrt -lpthread -ldl
 # Defines to enable certain endpoint handling functions to be used

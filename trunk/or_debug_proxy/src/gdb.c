@@ -3581,6 +3581,11 @@ int gdb_set_chain(int chain)
 {
 	switch (chain) {
 	case SC_RISC_DEBUG:
+		if (no_cpu)
+			return ERR_NONE;
+		else
+			gdb_chain = chain;
+		return ERR_NONE;
 	case SC_REGISTER:
 	case SC_TRACE:
 	case SC_WISHBONE:
@@ -3637,6 +3642,8 @@ static void swap_buf(char *p_buf, int len)
 /*---------------------------------------------------------------------------*/
 static void set_stall_state(int state)
 {
+	if (no_cpu)
+		return;
 
 	if (state == 0) {
 		err = dbg_cpu0_write_ctrl(0, 0);	/* unstall or1k */

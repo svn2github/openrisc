@@ -165,28 +165,57 @@ void usb_dbg_test() {
   
   uint32_t npc, ppc, r1; 
   unsigned char stalled;
-  
-  printf("Stalling or1k\n");
+  uint32_t zero = 0;
+
+  printf("Stalling OR1K CPU0\n");
   err = dbg_cpu0_write_ctrl(0, 0x01);      // stall or1k
   
   err = dbg_cpu0_read_ctrl(0, &stalled);
   if (!(stalled & 0x1)) {
-    printf("or1k should be stalled\n");   // check stall or1k
+    printf("OR1K CPU0 should be stalled\n");   // check stall or1k
     exit(1);
   }
-  uint32_t zero = 0;
-  /* Clear Debug Reason Register (DRR) 0x3015 */
-  err = dbg_cpu0_write((6 << 11) + 21, &zero, 4);
-  err = dbg_cpu0_read((0 << 11) + 16, &npc, 4);  /* Read NPC */
-  err = dbg_cpu0_read((0 << 11) + 18, &ppc, 4);  /* Read PPC */
-  err = dbg_cpu0_read(0x401, &r1, 4);  /* Read R1 */
 
   if (err)
     {
-      printf("Jtag error %d occured; exiting.", err);  
-      FT2232_USB_JTAG_CloseDevice();
-      exit(1);
+      printf("Error %d occured when attempting to stall CPU\n", err);
+      goto do_exit;
     }
+  
+  /* Clear Debug Reason Register (DRR) 0x3015 */
+  if (!err)
+	  err = dbg_cpu0_write((6 << 11) + 21, &zero, 4);
+  if (err)
+  {
+	  printf("Error %d occured when writing CPU DRR register\n",err);
+	  goto do_exit;
+	  
+  }
+  if (!err)
+	  err = dbg_cpu0_read((0 << 11) + 16, &npc, 4);  /* Read NPC */
+  if (err)
+  {
+	  printf("Error %d occured when reading CPU NPC\n",err);
+	  goto do_exit;
+	  
+  }
+  if (!err)
+	  err = dbg_cpu0_read((0 << 11) + 18, &ppc, 4);  /* Read PPC */
+  if (err)
+  {
+	  printf("Error %d occured when reading CPU PPC\n",err);
+	  goto do_exit;
+	  
+  }
+  if (!err)
+	  err = dbg_cpu0_read(0x401, &r1, 4);  /* Read R1 */
+  if (err)
+  {
+	  printf("Error %d occured when reading CPU GPR1\n",err);
+	  goto do_exit;
+	  
+  }
+
   printf("Read      npc = %.8x ppc = %.8x r1 = %.8x\n", npc, ppc, r1);
   
   /*
@@ -201,6 +230,11 @@ void usb_dbg_test() {
   printf("err = %d\n",err); 
   */
   return;
+
+do_exit:
+  printf("Exiting\n");
+  FT2232_USB_JTAG_CloseDevice();
+  exit(1);
 }
 
 
@@ -321,9 +355,16 @@ int usb_dbg_reset() {
   // uint32_t err;
   uint32_t id;
   uint32_t reinit_count=0;
- retry_jtag_init:	
-  if (init_usb_jtag() > 0)
-    return DBG_ERR_CRC;
+  int err;
+ retry_jtag_init:
+  err = init_usb_jtag();
+  if (err)
+  {
+#ifdef DEBUG_USB_DRVR_FUNCS
+	  printf("init_usb_jtag error %d\n",err);
+#endif
+	  return DBG_ERR_CRC;
+  }
   
   // Set ID code instruction in IR
   usb_set_tap_ir(JI_IDCODE);

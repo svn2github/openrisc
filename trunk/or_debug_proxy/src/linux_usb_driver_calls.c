@@ -176,11 +176,11 @@ void reinit_usb_jtag(void)
 int init_usb_jtag()
 {
   FTC_STATUS Status = FTC_SUCCESS;
-  DWORD dwNumDevices = 0;
   //char szDeviceName[100];
   //char szDeviceName[] = "Dual RS232 A"; // Original, unmodified FT2232 device name
   // We now open the device by its name
-  char szDeviceName[] = "ORSoC OpenRISC debug cable A\0"; // ORSoC debug cable UART A name
+  //char szDeviceName[] = "ORSoC OpenRISC debug cable A\0"; // ORSoC debug cable UART A name
+  char* szDeviceName;
   DWORD dwLocationID = 0;
   DWORD dwClockFrequencyHz = 0;
   FTC_INPUT_OUTPUT_PINS LowInputOutputPinsData;
@@ -191,70 +191,51 @@ int init_usb_jtag()
   //char szDllVersion[10];
 
   // Has been changed to hardcode load device named "ORSoC OpenRISC debug cable A"; - jb 090301
-  
-  /*
-  //Status = JTAG_GetNumDevices(&dwNumDevices);
-  Status = pFT2232cMpsseJtag->JTAG_GetNumDevices(&dwNumDevices);
-  if (DEBUG_USB_DRVR_FUNCS) 
-    {
-      if (Status == FTC_SUCCESS)
-	printf("JTAG_GetNumDevices detected %ld available FT2232x device(s) connected to the system.\n", dwNumDevices);
-      else 
-	{
-	  printf("GetNumDevices failed with status code 0x%lx\n", Status);
-	  exit(-1);
-	}
-    }
+#define MAX_DEVICES             5
+  char *  pcBufRead = NULL;
+  char *  pcBufLD[MAX_DEVICES + 1];
+  char    cBufLD[MAX_DEVICES][64];
+  FT_STATUS       ftStatus;
+  int     iNumDevs = 0;
+  int     i;
+        
+  for(i = 0; i < MAX_DEVICES; i++) {
+	  pcBufLD[i] = cBufLD[i];
+  }
+  pcBufLD[MAX_DEVICES] = NULL;
+        
+  ftStatus = FT_ListDevices(pcBufLD, &iNumDevs, FT_LIST_ALL | FT_OPEN_BY_DESCRIPTION);
 
-  if (dwNumDevices == 0)
-    {
-      printf("Error: USB Debugger device not detected\n");
-      exit(-1);
-    }
-  
-  Status = pFT2232cMpsseJtag->JTAG_GetDllVersion(szDllVersion, 10);
-  
-  if (DEBUG_USB_DRVR_FUNCS) 
-    printf("JTAG_GetDLLVersion returned Status: 0x%lx and version %s\n", Status, szDllVersion);
+  if(ftStatus != FT_OK) {
+	  printf("Error: FT_ListDevices(%d)\n", (int) ftStatus);
+	  return 1;
+  }
+#if DEBUG_USB_DRVR_FUNCS==1
+  for(i = 0; ( (i <MAX_DEVICES) && (i < iNumDevs) ); i++) {
+	  printf("Device %d Description - %s\n", i, cBufLD[i]);
+  }
+#endif
 
-  */
-  dwNumDevices = 1;
+  szDeviceName = cBufLD[0]; // Should be first device
 
   if (Status == FTC_SUCCESS)
     {
       
-      
-      if (dwNumDevices == 1)
-	{
-	  /*
-	  Status = pFT2232cMpsseJtag->JTAG_GetDeviceNameLocationID(0,szDeviceName,50, &dwLocationID); 
-	  
-	  if (DEBUG_USB_DRVR_FUNCS) 
-	    // In the Windows version it shows Dual RS323 A at: 0x321
-	    printf("JTAG_GetDeviceNameLocID: %s at: 0x%lx\n", szDeviceName, dwLocationID);      
-	  */
-	  dwLocationID = 0;
-	  
-	  if (Status == FTC_SUCCESS)
+	    dwLocationID = 0;
+	    
+	    if (Status == FTC_SUCCESS)
 	    {
-	      Status = pFT2232cMpsseJtag->JTAG_OpenSpecifiedDevice(szDeviceName,dwLocationID, &ftHandle);
+#if DEBUG_USB_DRVR_FUNCS==1
+		    printf("JTAG_OpenSpecifiedDevice %s\n", szDeviceName);
+#endif
+		    Status = pFT2232cMpsseJtag->JTAG_OpenSpecifiedDevice(szDeviceName,dwLocationID, &ftHandle);
+#if DEBUG_USB_DRVR_FUNCS==1
+		    printf("JTAG_OpenSpecifiedDevice status: %d (%s)\n",(int)Status, EN_Common_Errors[Status]);
+#endif
+		    
 	    }
-	}
-      else 
-	// When there's more than 1 device, will just open first device. Perhaps implement selection menu for
-	// users in event that there's more than 1, but for now just hard code this to open the same device
-	{
-	  //if (dwNumDevices == 2)
-	  //{
-	  Status=pFT2232cMpsseJtag->JTAG_GetDeviceNameLocationID(1,szDeviceName,50,&dwLocationID);
-	  
-	  if (Status == FTC_SUCCESS)
-	    {
-	      Status = pFT2232cMpsseJtag->JTAG_OpenSpecifiedDevice(szDeviceName, dwLocationID, &ftHandle);
-	    }
-	  //}
-	}
-
+	    
+	    
       // Try initialising and obtaining a handle to a specific device
       if (Status == FTC_SUCCESS)
 	{

@@ -18,6 +18,7 @@ OpenRISC processor system via the OpenCores USB debug cable.
 0.1.5 090903 jb@orsoc.se
 0.1.6 110307 jb@orsoc.se
 0.1.7 110308 jb@orsoc.se
+0.1.8 110422 jb@orsoc.se
 ===============================================================================
 -- Installation --
 ===============================================================================
@@ -101,6 +102,23 @@ specialised drivers from FTDI called the D2XX drivers.
 The Linux driver can be obtained from FTDI Chip's website,
 http://www.ftdichip.com, and is found under the links to "Drivers" and then
 "D2XX".
+
+WARNING: Later versions of the ftd2xx library appear not to work in the same way
+as the earlier versions. Version 1.0.4 does not open the USB device unless the
+kernel module ftdi_sio is unloaded (sudo rmmod ftdi_sio), however unloading this
+module removes device nodes /dev/ttyUSB0 and /dev/ttyUSB1. These later 
+libraries can be used with or_debug_proxy but the because the ftdi_sio kernel 
+module must be unloaded first the serial consoles disappear. With this in mind
+it is probably better to use the older driver that does not require this kernel
+module be unloaded.
+
+FTDI Chip do not make older versions of their drivers available on their website
+but there are locations where version the static 0.4.16 library can be obtained.
+
+See the discussion at the following URL for a link to the older static library
+- http://opencores.org/forum,OpenRISC,0,4170 - which must be downloaded and
+placed in the or_debug_proxy/lib path and a static compile performed, as 
+outline below.
 
 Statically linked driver:
 

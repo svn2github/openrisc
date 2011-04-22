@@ -91,6 +91,9 @@ int current_chain = -1;
 /* The chain that should be currently selected. */
 int dbg_chain = -1;
 
+/* By default, provide access to CPU */
+int no_cpu = 0;
+
 int main(int argc, char *argv[])
 {
 
@@ -98,6 +101,7 @@ int main(int argc, char *argv[])
 	int gdb_protocol = GDB_PROTOCOL_NONE;
 	endpoint_target = ENDPOINT_TARGET_NONE;
 	int inp_arg = 1;
+	
 
 	// Check we were compiled with at least one endpoint enabled
 #ifndef USB_ENDPOINT_ENABLED
@@ -129,6 +133,8 @@ int main(int argc, char *argv[])
 			endpoint_target = ENDPOINT_TARGET_OTHER;
 		} else if (strcmp(argv[inp_arg], "-k") == 0) {
 			kernel_debug = 1;
+		} else if (strcmp(argv[inp_arg], "-b") == 0) {
+			no_cpu = 1;
 		} else {
 			serverPort = strtol(argv[2], &s, 10);
 		}
@@ -163,7 +169,8 @@ int main(int argc, char *argv[])
 		printf("\nConnecting to OR1k via USB debug cable\n\n");
 		if ((err = usb_dbg_reset()))
 			goto JtagIfError;
-		dbg_test();	// Perform some tests
+		if (!no_cpu)
+			dbg_test();	// Perform some tests
 	}
 #endif
 
@@ -408,6 +415,8 @@ void print_usage()
 	printf("\tOptions:\n");
 	printf
 	    ("\t-k\tAccesses to 0xC0000000 map to 0x0. Useful for kernel debugging.\n");
+	printf
+	    ("\t-b\tBus access only - do not attempt to talk to the CPU\n");
 	printf("\n");
 	printf("\tExample:\n");
 #ifdef USB_ENDPOINT_ENABLED

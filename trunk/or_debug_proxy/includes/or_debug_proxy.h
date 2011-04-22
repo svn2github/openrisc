@@ -85,6 +85,8 @@ extern int vpi_fd; // should be the descriptor for our connection to the VPI ser
 extern int current_chain;
 extern int dbg_chain;
 
+extern int no_cpu; /* Don't provide access to anything in the cpu */
+
 #define DBGCHAIN_SIZE           4 // Renamed from DC_SIZE due to definition clash with something in <windows.h> --jb 090302
 #define DC_STATUS_SIZE    4
 
