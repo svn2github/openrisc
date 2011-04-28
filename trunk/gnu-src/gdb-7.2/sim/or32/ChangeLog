@@ -1,3 +1,8 @@
+2011-04-15  Jeremy Bennett  <jeremy.bennett@embecosm.com>
+
+	* wrapper.c (sim_resume): Don't print count of cycles on exit -
+	should be silent.
+
 2010-11-02  Joern Rennecke  <joern.rennecke@embecosm.com>
 
 	* Makefile.in (wrapper.o): Depend on targ-vals.h .

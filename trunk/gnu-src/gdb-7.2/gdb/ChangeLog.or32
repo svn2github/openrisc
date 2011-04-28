@@ -1,3 +1,14 @@
+2011-04-28 Jeremy Bennett  <jeremy.bennett@embecosm.com>
+
+	* or32-tdep.c (or32_frame_cache): Return a valid frame ID, even if
+	we can't find the start of the current function.
+
+2011-04-13 Jeremy Bennett  <jeremy.bennett@embecosm.com>
+
+	* or32-tdep.c (or32_push_dummy_call): Fix logic for attempting to
+	use register 8 for a double argument.
+	(or32_unwind_sp, or32_unwind_pc): Fixed language compliance.
+
 2011-04-13 Jeremy Bennett  <jeremy.bennett@embecosm.com>
 
 	* or32-tdep.c (or32_register_name): revert to use r1, r2, r9 and

@@ -402,23 +402,26 @@ or32_return_value (struct gdbarch  *gdbarch,
   enum bfd_endian byte_order = gdbarch_byte_order (gdbarch);
   enum type_code  rv_type    = TYPE_CODE (valtype);
   unsigned int    rv_size    = TYPE_LENGTH (valtype);
-  ULONGEST        tmp;
+  unsigned int    bpw        = (gdbarch_tdep (gdbarch))->bytes_per_word;
 
-  /* Deal with struct/union and large scalars first. Large (> 4 byte) scalars
-     are returned via a pointer (despite what is says in the architecture
-     document). Result pointed to by R11 */
-
-  if((TYPE_CODE_STRUCT == rv_type) ||
-     (TYPE_CODE_UNION  == rv_type) ||
-     (rv_size          >  4))
+  /* Deal with struct/union first. If this won't fit in a single register it
+     is returned in memory. Large (2 word) scalars are returned in r11 and r12
+     (this is a change from GCC 4.2.2, when they were apparently returned in
+     memory). */
+  if (((TYPE_CODE_STRUCT == rv_type) || (TYPE_CODE_UNION  == rv_type)) &&
+      (rv_size >  bpw))
     {
       if (readbuf)
 	{
+	  ULONGEST        tmp;
+
 	  regcache_cooked_read_unsigned (regcache, OR32_RV_REGNUM, &tmp);
 	  read_memory (tmp, readbuf, rv_size);
 	}
       if (writebuf)
 	{
+	  ULONGEST        tmp;
+
 	  regcache_cooked_read_unsigned (regcache, OR32_RV_REGNUM, &tmp);
 	  write_memory (tmp, writebuf, rv_size);
 	}
@@ -426,28 +429,68 @@ or32_return_value (struct gdbarch  *gdbarch,
       return RETURN_VALUE_ABI_RETURNS_ADDRESS;
     }
 
-  /* 1-4 byte scalars are returned in R11 */
-
-  if (readbuf)
+  if (rv_size <= bpw)
     {
-      regcache_cooked_read_unsigned (regcache, OR32_RV_REGNUM, &tmp);
-      store_unsigned_integer (readbuf, rv_size, byte_order, tmp);
+      /* up to one word scalars are returned in R11 */
+      if (readbuf)
+	{
+	  ULONGEST        tmp;
+
+	  regcache_cooked_read_unsigned (regcache, OR32_RV_REGNUM, &tmp);
+	  store_unsigned_integer (readbuf, rv_size, byte_order, tmp);
+
+	}
+      if (writebuf)
+	{
+	  gdb_byte buf[4];			/* TODO - fixed const! */
+	  memset (buf, 0, sizeof (buf));	/* Zero pad if < bpw bytes */
+
+	  if (BFD_ENDIAN_BIG == byte_order)
+	    {
+	      memcpy (buf + sizeof (buf) - rv_size, writebuf, rv_size);
+	    }
+	  else
+	    {
+	      memcpy (buf,                          writebuf, rv_size);
+	    }
+
+	  regcache_cooked_write (regcache, OR32_RV_REGNUM, buf);
+	}
     }
-  if (writebuf)
+  else
     {
-      gdb_byte buf[4];
-      memset (buf, 0, sizeof (buf));	/* Pad with zeros if < 4 bytes */
-
-      if (BFD_ENDIAN_BIG == byte_order)
+      /* 2 word scalars are returned in r11/r12 (with the MS word in r11). */
+      if (readbuf)
 	{
-	  memcpy (buf + sizeof (buf) - rv_size, writebuf, rv_size);
-	}
-      else
-	{
-	  memcpy (buf,                          writebuf, rv_size);
-	}
+	  ULONGEST        tmp_lo;
+	  ULONGEST        tmp_hi;
+	  ULONGEST        tmp;
 
-      regcache_cooked_write (regcache, OR32_RV_REGNUM, buf);
+	  /* JPB: This seems back to front, but it is definitely this way
+	     round for double results. */
+	  regcache_cooked_read_unsigned (regcache, OR32_RV_REGNUM    , &tmp_hi);
+	  regcache_cooked_read_unsigned (regcache, OR32_RV_REGNUM + 1, &tmp_lo);
+	  tmp = (tmp_hi << (bpw * 8)) | tmp_lo;
+
+	  store_unsigned_integer (readbuf, rv_size, byte_order, tmp);
+	}
+      if (writebuf)
+	{
+	  gdb_byte buf_lo[4];			/* TODO - fixed const! */
+	  gdb_byte buf_hi[4];			/* TODO - fixed const! */
+
+	  memset (buf_lo, 0, sizeof (buf_lo));	/* Zero pad if < bpw bytes */
+	  memset (buf_hi, 0, sizeof (buf_hi));	/* Zero pad if < bpw bytes */
+
+	  /* This is cheating. We assume that we fit in 2 words exactly, which
+	     wouldn't work if we had (say) a 6-byte scalar type on a big
+	     endian architecture (with the OpenRISC 1000 usually is). */
+	  memcpy (buf_hi, writebuf,       rv_size - bpw);
+	  memcpy (buf_lo, writebuf + bpw, bpw);
+
+	  regcache_cooked_write (regcache, OR32_RV_REGNUM,     buf_hi);
+	  regcache_cooked_write (regcache, OR32_RV_REGNUM + 1, buf_lo);
+	}
     }
 
   return RETURN_VALUE_REGISTER_CONVENTION;
@@ -971,13 +1014,15 @@ static CORE_ADDR
 or32_unwind_pc (struct gdbarch    *gdbarch,
 		struct frame_info *next_frame) 
 {
+  CORE_ADDR pc;
+
   if (frame_debug)
     {
       fprintf_unfiltered (gdb_stdlog, "or32_unwind_pc, next_frame=%d\n",
 			  frame_relative_level (next_frame));
     }
 
-  CORE_ADDR pc = frame_unwind_register_unsigned (next_frame, OR32_NPC_REGNUM);
+  pc = frame_unwind_register_unsigned (next_frame, OR32_NPC_REGNUM);
 
   if (frame_debug)
     {
@@ -1004,13 +1049,15 @@ static CORE_ADDR
 or32_unwind_sp (struct gdbarch    *gdbarch,
 		struct frame_info *next_frame) 
 {
+  CORE_ADDR sp;
+
   if (frame_debug)
     {
       fprintf_unfiltered (gdb_stdlog, "or32_unwind_sp, next_frame=%d\n",
 			  frame_relative_level (next_frame));
     }
 
-  CORE_ADDR sp = frame_unwind_register_unsigned (next_frame, OR32_SP_REGNUM);
+  sp = frame_unwind_register_unsigned (next_frame, OR32_SP_REGNUM);
 
   if (frame_debug)
     {
@@ -1089,45 +1136,59 @@ or32_push_dummy_call (struct gdbarch  *gdbarch,
       int             len      = arg_type->length;
       enum type_code  typecode = arg_type->main_type->code;
 
-      /* The EABI passes structures that do not fit in a register by
-	 reference. In all other cases, pass the structure by value.  */
-      if((len > bpw) &&
-	 ((TYPE_CODE_STRUCT == typecode) || (TYPE_CODE_UNION == typecode)))
+      /* Handle the different argument types. */
+      if((TYPE_CODE_STRUCT == typecode) || (TYPE_CODE_UNION == typecode))
 	{
-
-	  store_unsigned_integer (valbuf, bpa, byte_order, value_offset (arg));
+	  /* The ABI passes all structures by reference, so get its address. */
+	  store_unsigned_integer (valbuf, bpa, byte_order, value_address (arg));
 	  len      = bpa;
 	  val      = valbuf;
 	}
       else
 	{
-	  val = (char *)value_contents (arg);
-	}   
+	  /* Everything else, we just get the value. */
+	  val = (char *) value_contents (arg);
+	}
 
-      if((len > bpw) && (argreg <= (OR32_LAST_ARG_REGNUM - 1)))
+      /* Stick the value in a register */
+      if(len > bpw)
 	{
-
 	  /* Big scalars use two registers, but need NOT be pair aligned. This
 	     code breaks if we can have quad-word scalars (e.g. long
 	     double). */
-	  ULONGEST regval = extract_unsigned_integer (val, len, byte_order);
 
-	  unsigned int  bits_per_word = bpw * 8;
-	  ULONGEST      mask          = (((ULONGEST) 1) << bits_per_word) - 1;
-	  ULONGEST      lo            = regval & mask;
-	  ULONGEST      hi            = regval >> bits_per_word;
+	  /* JPB 16-Apr-11: This appears currently not to be true. Big scalars
+	     get aligned in pairs r3/r4, r5/r6 and r7/r8. Temporarily
+	     patched. */
+	  if (0 != ((argreg - OR32_FIRST_ARG_REGNUM) % 2))
+	    {
+	      argreg++;
+	    }
 
-	  gdb_assert (len <= (bpw * 2));
+	  if (argreg <= (OR32_LAST_ARG_REGNUM - 1))
+	    {
+	      ULONGEST regval = extract_unsigned_integer (val, len, byte_order);
 
-	  regcache_cooked_write_unsigned (regcache, argreg,     hi);
-	  regcache_cooked_write_unsigned (regcache, argreg + 1, lo);
-	  argreg += 2;
+	      unsigned int  bits_per_word = bpw * 8;
+	      ULONGEST      mask = (((ULONGEST) 1) << bits_per_word) - 1;
+	      ULONGEST      lo   = regval & mask;
+	      ULONGEST      hi   = regval >> bits_per_word;
+
+	      gdb_assert (len <= (bpw * 2));
+
+	      regcache_cooked_write_unsigned (regcache, argreg,     hi);
+	      regcache_cooked_write_unsigned (regcache, argreg + 1, lo);
+	      argreg += 2;
+	    }
+	  else
+	    {
+	      /* Run out of regs */
+	      break;
+	    }
 	}
       else if (argreg <= OR32_LAST_ARG_REGNUM)
 	{
-	  printf ("Writing 0x%08llx to r%d\n",
-		  extract_unsigned_integer (val, len, byte_order), argreg);
-
+	  /* Smaller scalars fit in a single register */
 	  regcache_cooked_write_unsigned (regcache, argreg,
 					  extract_unsigned_integer (val, len,
 								   byte_order));
@@ -1155,10 +1216,9 @@ or32_push_dummy_call (struct gdbarch  *gdbarch,
       int             len      = arg_type->length;
       enum type_code  typecode = arg_type->main_type->code;
 
-      if((len > bpw) &&
-	 ((TYPE_CODE_STRUCT == typecode) || (TYPE_CODE_UNION == typecode)))
+      if((TYPE_CODE_STRUCT == typecode) || (TYPE_CODE_UNION == typecode))
 	{
-	  /* Large structures are passed as addresses */
+	  /* Structures are passed as addresses */
 	  sp -= bpa;
 	}
       else
@@ -1185,17 +1245,15 @@ or32_push_dummy_call (struct gdbarch  *gdbarch,
 
       /* The EABI passes structures that do not fit in a register by
 	 reference. In all other cases, pass the structure by value.  */
-      if((len > bpw) &&
-	 ((TYPE_CODE_STRUCT == typecode) || (TYPE_CODE_UNION == typecode)))
+      if((TYPE_CODE_STRUCT == typecode) || (TYPE_CODE_UNION == typecode))
 	{
-
-	  store_unsigned_integer (valbuf, bpa, byte_order, value_offset (arg));
+	  store_unsigned_integer (valbuf, bpa, byte_order, value_address (arg));
 	  len      = bpa;
 	  val      = valbuf;
 	}
       else
 	{
-	  val = (char *)value_contents (arg);
+	  val = (char *) value_contents (arg);
 	}   
 
       gdb_assert (len <= (bpw * 2));
@@ -1351,13 +1409,19 @@ or32_frame_cache (struct frame_info  *this_frame,
     }
 
   /* Get a new prologue cache and populate it with default values */
-  info                 = trad_frame_cache_zalloc (this_frame);
+  info            = trad_frame_cache_zalloc (this_frame);
   *prologue_cache = info;
 
   /* Find the start address of THIS function (which is a NORMAL frame, even if
      the NEXT frame is the sentinel frame) and the end of its prologue.  */
   this_pc = get_frame_pc (this_frame);
   find_pc_partial_function (this_pc, NULL, &start_addr, NULL);
+
+  /* Get the stack pointer if we have one (if there's no process executing yet
+     we won't have a frame. */
+  this_sp = (NULL == this_frame) ? 0 :
+                                   get_frame_register_unsigned (this_frame,
+								OR32_SP_REGNUM);
 
   /* Return early if GDB couldn't find the function.  */
   if (start_addr == 0)
@@ -1367,14 +1431,13 @@ or32_frame_cache (struct frame_info  *this_frame,
 	  fprintf_unfiltered (gdb_stdlog, "  couldn't find function\n");
 	}
 
+      /* JPB: 28-Apr-11. This is a temporary patch, to get round GDB crashing
+	 right at the beginning. Build the frame ID as best we can. */
+      trad_frame_set_id (info, frame_id_build (this_sp, this_pc));
+
       return  info;
     }
 
-  /* Get the stack pointer if we have one (if there's no process executing yet
-     we won't have a frame. */
-  this_sp = (NULL == this_frame) ? 0 :
-                                   get_frame_register_unsigned (this_frame,
-								OR32_SP_REGNUM);
 
   /* The default frame base of THIS frame (for ID purposes only - frame base
      is an overloaded term) is its stack pointer. For now we use the value of

@@ -654,7 +654,6 @@ sim_resume (SIM_DESC  sd,
       sd->resume_npc  = OR32_RESET_EXCEPTION;
       cycles = (long int) (or1ksim_get_time_period ()
 			   * (double) or1ksim_clock_rate());
-      printf ("%ld cycles: Exiting (%u)\n", cycles, sd->last_rc);
       break;
 
     case OR1KSIM_RC_BRKPT:
