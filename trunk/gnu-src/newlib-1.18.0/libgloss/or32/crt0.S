@@ -51,8 +51,9 @@
                                                                               */
 /* -------------------------------------------------------------------------- */
 // Size of redzone + size of space required to store state
-// This value must match that in _exception_handler.S
-#define EXCEPTION_STACK_SIZE 128
+// This value must match that in the support library or1k_exception_handler
+// function
+#define EXCEPTION_STACK_SIZE (128+128)
 	
 #define CALL_EXCEPTION_HANDLER            		\
 	l.addi  r1, r1, -EXCEPTION_STACK_SIZE;          \
