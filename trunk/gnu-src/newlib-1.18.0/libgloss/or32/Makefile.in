@@ -89,25 +89,26 @@ OUTPUTS  = $(CRT0) $(LIBOR32)
 
 # The standard object files for the library
 LIBOR32_OBJS =	_exit.o      		\
-	close.o      		\
-	environ.o    		\
-	execve.o     		\
-	fork.o       		\
-	fstat.o 		\
-	getpid.o     		\
-	isatty.o 		\
-	kill.o       		\
-	link.o       		\
-	lseek.o 		\
-	open.o       		\
-	read.o  		\
-	sbrk.o       		\
-	stat.o       		\
-	times.o      		\
-	uart.o       		\
-	unlink.o     		\
-	wait.o       		\
-	write.o
+		close.o      		\
+		environ.o    		\
+		execve.o     		\
+		fork.o       		\
+		fstat.o 		\
+		getpid.o     		\
+		impure-init.o           \
+		isatty.o 		\
+		kill.o       		\
+		link.o       		\
+		lseek.o 		\
+		open.o       		\
+		read.o  		\
+		sbrk.o       		\
+		stat.o       		\
+		times.o      		\
+		uart.o       		\
+		unlink.o     		\
+		wait.o       		\
+		write.o
 
 # Host specific makefile fragment specifies the automatic rules
 @host_makefile_frag@

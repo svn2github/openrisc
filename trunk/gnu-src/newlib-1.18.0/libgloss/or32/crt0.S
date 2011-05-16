@@ -285,6 +285,10 @@ _start:
         l.bf    .L1
         l.addi  r3,r3,4		/* Delay slot */
 
+	/* Reinitialize the reentrancy structure */
+	l.jal	__impure_init
+	l.nop
+
 	/* Call global and static constructors */
 	l.jal	__init
 	l.nop
