@@ -292,11 +292,13 @@ OS_STK  *OSTaskStkInit (void (*task)(void *pd), void *pdata, OS_STK *ptos,
 {
   OS_STK *stk;
   OS_STK *fp;
+  INT32U  sr;
 
 #ifdef DEBUG
   printf("\nCreating Stack at %x for task %x", ptos, task);
 #endif
 
+  sr     = mfspr(SPR_SR);
   opt    = opt;                           /* 'opt' is not used, prevent warning */
   stk    = ptos;                          /* Load stack pointer */
   stk    -=32;                            /* Skip over red zone, 32 words */
@@ -337,7 +339,9 @@ OS_STK  *OSTaskStkInit (void (*task)(void *pd), void *pdata, OS_STK *ptos,
   *stk-- = (INT32U)4;                     /* r04 = 0                   */
   *stk-- = (OS_STK)(pdata);               /* r03 = arg0                */
   *stk-- = (OS_STK)fp;                    /* r02 = frame pointer       */
-  *stk-- = (INT32U)(SPR_SR_IEE | SPR_SR_TEE | SPR_SR_SM);         /* status word               */
+                                          /* supervision register      */
+  *stk-- = (INT32U)(SPR_SR_IEE | SPR_SR_TEE | SPR_SR_SM |
+	     (sr & (SPR_SR_ICE | SPR_SR_DCE)));
   *stk   = (OS_STK)(task);                /* program counter           */
 
   return ((OS_STK *)stk);                 /* sp gets saved in TCB      */
