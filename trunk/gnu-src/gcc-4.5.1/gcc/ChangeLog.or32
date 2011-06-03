@@ -1,3 +1,7 @@
+2011-04-16  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* config/or32/or32.h (OR32_ROUND_ADVANCE_CUM): Don't round.
+
 2011-04-13  Joern Rennecke  <joern.rennecke@embecosm.com>
 
 	* config/or32/elf.h (DRIVER_SELF_SPECS): Define.

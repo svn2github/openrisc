@@ -31,6 +31,8 @@
 # -----------------------------------------------------------------------------
 proc telnet_close {hostname} {
 
+    verbose "telnet_close: hostname $hostname" 3
+
     # Get the connected host name, if it exists (actually, we think this can
     # never be set, but it is for consistency with telnet_open
     if {[board_info $hostname exists name]} {
@@ -39,8 +41,12 @@ proc telnet_close {hostname} {
 	set connhost $hostname
     }
 
+    if [board_info $connhost exists hostname] {
+	set hostname [board_info $connhost hostname]
+    }
+
     # Use the standard close proc from remote.exp
-    standard_close $hostname
+    standard_close $connhost
 }
 
 
@@ -111,8 +117,8 @@ proc telnet_exec {hostname cmd args} {
 	    # No response try closing the connection and reopening.
 	    telnet_close $hostname
 	    if {[telnet_open $hostname] != -1} {
-		verbose "started new telnet session, spawn_id is [board_info
-$hostname fileid]"
+		verbose "problem: hostname is \"$hostname\""
+		verbose "started new telnet session, spawn_id is [board_info $hostname fileid]"
 		send -- "\r"
 		exp_continue
 	    } else {

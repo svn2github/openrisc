@@ -100,7 +100,7 @@
 #     Source directory for newlib (default newlib-1.18.0)
 
 # --uclibc-dir
-#     Source directory for uClibc (default uclibc-0.9.31)
+#     Source directory for uClibc (default uclibc-0.9.32)
 
 # --gdb-dir
 #     Source directory for gdb (default  gdb-7.2)
@@ -177,9 +177,9 @@ function set_defaults {
     binutils_dir="binutils-2.20.1"
     gcc_dir="gcc-4.5.1"
     newlib_dir="newlib-1.18.0"
-    uclibc_dir="uclibc-0.9.31"
+    uclibc_dir="uclibc-0.9.32"
     gdb_dir="gdb-7.2"
-    linux_dir="linux-2.6.37"
+    linux_dir="linux-2.6.39"
     or32_elf_flag="true"
     or32_linux_flag="true"
     link_flag="true"
@@ -399,7 +399,7 @@ function parse_args {
     Source directory for newlib (default newlib-1.18.0)
 
 --uclibc-dir
-    Source directory for uClibc (default uclibc-0.9.31)
+    Source directory for uClibc (default uclibc-0.9.32)
 
 --gdb-dir
     Source directory for gdb (default  gdb-7.2)

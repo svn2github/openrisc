@@ -50,7 +50,7 @@ void init_registers_or32 (void);
 #define GDB_REGNUM_NPC  33
 #define GDB_REGNUM_SR   34
 
-/*! This is the number of *GDB* registers. I.e. r0-r31, PPC, NPC and SR. */
+/*! This is the number of *GDB* registers. I.e. r0-r31, PPC, NPC and SR.  */
 #define or32_num_regs  (GDB_REGNUM_SR + 1)
 
 
