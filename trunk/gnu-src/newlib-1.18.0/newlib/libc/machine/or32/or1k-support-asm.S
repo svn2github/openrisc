@@ -217,7 +217,7 @@ or1k_icache_enable:
 	.global	or1k_icache_disable
         .type	or1k_icache_disable,@function
 
-or1k_icache_disble:
+or1k_icache_disable:
 	/* Disable IC */
 	l.mfspr r13,r0,SPR_SR
 	l.addi  r12,r0,-1
@@ -267,7 +267,7 @@ or1k_dcache_enable:
 	.global	or1k_dcache_disable
         .type	or1k_dcache_disable,@function
 
-or1k_dcache_disble:
+or1k_dcache_disable:
 	/* Disable DC */
 	l.mfspr r13,r0,SPR_SR
 	l.addi  r12,r0,-1
