@@ -252,7 +252,7 @@ function run_test_block {
     cd ${test_dir}
     mkdir -p ${res_dir}
 
-    runtest -v -v -v --target=or32-linux          \
+    runtest --target=or32-linux          \
 	    --srcdir=${src_dir}          \
 	    --tool=${tool}               \
             --outdir=${res_dir}          \

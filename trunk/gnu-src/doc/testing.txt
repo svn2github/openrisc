@@ -75,6 +75,7 @@ parameters, which may need adjusting. In particular it specifies the absolute
 location of the C and C++ compilers and gives timeouts for command execution
 (1200 seconds) and FTP upload/download (both 120 seconds).
 
+
 run-all-tests.sh
 ================
 
@@ -100,6 +101,17 @@ three calls to "run-tool_tests". Edit the file to adjust this.
 Having set up ip-avail.txt, the script is then run as:
 
   ./run-all-tests.sh
+
+
+Diagnostics
+===========
+
+To increase the diagnostic output, find the "runtest" command in
+run-all-tests.sh and add "-v" to its options (for even more output add "-v -v"
+or even "-v -v -v").
+
+Note this is useful for debugging the test scripts rather than actual tests
+themselves.
 
 
 Supplementary Scripts
