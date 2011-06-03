@@ -39,9 +39,9 @@ scripts are incomplete for telnet and have errors for FTP, so the board
 definition includes missing and fixed expect/TCL code to fix this.
 
 The test script expects the DEJAGNU environment variable to point to the
-main or32 directory (the one containing the boards directory). It uses the
-get-ip.sh script in that directory to obtain the IP address of the next
-available remote target for testing.
+site.exp file in the main or32 directory (the one containing the boards
+directory). It uses the get-ip.sh script in that directory to obtain the IP
+address of the next available remote target for testing.
 
 The list of target IP addresses is placed in the file ${DEJAGNU}/ip-avail.txt.
 
