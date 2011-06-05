@@ -22,7 +22,7 @@
 # ------------------------------------------------------------------------------
 
 # IP list excluding all known IPs
-ip_list="192.168.0.2-39,41-59,61-79,81-127,129,130,133-255"
+ip_list="192.168.0.2-39,41-59,61-79,82-127,129,130,133-255"
 ip_file=`dirname ${DEJAGNU}`/ip-avail.txt
 
 # Keep using nmap until we get the same number of IP addresses twice running.

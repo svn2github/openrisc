@@ -29,7 +29,8 @@
 tmpf=/tmp/check-results-$$
 
 # Get the individual results if we have any. Note that we don't check for the
-# strings at start of line, since they may have FTP prompts showing.
+# strings at start of line, since they may have FTP prompts showing. Don't
+# print out lines which have no tests at all.
 echo "                           PASS  FAIL XPASS XFAIL UNRES UNSUP UNTES TOTAL"
 
 if ls $* > /dev/null 2>&1
@@ -46,9 +47,13 @@ then
 	us=`grep 'UNSUPPORTED:' ${logfile} | wc -l`
 	ut=`grep 'UNTESTED:' ${logfile} | wc -l`
 	tot=`echo "${p} ${f} + ${xp} + ${xf} + ${ur} + ${us} + ${ut} + p" | dc`
-	printf "%-25s %5d %5d %5d %5d %5d %5d %5d %5d\n" \
-  	    ${tname} ${p} ${f} ${xp} ${xf} ${ur} ${us} ${ut} ${tot} | \
-	    tee -a ${tmpf}
+
+	if [ "x${tot}" != "x0" ]
+	then
+	    printf "%-25s %5d %5d %5d %5d %5d %5d %5d %5d\n" \
+  		${tname} ${p} ${f} ${xp} ${xf} ${ur} ${us} ${ut} ${tot} | \
+		tee -a ${tmpf}
+	fi
     done
 fi
 

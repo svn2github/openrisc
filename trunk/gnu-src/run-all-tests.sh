@@ -132,7 +132,7 @@ function check_remote_command {
     expect -f - <<EOF > /dev/null 2>&1
     spawn "${command}"
 
-    set timeout 2
+    set timeout 30
     expect {
         "${command}> " {}
         timeout    {exit 1}
@@ -140,7 +140,6 @@ function check_remote_command {
 
     send "open ${ip}\n"
 
-    set timeout 5
     expect {
         -re "${conn_prompt}" {}
         timeout   {exit 2}
@@ -148,7 +147,6 @@ function check_remote_command {
 
     send "root\n"
 
-    set timeout 2
     expect {
         -re "${op_prompt}" {}
         timeout   {exit 3}
@@ -156,7 +154,6 @@ function check_remote_command {
 
     send "exit\n"
 
-    set timeout 5
     expect {
         -re "${close_mess}" {exit 0}
         timeout {exit 4}
@@ -267,14 +264,25 @@ function run_test_block {
 
     # If the telnet or FTP to the IP address is dead, we assume the test
     # failed, the target machine having died (at last partially), so we return
-    # failure.
+    # failure having blown away that IP address.
+
+    # We also need to fail if we see any TCL or expect error messages (with
+    # the string "ERROR: ". These are indicative of transient failures.
     ip=`sed < ${tool}/${log_file} -n -e 's/OR32 target hostname is //p'`
     if check_telnet_ftp ${ip}
     then
-	echo "Running ${test_file} on ${ip} completed successfully"
-	res=0
+	if grep "ERROR: " ${tool}/${log_file} > /dev/null 2>&1
+	then
+	    echo "Running ${test_file} on ${ip} hit TCL/expect failure"
+	    mv ${tool}/${log_file} ${tool}/${log_file}-failed-$$-${index}
+	    mv ${tool}/${sum_file} ${tool}/${sum_file}-failed-$$-${index}
+	    res=1
+	else
+	    echo "Running ${test_file} on ${ip} completed successfully"
+	    res=0
+	fi
     else
-	echo "Running ${test_file} on ${ip} died"
+	echo "Running ${test_file} on ${ip} died with code $?"
 	mv ${tool}/${log_file} ${tool}/${log_file}-failed-$$-${index}
 	mv ${tool}/${sum_file} ${tool}/${sum_file}-failed-$$-${index}
 	${root_dir}/get-ip.sh --delete ${ip}
@@ -333,6 +341,15 @@ function run_tool_tests {
     tool=$1
     shift
 
+    # If we have no IP addresses, give up here.
+    if ${root_dir}/get-ip.sh > /dev/null 2>&1
+    then
+	true
+    else
+	echo "No IP addresses - exiting"
+	exit 1
+    fi
+
     # Create the local config file for DejaGnu
     create_local_config ${test_dir}
 
@@ -347,13 +364,30 @@ function run_tool_tests {
 	# Run the test in the background
 	(
 	    index=1
+
 	    until run_test_block ${test_dir} ${src_dir} ${tool} ${t} ${index}
 	    do
+	        # Give up if there are no more IP addresses.
+		if ${root_dir}/get-ip.sh > /dev/null 2>&1
+		then
+		    continue
+		else
+		    break
+		fi
 		index=$(( ${index} + 1 ))
 	    done
 
 	    inc_count
         ) &
+
+	# If we have exhausted all the IP addresses, give up here.
+	if ${root_dir}/get-ip.sh > /dev/null 2>&1
+	then
+	    true
+	else
+	    echo "Out of IP addresses - exiting"
+	    exit 1
+	fi
     done
 }
     
@@ -579,6 +613,7 @@ lib_test_list="abi#abi.exp \
                conformance-19#conformance.exp=${conf19_list} \
                conformance-20#conformance.exp=${conf20_list} \
                conformance-21#conformance.exp=${conf21_list}"
+
 
 run_tool_tests ${gcc_test_dir} ${gcc_src_dir} "gcc" ${gcc_test_list}
 run_tool_tests ${gcc_test_dir} ${gcc_src_dir} "g++" ${gpp_test_list}

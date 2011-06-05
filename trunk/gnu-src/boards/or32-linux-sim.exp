@@ -27,26 +27,46 @@
 # -----------------------------------------------------------------------------
 # Custom proc to close a telnet session
 
-# @param[in] boardname  The board being closed.
+# @param[in] connhost  The connected host being closed.
 # -----------------------------------------------------------------------------
-proc telnet_close {hostname} {
-
-    verbose "telnet_close: hostname $hostname" 3
-
-    # Get the connected host name, if it exists (actually, we think this can
-    # never be set, but it is for consistency with telnet_open
-    if {[board_info $hostname exists name]} {
-	set connhost [board_info $hostname name]
-    } else {
-	set connhost $hostname
-    }
-
-    if [board_info $connhost exists hostname] {
-	set hostname [board_info $connhost hostname]
-    }
+proc telnet_close {connhost} {
+    
+    verbose "telnet_close: connhost $connhost" 3
 
     # Use the standard close proc from remote.exp
     standard_close $connhost
+}
+
+
+# -----------------------------------------------------------------------------
+# Custom proc to check if we have had too many failures
+
+# @param[in] boardname  The board being closed.
+# -----------------------------------------------------------------------------
+proc telnet_failure_check { connhost errmess } {
+
+    # Get the maximum failure count
+    set max_fc 10
+
+    if [board_info $connhost exists max_failure_count] {
+	set max_fc [board_info $connhost max_failure_count]
+    }
+    verbose "telnet_failure_check: Max failure count $max_fc"
+
+    # Increment the current failure count
+    set fc 1
+    if [board_info $connhost exists failure_count] {
+	verbose "telnet_failure_check: Incrementing failure count"
+	set fc [expr [board_info $connhost failure_count] + 1]
+    }
+    set board_info($connhost,failure_count) $fc
+    verbose "telnet_failure_check: current failure count is [board_info $fc"
+    verbose "telnet_failure_check: board_info is [board_info $connhost failure_count]"
+
+    # Die if we are over the limit
+    if {$fc >= $max_fc} {
+	error "Too many failures: $errmess"
+    }
 }
 
 
@@ -56,8 +76,10 @@ proc telnet_close {hostname} {
 # We seem to only pass in the first of the arguments supplied to the command.
 
 # The timeout is a mess. It seems to always be 10, not the timeout needed to
-# execute a regression test (typicall 300 seconds). Fixed by using our onw
+# execute a regression test (typicall 300 seconds). Fixed by using our own
 # timeout data.
+
+# It also seems that only the first argument is passed.
 
 # @param[in] hostname  The board we are telnetting to
 # @param[in] cmd        The command to run
@@ -67,13 +89,24 @@ proc telnet_close {hostname} {
 # -----------------------------------------------------------------------------
 proc telnet_exec {hostname cmd args} {
     global timeout
-    global verbos
-    set output "(no output)"
+    global verbose
+    global spawn_id
 
-    # Save the old timeout, since its global, and we'll want to restore it.
-    set old_timeout $timeout
+    # Get the connected host name, if it exists. This code matches
+    # telnet_open.
+    verbose "telnet_exec: original hostname is $hostname"
 
-    verbose "Executing $hostname $cmd $args"
+    if {[board_info $hostname exists name]} {
+	set connhost [board_info $hostname name]
+    } else {
+	set connhost $hostname
+    }
+    verbose "telnet_exec: connhost is $connhost"
+
+    if [board_info $connhost exists hostname] {
+	set hostname [board_info $connhost hostname]
+    }
+    verbose "telnet_exec: hostname is $hostname"
 
     # Get the first argument, if any.
     if { [llength $args] > 0 } {
@@ -82,108 +115,164 @@ proc telnet_exec {hostname cmd args} {
 	set pargs ""
     }
 
-    # Set the shell prompt
-    if [board_info $hostname exists shell_prompt] {
-	set shell_prompt [board_info $hostname shell_prompt]
+    verbose "telnet_exec: executing on $connhost, command \"$cmd\", pargs \"$pargs\""
+
+    # Just check if we have more args. Potentially a second arg is an input
+    # file.
+    if { [llength $args] > 1 } {
+	set tinp [lindex $args 1]
+	if {$tinp != {}} {
+	    verbose "telnet_exec: long args: $args"
+	}
     }
-    if ![info exists shell_prompt] { # if no prompt, then set it to
-	something generic
-	set shell_prompt ".*> "
+
+    # Set the shell prompt
+    if [board_info $connhost exists shell_prompt] {
+	set shell_prompt [board_info $connhost shell_prompt]
+    } elseif ![info exists shell_prompt] {
+	# if no prompt, then set it to something generic
+	set shell_prompt "\[^\r\n\]*\[$#\] "
     }
 
     # Start a new telnet session if one doesn't already exist. If sucessful
-    # the fileid field associated with $hostname will be set to the spawn_id
+    # the fileid field associated with $connhost will be set to the spawn_id
     # of the new telnet process.
-    if ![board_info $hostname exists fileid] {
-	if {[telnet_open $hostname] == -1} {
-	    return [list -1
-		    "telnet to $hostname failed for $cmd, couldn't begin telnet session"]
+    if ![board_info $connhost exists fileid] {
+	if {[telnet_open $connhost] == -1} {
+	    return [list -1 "telnet to $hostname failed for $cmd, couldn't begin telnet session"]
 	}
     }
 
     # Make the telnet session the current process. Short timeout for this.
-    set spawn_id [board_info $hostname fileid]
-    set timeout 10
+    set spawn_id [board_info $connhost fileid]
+    set timeout 30
 
     #Hit enter to make sure you get a shell prompt
-    send -- "\r"
+    send "\r"
 
     expect {
 	# A prompt indicates the current session is alive
-	-re "$shell_prompt.*$" {
-	    verbose "Got a prompt"
+	-re "$shell_prompt" {
+	    verbose "telnet_exec: got prompt at start"
 	}
 	default {
-	    # No response try closing the connection and reopening.
-	    telnet_close $hostname
-	    if {[telnet_open $hostname] != -1} {
-		verbose "problem: hostname is \"$hostname\""
-		verbose "started new telnet session, spawn_id is [board_info $hostname fileid]"
-		send -- "\r"
+	    # Timeout or EOF. Die if we have had too many failures
+	    telnet_failure_check $connhost "no prompt at telnet start"
+
+	    # Try closing the connection and reopening.
+	    telnet_close $connhost
+	    if {[telnet_open $connhost] != -1} {
+		set spawn_id [board_info $connhost fileid]
+		verbose "telnet_exec: new telnet session, spawn_id: $spawn_id"
+		send "\r"
 		exp_continue
 	    } else {
-		set timeout $old_timeout
-		return [list -1 "telnet to $hostname failed for $cmd, couldn't get
-a shell prompt"]
+		return [list -1 "telnet to $hostname failed for $cmd, couldn't get a shell prompt"]
 	    }
-	    # I don't think we can get here. Comment out the old code and
-	    # trigger an error
-	    # send -- "\r"
-	    # exp_continue
-	    set timeout $old_timeout
-	    error "Problem reconnecting to telnet."
 	}
     }
 
-    # JPB to set custom timeout. Old timeout saved, so we can restore it,
-    # since it's global. Not sure why we only use the first of the arguments.
-    if [board_info $hostname exists telnet_exec_timeout] {
-	set timeout [board_info $hostname telnet_exec_timeout]
-	verbose "Telnet exec timeout set to $timeout"
+    # Send the command. We can't cope with any input, so only the first
+    # argument (group) is sent.
+    send "$cmd $pargs\r"
+
+    # We really should get the command echoed back immediately. This is a good
+    # way of slurping up unexpected prompts. We first swap out any characters
+    # from the command and args that might cause us grief.
+    regsub -all "\\+" "$cmd $pargs" "." cmdpargs
+    
+    expect {
+	"$cmdpargs" {
+	    verbose "telnet_exec: got command echoed back"
+	}
+    }
+
+    # Set the telnet command custom timeout to wait for the command
+    # prompt. Old timeout saved, so we can restore it, since it's global.
+    set old_timeout $timeout
+
+    if [board_info $connhost exists telnet_exec_timeout] {
+	set timeout [board_info $connhost telnet_exec_timeout]
+	verbose "telnet_exec: command timeout set to $timeout"
     } else {
 	# Appropriate default
 	set timeout 300
-	verbose "Telnet exec timeout set to default value $timeout"
+	verbose "telnet_exec: command timeout set to default value $timeout"
     }
 
-    send "$cmd $pargs\r"
-
     expect {
-	-re "$shell_prompt.*$" {
+	-re "$shell_prompt" {
+	    verbose "telnet_exec: got prompt after command"
 	}
-	timeout {
-	    if [info exists expect_out(buffer)] {
-		set execute_output_string $expect_out(buffer)
-	    }
+	default {
+	    # Give up on timeout or EOF
 	    set timeout $old_timeout
-	    telnet_close $hostname
+	    telnet_close $connhost
 	    return [list -1 "telnet to $hostname for $cmd $pargs failed (timeout)"]
 	}		
     }
 
-    #Remove unnecessary strings from the output string
+    # Restore the old timeout
+    set timeout $old_timeout
 
-    #If the file path contains any "+" signs, it will mess things up when $cmd
-    #is used as a regsub pattern (2 lines down), so we replace all "+"s with "."
-    regsub -all "\\+" $cmd "." cmd
-    regsub -all $cmd "$expect_out(buffer)" {} output
-    regsub "\(~ \)?$shell_prompt" $output {} output
+    # Remove unnecessary strings from the output string
+    verbose "telnet_exec: command expect_out(buffer): \"$expect_out(buffer)\""
+    regsub -all $cmdpargs "$expect_out(buffer)" {} output
+    regsub "$shell_prompt" $output {} output
     regsub -all "\[\r\n\]" $output {} output
 
-    #Check the return status. Use a short timeout for this.
+    if {$output == ""} {
+	set output "(no output)"
+    } else {
+	set output "\"$output\""
+    }	
+
+    verbose "telnet_exec: command output $output"
+
+    # Check the return status. Use a short timeout for this.
     set timeout 30
-    send -- "echo \$?\r"
-    expect -re "$shell_prompt.*$"
+    send "echo \$?\r"
 
-    #Regsub the output to get the status number
+    # Once again, look for the "echo" reflected back as a way of slurping up
+    # unexpected prompts. We don't worry about timeout here - we'll sort that
+    # out on the next one.
+    expect {
+	-re "echo \\$\\?" {
+	    verbose "telnet_exec: got \"echo\" echoed back"
+	}
+    }
+
+    expect {
+	-re "$shell_prompt" {
+	    verbose "telnet_exec: got status shell prompt"
+	}
+	default {
+	    warning "No response to status request"
+
+	    # Die if we have had too many failures like this.
+	    telnet_failure_check $connhost "no shell prompt from status"
+
+	    # See if another carriage return will prompt a response
+	    send "\r"
+	    exp_continue
+	}
+    }
+	    
+    # Regsub the output to get the status number
+    verbose "telnet_exec: status expect_out(buffer): \"$expect_out(buffer)\""
     regsub -all {echo \$\?} $expect_out(buffer) {} status
-    regsub "\(~ \)?$shell_prompt" $status {} status
+    regsub "$shell_prompt" $status {} status
     regsub -all "\[\r\n \]" $status {} status
+    verbose "telnet_exec: status \"$status\""
 
-    #This probably isn't neccessary..
+    # This shouldn't be neccessary...
     if {[regexp {[0123456789]+} $status] != 1} {
-	warning "status not a number, it is <$status>, setting it to 1"
+	warning "status not a number (\"$status\"), setting to 1"
+	verbose "telnet_exec: status (\"$status\"), expect_out(buffer): \"$expect_out(buffer)\""
 	set status 1
+
+	# Die if we have had too many failures like this.
+	telnet_failure_check $connhost "bad status"
     }
 
     # Restore timeout
@@ -371,7 +460,7 @@ set_board_info c++compiler /opt/or32-new/bin/or32-linux-g++
 set target_alias "or32-linux"
 
 set_board_info connect telnet
-set_board_info shell_prompt          "# "
+set_board_info shell_prompt          "\[^\r\n\]*# "
 set_board_info telnet_username       "root"
 set_board_info telnet_password       ""
 set_board_info telnet_exec_timeout   1200
