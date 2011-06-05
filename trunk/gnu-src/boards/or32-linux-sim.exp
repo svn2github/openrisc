@@ -60,7 +60,7 @@ proc telnet_failure_check { connhost errmess } {
 	set fc [expr [board_info $connhost failure_count] + 1]
     }
     set board_info($connhost,failure_count) $fc
-    verbose "telnet_failure_check: current failure count is [board_info $fc"
+    verbose "telnet_failure_check: current failure count is $fc"
     verbose "telnet_failure_check: board_info is [board_info $connhost failure_count]"
 
     # Die if we are over the limit
