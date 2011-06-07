@@ -85,7 +85,7 @@ __uart_init ()
 	UREG8 (UART_LCR) = UART_LCR_WLEN8 & ~(UART_LCR_STOP | UART_LCR_PARITY);
 
 	/* Set baud rate */
-	divisor = _board_clk_freq / (16 * _board_uart_baud);
+	divisor = (_board_clk_freq / _board_uart_baud + 8) / 16;
 
 	UREG8 (UART_LCR) |= UART_LCR_DLAB;
 	UREG8 (UART_DLL)  = divisor & 0x000000ff;
