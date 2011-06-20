@@ -15,6 +15,9 @@
 // with this library; see the file COPYING3.  If not see
 // <http://www.gnu.org/licenses/>.
 
+// OpenRISC does not support file I/O in newlib
+// { dg-xfail-run-if "not supported on OR32 newlib" { or32-*-elf } }
+
 #include <iostream>
 #include <cstdio>
 #include <cwchar>

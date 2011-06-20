@@ -19,7 +19,8 @@
 // equivalent and interchangable. Currently however, cin.rdbuf()->sungetc()
 // only returns characters that were read with cin.rdbuf()->sbumpc()
 
-// { dg-do run { xfail *-*-* } }
+// Works unexpectedly with OpenRISC 1000 newlib, which has no file I/O
+// { dg-do run { xfail { ! or32-*-elf } } }
 
 #include <iostream>
 #include <cstdio>

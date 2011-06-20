@@ -19,6 +19,8 @@
 
 // 27.6.1.2.3 basic_istream::operator>>
 
+// { dg-xfail-run-if "not supported on OR32 newlib" { or32-*-elf } }
+
 #include <istream>
 #include <string>
 #include <fstream>

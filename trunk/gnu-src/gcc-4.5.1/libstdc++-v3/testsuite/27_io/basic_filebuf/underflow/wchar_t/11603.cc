@@ -19,6 +19,8 @@
 
 // { dg-require-binary-io "" }
 
+// { dg-xfail-run-if "not supported on OR32 newlib" { or32-*-elf } }
+
 #include <fstream>
 #include <locale>
 #include <testsuite_hooks.h>

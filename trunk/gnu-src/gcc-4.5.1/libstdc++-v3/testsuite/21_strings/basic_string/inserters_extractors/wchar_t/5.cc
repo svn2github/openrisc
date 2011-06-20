@@ -24,6 +24,8 @@
 // working, not to mention other major details like char_traits, and
 // all of the string class.
 
+// { dg-xfail-run-if "not supported on OR32 newlib" { or32-*-elf } }
+
 #include <string>
 #include <fstream>
 #include <iostream>

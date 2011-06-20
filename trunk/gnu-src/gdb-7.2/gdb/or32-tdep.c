@@ -100,6 +100,7 @@
 #include "frame-base.h"
 #include "dwarf2-frame.h"
 #include "trad-frame.h"
+#include "regset.h"
 
 #include <inttypes.h>
 
@@ -466,8 +467,6 @@ or32_return_value (struct gdbarch  *gdbarch,
 	  ULONGEST        tmp_hi;
 	  ULONGEST        tmp;
 
-	  /* JPB: This seems back to front, but it is definitely this way
-	     round for double results. */
 	  regcache_cooked_read_unsigned (regcache, OR32_RV_REGNUM    , &tmp_hi);
 	  regcache_cooked_read_unsigned (regcache, OR32_RV_REGNUM + 1, &tmp_lo);
 	  tmp = (tmp_hi << (bpw * 8)) | tmp_lo;
@@ -1157,14 +1156,6 @@ or32_push_dummy_call (struct gdbarch  *gdbarch,
 	     code breaks if we can have quad-word scalars (e.g. long
 	     double). */
 
-	  /* JPB 16-Apr-11: This appears currently not to be true. Big scalars
-	     get aligned in pairs r3/r4, r5/r6 and r7/r8. Temporarily
-	     patched. */
-	  if (0 != ((argreg - OR32_FIRST_ARG_REGNUM) % 2))
-	    {
-	      argreg++;
-	    }
-
 	  if (argreg <= (OR32_LAST_ARG_REGNUM - 1))
 	    {
 	      ULONGEST regval = extract_unsigned_integer (val, len, byte_order);
@@ -1740,6 +1731,29 @@ or32_frame_base_sniffer (struct frame_info *this_frame)
 
 
 /* -------------------------------------------------------------------------- */
+/*!Return information needed to handle a core file.
+
+   We put together a regset structure that tells the system how to transfer
+   registers to and from a core file image.
+
+   @param[in] gdbarch    The GDB architecture we are using.
+   @param[in] sect_name  The name of the section being considered.
+   @param[in] sect_size  The size of the section being considered.
+
+   @return  A regset structure for the section, or NULL if none is available. */
+/* -------------------------------------------------------------------------- */
+static const struct regset *
+or32_regset_from_core_section (struct gdbarch *gdbarch,
+			       const char     *sect_name,
+			       size_t          sect_size)
+{
+  printf ("sect_name \"%s\", sect_size %d\n", sect_name, sect_size);
+  return NULL;
+
+}	/* or32_regset_from_core_section () */
+
+
+/* -------------------------------------------------------------------------- */
 /*!Architecture initialization for OpenRISC 1000
 
    Looks for a candidate architecture in the list of architectures supplied
@@ -1851,6 +1865,9 @@ or32_gdbarch_init (struct gdbarch_info  info,
   frame_base_append_sniffer (gdbarch, dwarf2_frame_base_sniffer);
   frame_base_append_sniffer (gdbarch, or32_frame_base_sniffer);
 #endif
+
+  /* Handle core files */
+  set_gdbarch_regset_from_core_section (gdbarch, or32_regset_from_core_section);
 
   /* Frame unwinders. Use DWARF debug info if available, otherwise use our
      own unwinder. */

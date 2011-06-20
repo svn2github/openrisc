@@ -1,3 +1,7 @@
+2011-06-17  Jeremy Bennett  <jeremy.bennett@embecosm.com>
+
+	* or32/wrapper.c: Added and modified debug messages throughout.
+
 2010-09-01  Jeremy Bennett  <jeremy.bennett@embecosm.com>
 
 	* configure.tgt: Added or32.

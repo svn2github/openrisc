@@ -374,7 +374,7 @@ mt-*-*)
 
 or32-*-linux*)
 	# Target: OpenCores OpenRISC 1000 32-bit implementation for Linux
-	gdb_target_obs="or32-tdep.o"
+	gdb_target_obs="or32-tdep.o corelow.o"
 	gdb_sim=../sim/or32/libsim.a
 	build_gdbserver=yes
 	;;

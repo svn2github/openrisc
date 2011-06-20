@@ -19,6 +19,12 @@
 
 // 21.3.5 string modifiers
 
+// { dg-options " -DSTR_LOOP_SIZE=9" { target { or32-*-elf } } }
+
+#ifndef STR_LOOP_SIZE
+#define STR_LOOP_SIZE 18
+#endif
+
 #include <string>
 #include <testsuite_hooks.h>
 
@@ -37,7 +43,7 @@ test03()
     {
       wstring one(source);
       wstring two(source);
-      for (unsigned j = 0; j < 18; ++j)
+      for (unsigned j = 0; j < STR_LOOP_SIZE; ++j)
 	{
 	  VERIFY( one == two );
 	  one.append(one);

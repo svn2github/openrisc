@@ -19,6 +19,9 @@
 // @require@ %-*.tst %-*.txt
 // @diff@ %-*.tst %-*.txt
 
+// OpenRISC does not support file I/O in newlib
+// { dg-xfail-run-if "not supported on OR32 newlib" { or32-*-elf } }
+
 #include <istream>
 #include <sstream>
 #include <fstream>

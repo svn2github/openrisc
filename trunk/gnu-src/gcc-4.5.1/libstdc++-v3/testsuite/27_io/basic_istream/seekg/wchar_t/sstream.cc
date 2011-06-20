@@ -22,6 +22,8 @@
 // @require@ %-*.tst %-*.txt
 // @diff@ %-*.tst %-*.txt
 
+// { dg-xfail-run-if "not supported on OR32 newlib" { or32-*-elf } }
+
 #include <istream>
 #include <sstream>
 #include <fstream>

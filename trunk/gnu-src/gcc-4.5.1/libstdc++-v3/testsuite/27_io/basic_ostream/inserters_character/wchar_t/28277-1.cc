@@ -19,6 +19,12 @@
 
 // 27.6.2.5.4 basic_ostream character inserters
 
+// { dg-options " -DSTR_LEN=500000" { target { or32-*-elf } } }
+
+#ifndef STR_LEN
+#define STR_LEN 5000000
+#endif
+
 #include <ostream>
 #include <sstream>
 #include <testsuite_hooks.h>
@@ -30,7 +36,7 @@ void test01()
   bool test __attribute__((unused)) = true;
 
   wostringstream oss_01;
-  const string str_01(5000000, 'a');
+  const string str_01(STR_LEN, 'a');
 
   oss_01 << str_01.c_str();
 

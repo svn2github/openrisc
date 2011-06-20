@@ -17,6 +17,8 @@
 
 // 27.6.2.4 basic_ostream seek members
 
+// { dg-xfail-run-if "not supported on OR32 newlib" { or32-*-elf } }
+
 #include <ostream>
 #include <sstream>
 #include <fstream>

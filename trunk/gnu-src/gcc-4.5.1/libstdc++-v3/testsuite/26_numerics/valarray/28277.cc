@@ -17,6 +17,12 @@
 // with this library; see the file COPYING3.  If not see
 // <http://www.gnu.org/licenses/>.
 
+// { dg-options " -DVALARRAY_SIZE=500000" { target { or32-*-elf } } }
+
+#ifndef VALARRAY_SIZE
+#define VALARRAY_SIZE 5000000
+#endif
+
 #include <valarray>
 #include <testsuite_hooks.h>
 
@@ -25,7 +31,7 @@ void test01()
 {
   bool test __attribute__((unused)) = true;
 
-  const std::valarray<int> v1(1, 5000000);
+  const std::valarray<int> v1(1, VALARRAY_SIZE);
 
   const std::valarray<int> v2 = v1.shift(1);
   VERIFY( v2.size() == v1.size() );

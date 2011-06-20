@@ -1,3 +1,15 @@
+2011-06-11  Jeremy Bennett  <jeremy.bennett@embecosm.com>
+
+	* configure.tgt: Added corelow.c to ensure core handling.
+	* or32-tdep.c (or32_regset_from_core_section): Created.
+	(or32_gdbarch_init): register or32_regset_from_core_section.
+	<regset.h>: Now included.
+
+2011-04-28  Jeremy Bennett  <jeremy.bennett@embecosm.com>
+
+	* or32-tdep.c (or32_push_dummy_call): Corrected handling of double
+	args provided in two regs to match updated compiler and ABI.
+
 2011-04-28 Jeremy Bennett  <jeremy.bennett@embecosm.com>
 
 	* or32-tdep.c (or32_frame_cache): Return a valid frame ID, even if

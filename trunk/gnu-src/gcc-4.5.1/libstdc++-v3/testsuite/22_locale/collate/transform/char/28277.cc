@@ -19,6 +19,12 @@
 
 // 22.2.4.1.1 collate members
 
+// { dg-options " -DSTR_LEN=1000000" { target { or32-*-elf } } }
+
+#ifndef STR_LEN
+#define STR_LEN 10000000
+#endif
+
 #include <locale>
 #include <testsuite_hooks.h>
 
@@ -36,7 +42,7 @@ void test01()
   // cache the collate facets
   const collate<char>& coll_c = use_facet<collate<char> >(loc_c); 
 
-  const string_type sstr(10000000, 'a');
+  const string_type sstr(STR_LEN, 'a');
 
   const string_type dstr = coll_c.transform(sstr.data(),
 					    sstr.data() + sstr.size());

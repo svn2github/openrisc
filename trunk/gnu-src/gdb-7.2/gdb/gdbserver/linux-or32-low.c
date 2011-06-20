@@ -50,7 +50,7 @@ void init_registers_or32 (void);
 #define GDB_REGNUM_NPC  33
 #define GDB_REGNUM_SR   34
 
-/*! This is the number of *GDB* registers. I.e. r0-r31, PPC, NPC and SR.  */
+/*! This is the number of *GDB* registers. I.e. r0-r31, PPC, NPC and SR. */
 #define or32_num_regs  (GDB_REGNUM_SR + 1)
 
 
@@ -61,11 +61,15 @@ void init_registers_or32 (void);
    regs_or32, we substitute r31 for r0 and NPC for PPC.                       */
 /* -------------------------------------------------------------------------- */
 static int or32_regmap[] = {
-  GPR31, SP,    GPR2,  GPR3,  GPR4,  GPR5,  GPR6,  GPR7,
-  GPR8,  GPR9,  GPR10, GPR11, GPR12, GPR13, GPR14, GPR15,
-  GPR16, GPR17, GPR18, GPR19, GPR20, GPR21, GPR22, GPR23,
-  GPR24, GPR25, GPR26, GPR27, GPR28, GPR29, GPR30, GPR31,
-  PC,    PC,    SR
+  PT_GPR31, PT_SP,    PT_GPR2,  PT_GPR3,
+  PT_GPR4,  PT_GPR5,  PT_GPR6,  PT_GPR7,
+  PT_GPR8,  PT_GPR9,  PT_GPR10, PT_GPR11,
+  PT_GPR12, PT_GPR13, PT_GPR14, PT_GPR15,
+  PT_GPR16, PT_GPR17, PT_GPR18, PT_GPR19,
+  PT_GPR20, PT_GPR21, PT_GPR22, PT_GPR23,
+  PT_GPR24, PT_GPR25, PT_GPR26, PT_GPR27,
+  PT_GPR28, PT_GPR29, PT_GPR30, PT_GPR31,
+  PT_PC,    PT_PC,    PT_SR
 };
 
 
@@ -119,7 +123,7 @@ static CORE_ADDR
 or32_get_pc (struct regcache *regcache)
 {
   unsigned long int  npc;
-  collect_register_by_name (regcache, "npc", &npc);  
+  collect_register_by_name (regcache, "pc", &npc);  
 
     if (debug_threads)
     {
@@ -144,7 +148,7 @@ or32_set_pc (struct regcache *regcache,
 	     CORE_ADDR        pc)
 {
   unsigned long int  npc = pc;
-  supply_register_by_name (regcache, "npc", &npc);
+  supply_register_by_name (regcache, "pc", &npc);
 
 }	/* or32_set_pc () */
 

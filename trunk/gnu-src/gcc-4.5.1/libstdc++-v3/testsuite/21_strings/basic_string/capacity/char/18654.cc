@@ -22,6 +22,12 @@
 #include <string>
 #include <testsuite_hooks.h>
 
+// { dg-options " -DSTR_MAX_SIZE=16" { target { or32-*-elf } } }
+
+#ifndef STR_MAX_SIZE
+#define STR_MAX_SIZE 20
+#endif
+
 // libstdc++/18654
 void test01()
 {
@@ -34,7 +40,7 @@ void test01()
   // and shrink-to-fit (in the future, maybe this will change
   // for short strings).
   const size_type minsize = 2 << 0;
-  const size_type maxsize = 2 << 20;
+  const size_type maxsize = 2 << STR_MAX_SIZE;
   for (size_type i = minsize; i <= maxsize; i *= 2)
     {
       string str(i, 'x');

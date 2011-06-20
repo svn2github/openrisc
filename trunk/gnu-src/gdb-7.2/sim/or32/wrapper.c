@@ -364,7 +364,7 @@ sim_read (SIM_DESC       sd  ATTRIBUTE_UNUSED,
   int res = or1ksim_read_mem (mem, buf, len);
 
 #ifdef OR32_SIM_DEBUG
-  printf ("Reading %d bytes from 0x%8p\n", len, (void *) mem);
+  printf ("Reading %d bytes from %08p\n", len, (void *) mem);
 #endif
 
   return  res;
@@ -390,7 +390,7 @@ sim_write (SIM_DESC             sd  ATTRIBUTE_UNUSED,
 	   int                  len)
 {
 #ifdef OR32_SIM_DEBUG
-  printf ("Writing %d bytes to 0x%8p\n", len, (void *) mem);
+  printf ("Writing %d bytes to %08p\n", len, (void *) mem);
 #endif
 
   return  or1ksim_write_mem ((unsigned int) mem, buf, len);
@@ -429,7 +429,7 @@ sim_fetch_register (SIM_DESC       sd,
   int                res;
 
 #ifdef OR32_SIM_DEBUG
-  printf ("sim_fetch_register (regno=%d\n) called\n", regno);
+  printf ("sim_fetch_register (regno=%d) called\n", regno);
 #endif
   if (4 != len)
     {
@@ -648,6 +648,12 @@ sim_resume (SIM_DESC  sd,
   switch (res)
     {
     case OR1KSIM_RC_HALTED:
+
+#ifdef OR32_SIM_DEBUG
+      (void) or1ksim_read_reg (OR32_NPC_REGNUM, &npc);
+      printf ("  execution halted at 0x%08lx.\n", npc);
+#endif
+
       sd->last_reason = sim_exited;
       (void) or1ksim_read_reg (OR32_FIRST_ARG_REGNUM, &retval);
       sd->last_rc     = (unsigned int) retval;
@@ -657,6 +663,11 @@ sim_resume (SIM_DESC  sd,
       break;
 
     case OR1KSIM_RC_BRKPT:
+
+#ifdef OR32_SIM_DEBUG
+      printf ("  execution hit breakpoint.\n");
+#endif
+
       sd->last_reason = sim_stopped;
       sd->last_rc     = TARGET_SIGNAL_TRAP;
 

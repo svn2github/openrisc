@@ -19,6 +19,12 @@
 
 // 27.8.1.4 Overridden virtual functions
 
+// { dg-options " -DMAX_SIZE_EXP=16" { target { or32-*-elf } } }
+
+#ifndef MAX_SIZE_EXP
+#define MAX_SIZE_EXP 18
+#endif
+
 #include <sstream>
 #include <testsuite_hooks.h>
 
@@ -27,7 +33,7 @@ void test01()
   using namespace std;
   bool test __attribute__((unused)) = true;
 
-  const unsigned max_size = 1 << 18;
+  const unsigned max_size = 1 << MAX_SIZE_EXP;
 
   static wchar_t ref[max_size];
   wmemset(ref, L'\0', max_size);

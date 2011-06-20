@@ -24,9 +24,38 @@
 # Look for the different GNU results in different directories. We put the
 # results to a temporary file, to allow us to suck out the summary as well.
 
-# The argument is the list of log files to process.
+# The argument is the list of log files to process. It may optionally start
+# with -d, indicating that the name of the test is the last directory name,
+# not the tool and/or -a to indicate that tests with zero results should be
+# included.
 
 tmpf=/tmp/check-results-$$
+
+# Check for flags
+usedir="false"
+showall="false"
+until
+complete="false"
+case $1
+    in
+    -d)
+	usedir="true"
+	shift
+	;;
+
+    -a)
+	showall="true"
+	shift
+	;;
+    
+    *)
+	complete="true"
+	;;
+esac;
+[ "true" == "${complete}" ]
+do
+    continue
+done
 
 # Get the individual results if we have any. Note that we don't check for the
 # strings at start of line, since they may have FTP prompts showing. Don't
@@ -37,8 +66,15 @@ if ls $* > /dev/null 2>&1
 then
     for logfile in $*
     do
-	logfile_base=`basename ${logfile}`
-	tname=`echo ${logfile_base} | sed -e 's/\.log//'`
+	if [ "${usedir}" == "true" ]
+	then
+	    dir=`dirname ${logfile}`
+	    tname=`basename ${dir}`
+	else
+	    logfile_base=`basename ${logfile}`
+	    tname=`echo ${logfile_base} | sed -e 's/\.log//'`
+	fi
+
 	p=`grep 'PASS:' ${logfile} | grep -v 'XPASS' | wc -l`
 	f=`grep 'FAIL:' ${logfile} | grep -v 'XFAIL' | wc -l`
 	xp=`grep 'XPASS:' ${logfile} | wc -l`
@@ -48,7 +84,7 @@ then
 	ut=`grep 'UNTESTED:' ${logfile} | wc -l`
 	tot=`echo "${p} ${f} + ${xp} + ${xf} + ${ur} + ${us} + ${ut} + p" | dc`
 
-	if [ "x${tot}" != "x0" ]
+	if [ "${showall}" == "true" -o "x${tot}" != "x0" ]
 	then
 	    printf "%-25s %5d %5d %5d %5d %5d %5d %5d %5d\n" \
   		${tname} ${p} ${f} ${xp} ${xf} ${ur} ${us} ${ut} ${tot} | \

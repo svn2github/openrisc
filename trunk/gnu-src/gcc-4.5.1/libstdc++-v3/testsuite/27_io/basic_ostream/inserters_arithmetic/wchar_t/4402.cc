@@ -17,6 +17,8 @@
 // with this library; see the file COPYING3.  If not see
 // <http://www.gnu.org/licenses/>.
 
+// { dg-do run { xfail newlib } }
+
 #include <cstdio> // for swprintf
 #include <iostream>
 #include <iomanip>

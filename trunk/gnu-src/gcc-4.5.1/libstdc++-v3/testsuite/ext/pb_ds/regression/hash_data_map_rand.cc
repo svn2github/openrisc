@@ -40,8 +40,10 @@
 #include <regression/rand/assoc/rand_regression_test.hpp>
 #include <regression/common_type.hpp>
 
-// This can take long on simulators, timing out the test.
+// This can take long on simulators, timing out the test. Also change on
+// OpenRISC linux, since this may be a remotely simulated target.
 // { dg-options "-DPB_DS_REGRESSION -DITERATIONS=5" { target simulator } }
+// { dg-options "-DPB_DS_REGRESSION -DITERATIONS=5" { target or32-*-linux } }
 // { dg-timeout-factor 2.0 }
 #ifndef ITERATIONS
 #define ITERATIONS 5000

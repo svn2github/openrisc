@@ -18,7 +18,7 @@
 // <http://www.gnu.org/licenses/>.
 
 
-// { dg-do run }
+// { dg-do run { xfail newlib } }
 
 #include <locale>
 #include <testsuite_hooks.h>

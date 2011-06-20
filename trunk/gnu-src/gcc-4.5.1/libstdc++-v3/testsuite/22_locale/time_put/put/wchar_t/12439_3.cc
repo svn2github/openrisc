@@ -17,6 +17,9 @@
 
 // 22.2.5.3.1 time_put members
 
+// { dg-do run { target { ! or32-*-elf } } }
+// { dg-do compile { target or32-*-elf } }
+
 #include <locale>
 #include <sstream>
 #include <ctime>

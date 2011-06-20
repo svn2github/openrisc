@@ -19,8 +19,10 @@
 
 //  riemann_zeta
 
-// This can take long on simulators, timing out the test.
+// This can take long on simulators, timing out the test. Also change on
+// OpenRISC linux, since this may be a remotely simulated target.
 // { dg-options "-DMAX_ITERATIONS=5" { target simulator } }
+// { dg-options "-DMAX_ITERATIONS=5" { target or32-*-linux } }
 
 #ifndef MAX_ITERATIONS
 #define MAX_ITERATIONS (sizeof(data001) / sizeof(testcase_riemann_zeta<double>))

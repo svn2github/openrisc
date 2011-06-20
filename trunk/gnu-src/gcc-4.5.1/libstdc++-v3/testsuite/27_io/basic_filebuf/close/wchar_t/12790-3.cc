@@ -17,6 +17,8 @@
 
 // 27.8.1.3 filebuf member functions
 
+// { dg-xfail-run-if "not supported on OR32 newlib" { or32-*-elf } }
+
 #include <locale>
 #include <fstream>
 #include <testsuite_hooks.h>

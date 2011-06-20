@@ -17,6 +17,8 @@
 
 // 21.3.7.9 inserters and extractors
 
+// { dg-xfail-run-if "not supported on OR32 newlib" { or32-*-elf } }
+
 #include <istream>
 #include <string>
 #include <fstream>

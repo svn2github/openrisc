@@ -20,6 +20,9 @@
 
 // 20.8.5 Clocks [time.clock]
 
+// { dg-do run { target { ! or32-*-elf } } }
+// { dg-do compile { target or32-*-elf } }
+
 #include <chrono>
 
 // 20.8.5.1 system_clock [time.clock.system]

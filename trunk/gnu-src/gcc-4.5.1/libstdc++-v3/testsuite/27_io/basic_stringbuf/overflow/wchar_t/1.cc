@@ -19,6 +19,12 @@
 
 // 27.7.1.3 basic_stringbuf overridden virtual functions.
 
+// { dg-options " -DSTR_ITER=100000" { target { or32-*-elf } } }
+
+#ifndef STR_ITER
+#define STR_ITER 10000000
+#endif
+
 #include <sstream>
 #include <cstdlib>
 #include <testsuite_hooks.h>
@@ -51,6 +57,6 @@ test01(unsigned iter)
 
 int main()
 {
-  test01(10000000);
+  test01(STR_ITER);
   return 0;
 }

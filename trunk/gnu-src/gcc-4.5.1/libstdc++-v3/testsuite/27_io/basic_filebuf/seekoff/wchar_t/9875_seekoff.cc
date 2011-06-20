@@ -17,6 +17,8 @@
 
 // 27.8.1.4 Overridden virtual functions
 
+// { dg-xfail-run-if "not supported on OR32 newlib" { or32-*-elf } }
+
 #include <fstream>
 #include <locale>
 #include <algorithm>
