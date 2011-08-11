@@ -3,10 +3,17 @@ include ../Makefile.inc
 INCDIR 	= -I../arch
 CFLAGS	+= $(INCDIR)
 
+SRC_C = uart.c
+SRC_S = 
+
+OBJ_C = $(SRC_C:.c=.o)
+OBJ_S = $(SRC_S:.S=.o)
+OBJS  = $(OBJ_C) $(OBJ_S)
+
 all: libdrivers.a
 
-libdrivers.a: uart.o
-	@$(AR) cru $@ $<
+libdrivers.a: $(OBJS)
+	@$(AR) cru $@ $(OBJS)
 	@$(RANLIB) $@
 	@echo Complete $@
 

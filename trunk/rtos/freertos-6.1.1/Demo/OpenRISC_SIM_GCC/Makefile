@@ -27,7 +27,8 @@ APP_SRC = \
 PORT_SRC = $(RTOS_SOURCE_DIR)/portable/GCC/OpenRISC/port.c
 PORT_ASM = $(RTOS_SOURCE_DIR)/portable/GCC/OpenRISC/portasm.S
 
-DEMO_SRC = main.c ./drivers/uart.c 
+DEMO_SRC = main.c  
+ARCH_ASM = ./arch/reset.S
 
 INC		= -I. -I../../Source/include -I./arch -I./drivers -I../Common/include \
 		  -I$(RTOS_SOURCE_DIR)/portable/GCC/OpenRISC
@@ -48,10 +49,10 @@ APP_OBJ  = $(APP_SRC:.c=.o)
 PORT_OBJ = $(PORT_SRC:.c=.o)
 DEMO_OBJ = $(DEMO_SRC:.c=.o)
 PORT_ASM_OBJ = $(PORT_ASM:.S=.o)
-ARCH_OBJ = ./arch/reset.o ./arch/int.o ./arch/support.o ./arch/interrupts.o
+ARCH_ASM_OBJ = $(ARCH_ASM:.S=.o)
 
 LDFLAGS	 = -T ./arch/link.ld -Map $(PROG).map
-LIBS	 = -L./drivers -ldrivers \
+LIBS	 = -L./arch -larch -L./drivers -ldrivers \
 		   -L$(CCPATH)/lib/gcc/$(TARGET)/$(GCCVER) \
 		   -L$(CCPATH)/$(TARGET)/lib \
 		   -lgcc -lc -lm
@@ -61,14 +62,14 @@ LIBS	 = -L./drivers -ldrivers \
 	@$(CC) -c $(CFLAGS) -o $@ $<
 
 %.o: %.S
-	@echo "    CC $<"
+	@echo "    ASM $<"
 	@$(CC) -c $(CFLAGS) -o $@ $<
 
 all: $(PROG).or32
 
 $(PROG).or32 : $(PORT_ASM_OBJ) $(PORT_OBJ) $(RTOS_OBJ) $(DEMO_OBJ) Makefile arch drivers
 	@echo Link....
-	@$(LD) -o $@ $(LDFLAGS) --start-group $(ARCH_OBJ) $(PORT_ASM_OBJ) $(PORT_OBJ) $(RTOS_OBJ) $(DEMO_OBJ) $(LIBS) --end-group 
+	@$(LD) -o $@ $(LDFLAGS) --start-group $(ARCH_ASM_OBJ) $(PORT_ASM_OBJ) $(PORT_OBJ) $(RTOS_OBJ) $(DEMO_OBJ) $(LIBS) --end-group 
 	@$(OBJDUMP) -S $(PROG).or32 >> $(PROG).asm	
 	@echo Complete $@
 

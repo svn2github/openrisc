@@ -28,6 +28,9 @@
 void uart_init(void) {
 	int divisor;
 
+	/* Diable interrupt */
+	REG8(UART_BASE + UART_IER) = 0x0;
+
 	/* Reset receiver and transmiter */
 	/* Set RX interrupt for each byte */
 	REG8(UART_BASE + UART_FCR) = UART_FCR_ENABLE_FIFO | UART_FCR_CLEAR_RCVR | UART_FCR_CLEAR_XMIT | UART_FCR_TRIGGER_1;

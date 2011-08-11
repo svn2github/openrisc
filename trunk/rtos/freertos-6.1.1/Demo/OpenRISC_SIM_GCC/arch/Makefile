@@ -2,14 +2,26 @@ include ../Makefile.inc
 
 CFLAGS	+= -DIC=0 -DDC=0 
 
-all: support.o int.o reset.o interrupts.o
+SRC_C = support.c int.c interrupts.c
+SRC_S = reset.S
+
+OBJ_C = $(SRC_C:.c=.o)
+OBJ_S = $(SRC_S:.S=.o)
+OBJS  = $(OBJ_C) $(OBJ_S)
+
+all: libarch.a
+
+libarch.a: $(OBJS)
+	@$(AR) cru $@ $(OBJ_C)
+	@$(RANLIB) $@
+	@echo Complete $@
 
 %.o: %.c
 	@echo "    CC $<"
 	@$(CC) -c $(CFLAGS) $(INCDIRS) -o $@ $<
 
 %.o: %.S
-	@echo "    CC $<"
+	@echo "    ASM $<"
 	@$(CC) -c $(CFLAGS) $(INCDIRS) -o $@ $<
 
 clean:
