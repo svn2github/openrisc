@@ -35,9 +35,6 @@ void uart_init(void) {
 	/* Set RX interrupt for each byte */
 	REG8(UART_BASE + UART_FCR) = UART_FCR_ENABLE_FIFO | UART_FCR_CLEAR_RCVR | UART_FCR_CLEAR_XMIT | UART_FCR_TRIGGER_1;
 
-	/* Enable RX interrupt */
-	REG8(UART_BASE + UART_IER) = UART_IER_RDI | UART_IER_THRI;
-
 	/* Set 8 bit char, 1 stop bit, no parity */
 	REG8(UART_BASE + UART_LCR) = UART_LCR_WLEN8 & ~(UART_LCR_STOP | UART_LCR_PARITY);
 
@@ -80,7 +77,7 @@ void uart_print_str(char *p) {
 	}
 }
 
-void uart_put_int(int n) {
+void uart_print_int(int n) {
 	int  a;
 	char c;
 	if (n<0) {
@@ -89,7 +86,7 @@ void uart_put_int(int n) {
 	}
 
 	a = n/10;
-	if(a) uart_put_int(a);
+	if(a) uart_print_int(a);
 
 	c = '0' + (n % 10);
 	uart_putc(c);

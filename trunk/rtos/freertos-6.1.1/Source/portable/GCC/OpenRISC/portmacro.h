@@ -85,8 +85,7 @@ extern "C" {
 
 #define portYIELD_FROM_ISR()			vTaskSwitchContext()
 #define portYIELD()		{	\
-	__asm__ __volatile__ ( "l.addi r1, r1, -4" ); \
-	__asm__ __volatile__ ( "l.sw 0x0(r1), r11" ); \
+	__asm__ __volatile__ ( "l.sw  -4(r1), r11" ); \
 	__asm__ __volatile__ ( "l.addi r11, r0, 0x0FCC" ); \
 	__asm__ __volatile__ ( "l.sys 0x0FCC" ); \
 	__asm__ __volatile__ ( "l.nop       " ); \
@@ -115,8 +114,7 @@ void vPortEnableInterrupts( void );
 // Critical section handling.
 // switch supervisormode, disable tick interrupt and all external interrupt, switch back usermode
 #define portENTER_CRITICAL()	{	\
-	__asm__ __volatile__ ( "l.addi r1, r1, -4" ); \
-	__asm__ __volatile__ ( "l.sw 0x0(r1), r11" ); \
+	__asm__ __volatile__ ( "l.sw  -4(r1), r11" ); \
 	__asm__ __volatile__ ( "l.addi r11, r0, 0x0FCE" ); \
 	__asm__ __volatile__ ( "l.sys 0x0FCE" ); \
 	__asm__ __volatile__ ( "l.nop       " ); \
@@ -124,8 +122,7 @@ void vPortEnableInterrupts( void );
 
 // switch supervisormode, enable tick interrupt and all external interrupt, switch back usermode
 #define portEXIT_CRITICAL()		{	\
-	__asm__ __volatile__ ( "l.addi r1, r1, -4" ); \
-	__asm__ __volatile__ ( "l.sw 0x0(r1), r11" ); \
+	__asm__ __volatile__ ( "l.sw  -4(r1), r11" ); \
 	__asm__ __volatile__ ( "l.addi r11, r0, 0x0FCF" ); \
 	__asm__ __volatile__ ( "l.sys 0x0FCF" ); \
 	__asm__ __volatile__ ( "l.nop       " ); \
@@ -144,7 +141,7 @@ void vPortEnableInterrupts( void );
 	asm volatile (								\
 	"	.global	pxCurrentTCB			\n\t"	\
 	"	# make rooms in stack			\n\t"	\
-	"	l.addi	r1, r1, -132			\n\t"	\
+	"	l.addi	r1, r1, -128			\n\t"	\
 	"	# early save r3-r5, these are clobber register\n\t" \
 	"	l.sw	0x08(r1), r3			\n\t"	\
 	"	l.sw	0x0C(r1), r4			\n\t"	\
@@ -240,6 +237,7 @@ void vPortEnableInterrupts( void );
 	"	l.lwz	r3, 0x08(r1)			\n\t"	\
 	"	l.lwz	r4, 0x0C(r1)			\n\t"	\
 	"	l.lwz	r5, 0x10(r1)			\n\t"	\
+	"	l.addi	r1, r1, 128				\n\t"	\
 	"	l.rfe							\n\t"	\
 	"	l.nop							\n\t"	\
 	);

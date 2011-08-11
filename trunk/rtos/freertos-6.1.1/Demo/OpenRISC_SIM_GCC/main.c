@@ -63,7 +63,7 @@
 #include "task.h"
 
 #include "uart.h"
-#include "int.h"
+#include "interrupts.h"
 
 #define TASK_STACK_SIZE	(configMINIMAL_STACK_SIZE)
 
@@ -117,13 +117,13 @@ void vClockTask(void *pvParameters) {
 
 		portENTER_CRITICAL();
 		{
-			uart_put_int(hour);
+			uart_print_int(hour);
 			uart_print_str(" : ");
-			uart_put_int(min);
+			uart_print_int(min);
 			uart_print_str(" : ");
-			uart_put_int(sec);
+			uart_print_int(sec);
 			uart_print_str(" , ");
-			uart_put_int(ticks);
+			uart_print_int(ticks);
 			uart_print_str("\n\r");
 		}
 		portEXIT_CRITICAL();
@@ -142,11 +142,11 @@ void vDemoTask(void *pvParameters) {
 		portENTER_CRITICAL();
 		{
 			uart_print_str("vTask ");
-			uart_put_int(delay);
+			uart_print_int(delay);
 			uart_print_str(" : ");
-			// uart_put_int(priority);
+			// uart_print_int(priority);
 			// uart_print_str(" , ");
-			uart_put_int(ticks);
+			uart_print_int(ticks);
 			uart_print_str(" \n\r");	
 		}
 		portEXIT_CRITICAL();

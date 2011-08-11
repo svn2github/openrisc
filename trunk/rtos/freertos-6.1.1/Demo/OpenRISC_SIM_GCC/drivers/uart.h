@@ -122,6 +122,6 @@ void uart_init(void);
 void uart_putc(char);
 char uart_getc(void);
 void uart_print_str(char *p);
-void uart_put_int(int n);
+void uart_print_int(int n);
 
 #endif

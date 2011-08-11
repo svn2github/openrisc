@@ -1,8 +1,8 @@
 include ../Makefile.inc
 
-CFLAGS	+= -DIC=0 -DDC=0 
+CFLAGS	+= -DIC=0 -DDC=0 -g
 
-SRC_C = support.c int.c interrupts.c
+SRC_C = support.c interrupts.c
 SRC_S = reset.S
 
 OBJ_C = $(SRC_C:.c=.o)

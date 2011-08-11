@@ -1,13 +1,6 @@
 /* Support */
 #include "spr_defs.h"
 #include "support.h"
-#include "int.h"
-
-void int_main();
-
-void ext_except(void) {
-	int_main();
-}
 
 /* Start function, called by reset exception handler.  */
 static char *main_argv[2] = {"NULL", " "};

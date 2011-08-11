@@ -1,45 +1,140 @@
-#include "../../../Source/portable/GCC/OpenRISC/portmacro.h"
+/* This file is part of test microkernel for OpenRISC 1000. */
+/* (C) 2001 Simon Srot, srot@opencores.org */
+
+#include "support.h"
 #include "spr_defs.h"
+#include "interrupts.h"
+
+/* Interrupt handlers table */
+static struct ihnd int_handlers[MAX_INT_HANDLERS];
+
+/* Initialize routine */
+int int_init(void) {
+	int i;
+	
+	// initialize Interrupt handler table
+	for(i = 0; i < MAX_INT_HANDLERS; i++) {
+		int_handlers[i].handler = 0;
+		int_handlers[i].arg = 0;
+	}
+	
+	// mask all interrupt
+	mtspr(SPR_PICMR, 0x00000000);
+
+	// set OR1200 to accept exceptions (external interrupt enable)
+	mtspr(SPR_SR, mfspr(SPR_SR) | SPR_SR_IEE);
+
+	return 0;
+}
+
+/* Add interrupt handler */ 
+int int_add(unsigned long vect, void (* handler)(void *), void *arg) {
+	if(vect >= MAX_INT_HANDLERS)
+		return -1;
+
+	int_handlers[vect].handler = handler;
+	int_handlers[vect].arg = arg;
+
+	mtspr(SPR_PICMR, mfspr(SPR_PICMR) | (0x00000001L << vect));
+
+	return 0;
+}
+
+/* Disable interrupt */ 
+int int_disable(unsigned long vect) {
+	if(vect >= MAX_INT_HANDLERS)
+		return -1;
+
+	mtspr(SPR_PICMR, mfspr(SPR_PICMR) & ~(0x00000001L << vect));
+
+	return 0;
+}
+
+/* Enable interrupt */ 
+int int_enable(unsigned long vect) {
+	if(vect >= MAX_INT_HANDLERS)
+		return -1;
+
+	mtspr(SPR_PICMR, mfspr(SPR_PICMR) | (0x00000001L << vect));
+
+	return 0;
+}
+
+/* Main interrupt handler */
+void int_main(void) {
+	unsigned long picsr = mfspr(SPR_PICSR);   // process only the interrupts asserted at signal catch, ignore all during process
+	unsigned long i = 0;
+
+	while(i < 32) {
+		if((picsr & (0x01L << i)) && (int_handlers[i].handler != 0)) {
+			(*int_handlers[i].handler)(int_handlers[i].arg); 
+		}
+		i++;
+	}
+
+	mtspr(SPR_PICSR, 0);	// clear interrupt status: all modules have level interrupts, which have to be cleared by software,
+}                          	// thus this is safe, since non processed interrupts will get re-asserted soon enough
 
 // Dummy or32 except vectors
 void buserr_except(void) {
 	uart_print_str("buserr_except\n\r");
-	while(1) ;
 }
 
 void dpf_except(void) {
 	uart_print_str("dpf_except\n\r");
-	while(1) ;
 }
 
 void ipf_except(void) {
 	uart_print_str("ipf_except\n\r");
-	while(1) ;
 }
 
 void align_except(void) {
 	uart_print_str("align_except\n\r");
-	while(1) ;
 }
 
 void illegal_except(void) {
 	uart_print_str("illegal_except\n\r");
-	while(1) ;
 }
 
 void dtlbmiss_except(void) {
 	uart_print_str("dtlbmiss_except\n\r");
-	while(1) ;
 }
 
 void itlbmiss_except(void) {
 	uart_print_str("itlbmiss_except\n\r");
-	while(1) ;
 }
 
 void range_except(void) {
 	uart_print_str("range_except\n\r");
-	while(1) ;
+}
+
+void res1_except(void) {
+	uart_print_str("res1_except\n\r");
+}
+
+void trap_except(void) {
+	uart_print_str("trap_except\n\r");
+}
+
+void res2_except(void) {
+	uart_print_str("res2_except\n\r");
+}
+
+void misc_int_handler(int arg) {
+	switch(arg) {
+	case 0x200: { buserr_except(); 	 break; }
+	case 0x300: { dpf_except();		 break; }
+	case 0x400: { ipf_except(); 	 break; }
+	case 0x600: { align_except(); 	 break; }
+	case 0x700: { illegal_except();	 break; }
+	case 0x900: { dtlbmiss_except(); break; }
+	case 0xa00: { itlbmiss_except(); break; }
+	case 0xb00: { range_except(); 	 break; }
+	case 0xd00: { res1_except(); 	 break; }
+	case 0xe00: { trap_except(); 	 break; }
+	case 0xf00: { res2_except(); 	 break; }
+	default: { break; }
+	}
 }
 
 static void syscall_enter_critical(void) {
@@ -59,29 +154,15 @@ static void syscall_exit_critical(void) {
 }
 
 void syscall_except(int id) {
-	if(id == 0x0FCE) {
+	if(id == 0x0FCC) {
+		vTaskSwitchContext();
+	} else if(id == 0x0FCE) {
 		syscall_enter_critical();
 	} else if(id == 0x0FCF) {
 		syscall_exit_critical();
 	} else {
-		uart_put_int(id);
+		uart_print_int(id);
 		uart_print_str(" syscall is not impelmented yet....\n\r");
 	}
-}
-
-
-void res1_except(void) {
-	uart_print_str("res1_except\n\r");
-	while(1) ;
-}
-
-void trap_except(void) {
-	uart_print_str("trap_except\n\r");
-	while(1) ;
-}
-
-void res2_except(void) {
-	uart_print_str("res2_except\n\r");
-	while(1) ;
 }
 

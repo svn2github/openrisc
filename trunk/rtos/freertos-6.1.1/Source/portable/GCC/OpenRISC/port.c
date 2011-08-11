@@ -63,6 +63,10 @@
 /* Processor constants. */
 #include "port_spr_defs.h"
 
+/* Jump buffer */
+#include <setjmp.h>
+static jmp_buf jmpbuf;
+
 /* Tick Timer Interrupt handler */
 void vTickHandler( void );	
 
@@ -172,20 +176,26 @@ portSTACK_TYPE *pxPortInitialiseStack( portSTACK_TYPE *pxTopOfStack, pdTASK_CODE
 
 portBASE_TYPE xPortStartScheduler( void )
 {
-	/* Start the timer that generates the tick ISR.  Interrupts are disabled
-	here already. */
-	prvSetupTimerInterrupt();
+	if(setjmp((void *)jmpbuf) == 0) {
+		/* Start the timer that generates the tick ISR.  Interrupts are disabled
+		here already. */
+		prvSetupTimerInterrupt();
 
-	/* Start the first task. */
-	portRESTORE_CONTEXT();	
-	
-	/* Should not get here! */
+		/* Start the first task. */
+		portRESTORE_CONTEXT();	
+		
+		/* Should not get here! */
+	} else {
+		/* Retrun by vPortEndScheduler */
+	}
+
 	return 0;
 }
 
 void vPortEndScheduler( void )
 {
 	mtspr(SPR_SR, mfspr(SPR_SR) & (~SPR_SR_TEE));	// Tick stop
+	longjmp((void *)jmpbuf, 1);						// return to xPortStartScheduler
 }
 
 /*
@@ -211,6 +221,10 @@ static void prvSetupTimerInterrupt( void )
     mtspr(SPR_SR, mfspr(SPR_SR) | SPR_SR_TEE);
 }
 
+/* 
+ * naked attribute is ignored or32-elf-gcc 4.5.1-or32-1.0rc1 
+ * use assemble routines in portasm.S
+ */
 #if 0
 void vTickHandler( void )
 {

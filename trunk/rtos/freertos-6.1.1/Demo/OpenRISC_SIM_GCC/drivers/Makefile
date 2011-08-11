@@ -1,7 +1,7 @@
 include ../Makefile.inc
 
 INCDIR 	= -I../arch
-CFLAGS	+= $(INCDIR)
+CFLAGS	+= $(INCDIR) -g
 
 SRC_C = uart.c
 SRC_S = 
