@@ -10,9 +10,9 @@
 #include <limits.h>
 
 /* Register access macros */
-#define REG8(add) *((volatile unsigned char *)(add))
-#define REG16(add) *((volatile unsigned short *)(add))
-#define REG32(add) *((volatile unsigned long *)(add))
+#define REG8(add)	*((volatile unsigned char *)(add))
+#define REG16(add) 	*((volatile unsigned short *)(add))
+#define REG32(add) 	*((volatile unsigned long *)(add))
 
 /* For writing into SPR. */
 void mtspr(unsigned long spr, unsigned long value);
@@ -28,25 +28,5 @@ void report(unsigned long value);
 
 /* return value by making a syscall */
 extern void or32_exit (int i) __attribute__ ((__noreturn__));
-
-/* Timer functions */
-extern void start_timer(int);
-extern unsigned int read_timer(int);
-
-
-extern unsigned long excpt_buserr;
-extern unsigned long excpt_dpfault;
-extern unsigned long excpt_ipfault;
-extern unsigned long excpt_tick;
-extern unsigned long excpt_align;
-extern unsigned long excpt_illinsn;
-extern unsigned long excpt_int;
-extern unsigned long excpt_dtlbmiss;
-extern unsigned long excpt_itlbmiss;
-extern unsigned long excpt_range;
-extern unsigned long excpt_syscall;
-extern unsigned long excpt_break;
-extern unsigned long excpt_trap;
-
 
 #endif /* SUPPORT_H */
