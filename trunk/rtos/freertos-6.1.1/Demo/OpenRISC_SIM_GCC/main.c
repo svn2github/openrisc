@@ -157,7 +157,7 @@ void vDemoTask(void *pvParameters) {
 
 static void prvSetupHardware(void) {
 	// UART controller use 25 Mhz Wishbone bus clock, define in board.h
-	uart_init();			
+	uart_init(0);			
 
 	// Initialize internal Programmable Interrupt Controller
 	int_init();

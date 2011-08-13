@@ -118,9 +118,20 @@
 #define UART_EFR_SCD	0x20	/* Special character detect */
 #define UART_EFR_ENI	0x10	/* Enhanced Interrupt */
 
-void uart_init(void);
-void uart_putc(char);
-char uart_getc(void);
+void uart_init(int core);
+void uart_putc(int core, char c);
+void uart_putc_noblock(int core, char c);
+char uart_getc(int core);
+int uart_check_for_char(int core);
+char uart_getc_noblock(int core);
+void uart_rxint_enable(int core);
+void uart_rxint_disable(int core);
+void uart_txint_enable(int core);
+void uart_txint_disable(int core);
+char uart_get_iir(int core);
+char uart_get_lsr(int core);
+char uart_get_msr(int core);
+
 void uart_print_str(char *p);
 void uart_print_int(int n);
 
