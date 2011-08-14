@@ -16,6 +16,7 @@ vPortDisableInterrupts:
 	l.and	r3, r3, r4			# disable External Interrupt
 	l.mtspr	r0, r3, SPR_SR		# update SR					
 	l.jr	r9
+	l.nop
 .size	vPortDisableInterrupts, .-vPortDisableInterrupts
 
 
@@ -28,6 +29,7 @@ vPortEnableInterrupts:
 	l.ori	r3, r3, SPR_SR_IEE	# enable External Interrupt	
 	l.mtspr	r0, r3, SPR_SR		# update SR					
 	l.jr	r9
+	l.nop
 .size	vPortEnableInterrupts, .-vPortEnableInterrupts
 
 
