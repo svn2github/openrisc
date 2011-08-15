@@ -620,13 +620,15 @@ function gnu_config {
 
 	verstr="OpenRISC 32-bit toolchain for ${target} (built `date +%Y%m%d`)"
 
-	mkdir -p ${top_builddir} &&                                   \
-	    cd ${top_builddir} &&                                     \
-	    ${top_srcdir}/configure --target=${target}                \
-  	        --with-pkgversion="${verstr}" --disable-shared        \
-	        --with-bugurl=http://www.opencores.org/               \
-	        --with-or1ksim=${or1ksim_dir}                         \
-	        --enable-fast-install=N/A --disable-libssp            \
+	# Add --disable-werror, since binutils will not compile with very
+	# latest GCC, due to unset variables.
+	mkdir -p ${top_builddir} &&                                    \
+	    cd ${top_builddir} &&                                      \
+	    ${top_srcdir}/configure --target=${target}                 \
+  	        --with-pkgversion="${verstr}" --disable-shared         \
+	        --with-bugurl=http://www.opencores.org/                \
+	        --with-or1ksim=${or1ksim_dir} --disable-werror         \
+	        --enable-fast-install=N/A --disable-libssp             \
 	        --enable-languages=${langs} --prefix=${this_prefix} $*
 
 	if [ $? != 0 ]
