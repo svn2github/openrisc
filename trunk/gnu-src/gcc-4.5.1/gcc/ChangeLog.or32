@@ -1,3 +1,8 @@
+2011-08-25  Jeremy Bennett  <jeremy.bennett@embecosm.com>
+
+	* config/or32/linux-elf.h <TARGET_OS_CPP_BUILTINS>: Defined, based
+	on LINUX_TARGET_OS_CPP_BUILTINS copied from linux.h.
+
 2011-04-16  Joern Rennecke  <joern.rennecke@embecosm.com>
 
 	* config/or32/or32.h (OR32_ROUND_ADVANCE_CUM): Don't round.
