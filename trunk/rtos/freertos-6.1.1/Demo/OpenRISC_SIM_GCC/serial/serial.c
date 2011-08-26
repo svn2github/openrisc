@@ -55,7 +55,12 @@
 
 /* Demo application includes. */
 #include "serial.h"
+
+/* bsp includes. */
+#include "support.h"
+#include "spr_defs.h"
 #include "uart.h"
+#include "interrupts.h"
 
 /*-----------------------------------------------------------*/
 
@@ -80,56 +85,54 @@ static void vprvSerialCreateQueues( unsigned portBASE_TYPE uxQueueLength,
 									xQueueHandle *pxCharsForTx );
 
 /*-----------------------------------------------------------*/
-// TODO : Porting
-static portBASE_TYPE prvUSART_ISR_NonNakedBehaviour( void )
+static void vUSART_ISR( void *arg )
 {
 	/* Now we can declare the local variables. */
-	signed portCHAR     cChar;
-	portBASE_TYPE     xHigherPriorityTaskWoken = pdFALSE;
-	unsigned portLONG     ulStatus;
-	// FIXME
-	#define ADDR_UART_BASE		(0x90000000)
-	volatile portBASE_TYPE  *usart = ADDR_UART_BASE;
+	arg = arg;
+	signed portCHAR cChar;
+	portBASE_TYPE xHigherPriorityTaskWoken = pdFALSE;
+	unsigned portLONG ulStatus;
 	portBASE_TYPE retstatus;
 
 	/* What caused the interrupt? */
-	// FIXME
-	// ulStatus = usart->csr & usart->imr;
+	ulStatus = uart_get_iir(0);
 	
-	// TODO : TX RADY INTERRUPT, FIXME
-	// if (ulStatus & AVR32_USART_CSR_TXRDY_MASK)
-	if (ulStatus & 0x1)
+	// TX RADY INTERRUPT
+	if (ulStatus & UART_IIR_THRI)
 	{
 		/* The interrupt was caused by the THR becoming empty.  Are there any
 		more characters to transmit?
 		Because FreeRTOS is not supposed to run with nested interrupts, put all OS
 		calls in a critical section . */
+			
+		/* FIXME, entering, exiting ciritical section around 
+		xQueueReceiveFromISR is not work */
+#if 0
 		portENTER_CRITICAL();
 			retstatus = xQueueReceiveFromISR( xCharsForTx, &cChar, &xHigherPriorityTaskWoken );
 		portEXIT_CRITICAL();
+#else
+		retstatus = xQueueReceiveFromISR( xCharsForTx, &cChar, &xHigherPriorityTaskWoken );
+#endif
 
 		if (retstatus == pdTRUE)
 		{
 			/* A character was retrieved from the queue so can be sent to the
 			 THR now. */
-			// FIXME
-			// usart->thr = cChar;
+			uart_putc_noblock(0, cChar);
 		}
 		else
 		{
 			/* Queue empty, nothing to send so turn off the Tx interrupt. */
-			// FIXME
-			// usart->idr = AVR32_USART_IDR_TXRDY_MASK;
+			uart_txint_disable(0);
 		}
 	}
 
-	// TODO : RX RADY INTERRUPT, FIXME
-	// if (ulStatus & AVR32_USART_CSR_RXRDY_MASK)
-	if (ulStatus & 0x2)
+	// RX RADY INTERRUPT
+	if (ulStatus & UART_IIR_RDI)
 	{
 		/* The interrupt was caused by the receiver getting data. */
-		// FIXME
-		// cChar = usart->rhr; 
+		cChar = uart_getc_noblock(0); 
 
 		/* Because FreeRTOS is not supposed to run with nested interrupts, put all OS
 		calls in a critical section . */
@@ -140,41 +143,17 @@ static portBASE_TYPE prvUSART_ISR_NonNakedBehaviour( void )
 
 	/* The return value will be used by portEXIT_SWITCHING_ISR() to know if it
 	should perform a vTaskSwitchContext(). */
-	return ( xHigherPriorityTaskWoken );
-}
-/*-----------------------------------------------------------*/
-
-/*
- * USART interrupt service routine.
- */
-// FIXME it was __naked__ fuction
-static void vUSART_ISR( void ) 
-{
-	/* This ISR can cause a context switch, so the first statement must be a
-	call to the portENTER_SWITCHING_ISR() macro.  This must be BEFORE any
-	variable declarations. */
-	portENTER_SWITCHING_ISR();			// TODO
-
-	prvUSART_ISR_NonNakedBehaviour();
-
-	/* Exit the ISR.  If a task was woken by either a character being received
-	or transmitted then a context switch will occur. */
-	portEXIT_SWITCHING_ISR();			// TODO
+	// return ( xHigherPriorityTaskWoken );
 }
 /*-----------------------------------------------------------*/
 
 
-// TODO : porting
 /*
  * Init the serial port for the Minimal implementation.
  */
 xComPortHandle xSerialPortInitMinimal( unsigned portLONG ulWantedBaud, unsigned portBASE_TYPE uxQueueLength )
 {
 	xComPortHandle xReturn = serHANDLE;
-	// FIXME
-	#define ADDR_UART_BASE		(0x90000000)
-	volatile portBASE_TYPE  *usart = ADDR_UART_BASE;
-	int cd; /* USART Clock Divider. */
 
 	/* Create the rx and tx queues. */
 	vprvSerialCreateQueues( uxQueueLength, &xRxedChars, &xCharsForTx );
@@ -186,14 +165,8 @@ xComPortHandle xSerialPortInitMinimal( unsigned portLONG ulWantedBaud, unsigned 
 	{
 		portENTER_CRITICAL();
 		{
-			if( cd > 65535 )
-			{
-				/* Baudrate is too low */
-				return serINVALID_COMPORT_HANDLER;
-			}
-			
-			// FIXME
-			// INTC_register_interrupt((__int_handler)&vUSART_ISR, serialPORT_USART_IRQ, INT1);	// interrupt register
+			// register interrupt handler
+			int_add(UART0_IRQ, vUSART_ISR, 0x0);
 		}
 		portEXIT_CRITICAL();
 	}
@@ -226,6 +199,7 @@ signed portBASE_TYPE xSerialGetChar( xComPortHandle pxPort, signed portCHAR *pcR
 
 void vSerialPutString( xComPortHandle pxPort, const signed portCHAR * const pcString, unsigned portSHORT usStringLength )
 {
+	usStringLength = usStringLength;
 	signed portCHAR *pxNext;
 
 	/* NOTE: This implementation does not handle the queue being full as no
@@ -246,9 +220,8 @@ void vSerialPutString( xComPortHandle pxPort, const signed portCHAR * const pcSt
 
 signed portBASE_TYPE xSerialPutChar( xComPortHandle pxPort, signed portCHAR cOutChar, portTickType xBlockTime )
 {
-	// FIXME
-	#define ADDR_UART_BASE		(0x90000000)
-	volatile portBASE_TYPE  *usart = ADDR_UART_BASE;
+	/* The port handle is not required as this driver only supports UART0. */
+	( void ) pxPort;
 
 	/* Place the character in the queue of characters to be transmitted. */
 	if( xQueueSend( xCharsForTx, &cOutChar, xBlockTime ) != pdPASS )
@@ -260,10 +233,7 @@ signed portBASE_TYPE xSerialPutChar( xComPortHandle pxPort, signed portCHAR cOut
 	queue and send it.   This does not need to be in a critical section as
 	if the interrupt has already removed the character the next interrupt
 	will simply turn off the Tx interrupt again. */
-
-	// FIXME
-	// usart->ier = (1 << AVR32_USART_IER_TXRDY_OFFSET);
-	// TODO : Turn on TX interrupt
+	uart_txint_enable(0);
 
 	return pdPASS;
 }
@@ -272,6 +242,7 @@ signed portBASE_TYPE xSerialPutChar( xComPortHandle pxPort, signed portCHAR cOut
 void vSerialClose( xComPortHandle xPort )
 {
   /* Not supported as not required by the demo application. */
+  xPort = xPort;				// prevent compiler warning
 }
 /*-----------------------------------------------------------*/
 
