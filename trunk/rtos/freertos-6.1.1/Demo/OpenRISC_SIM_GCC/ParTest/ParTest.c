@@ -45,37 +45,32 @@
 
 
 
-#include <avr32/io.h>
 #include "FreeRTOS.h"
 #include "task.h"
 #include "partest.h"
+#include "gpio.h"
 
 
 /*-----------------------------------------------------------
  * Simple parallel port IO routines.
  *-----------------------------------------------------------*/
 
-#define partstALL_OUTPUTS_OFF     ( ( unsigned portCHAR ) 0x00 )
-#if( BOARD==EVK1100 )
-#  define partstMAX_OUTPUT_LED    ( ( unsigned portCHAR ) 8 )
+#define partstALL_OUTPUTS_OFF	( ( unsigned portCHAR ) 0x00 )
+#define partstMAX_OUTPUT_LED    ( ( unsigned portCHAR ) 0x08 )
 
-#elif( BOARD==EVK1101 )
-#  define partstMAX_OUTPUT_LED    ( ( unsigned portCHAR ) 4 )
-#endif
-
-static volatile unsigned portCHAR ucCurrentOutputValue = partstALL_OUTPUTS_OFF; /*lint !e956 File scope parameters okay here. */
+static volatile unsigned portCHAR ucCurrentOutputValue = partstALL_OUTPUTS_OFF; 
 
 /*-----------------------------------------------------------*/
 
 void vParTestInitialise( void )
 {
-	LED_Display( partstALL_OUTPUTS_OFF ); /* Start with all LEDs off. */
+	gpio_write(0, partstALL_OUTPUTS_OFF);
 }
 /*-----------------------------------------------------------*/
 
 void vParTestSetLED( unsigned portBASE_TYPE uxLED, signed portBASE_TYPE xValue )
 {
-unsigned portCHAR ucBit;
+	unsigned portCHAR ucBit;
 
 	if( uxLED >= partstMAX_OUTPUT_LED )
 	{
@@ -95,7 +90,7 @@ unsigned portCHAR ucBit;
 			ucCurrentOutputValue &= ~ucBit;
 		}
 
-		LED_Display(ucCurrentOutputValue);
+		gpio_write(0, ucCurrentOutputValue);
 	}
 	xTaskResumeAll();
 }
@@ -103,11 +98,11 @@ unsigned portCHAR ucBit;
 
 void vParTestToggleLED( unsigned portBASE_TYPE uxLED )
 {
-unsigned portCHAR ucBit;
+	unsigned portCHAR ucBit;
 
-	  if( uxLED >= partstMAX_OUTPUT_LED )
-	  {
-	return;
+	if( uxLED >= partstMAX_OUTPUT_LED )
+	{
+		return;
 	}
 
 	ucBit = ( ( unsigned portCHAR ) 1 ) << uxLED;
@@ -115,7 +110,9 @@ unsigned portCHAR ucBit;
 	vTaskSuspendAll();
 	{
 		ucCurrentOutputValue ^= ucBit;
-		LED_Display(ucCurrentOutputValue);
+		gpio_write(0, ucCurrentOutputValue);
 	}
 	xTaskResumeAll();
 }
+
+
