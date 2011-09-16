@@ -216,7 +216,15 @@ int init_usb_jtag()
   }
 #endif
 
-  szDeviceName = cBufLD[0]; // Should be first device
+  if (iNumDevs==2)
+    szDeviceName = cBufLD[0]; // Should be first device
+  else if (iNumDevs==4)
+    szDeviceName = cBufLD[1]; // Should be second device
+  else
+    {
+      printf("Unexpected number of FTDI ports %d\n", iNumDevs);
+      return 1;
+    }
 
   if (Status == FTC_SUCCESS)
     {
