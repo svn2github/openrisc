@@ -105,15 +105,9 @@ static void vUSART_ISR( void *arg )
 		Because FreeRTOS is not supposed to run with nested interrupts, put all OS
 		calls in a critical section . */
 			
-		/* FIXME, entering, exiting ciritical section around 
-		xQueueReceiveFromISR is not work */
-#if 0
-		portENTER_CRITICAL();
-			retstatus = xQueueReceiveFromISR( xCharsForTx, &cChar, &xHigherPriorityTaskWoken );
-		portEXIT_CRITICAL();
-#else
+		/* entering, exiting ciritical section around xQueueReceiveFromISR is not 
+		required. OpenRISC automaticaly disable interrupt when expection occurs */
 		retstatus = xQueueReceiveFromISR( xCharsForTx, &cChar, &xHigherPriorityTaskWoken );
-#endif
 
 		if (retstatus == pdTRUE)
 		{
@@ -135,10 +129,9 @@ static void vUSART_ISR( void *arg )
 		cChar = uart_getc_noblock(0); 
 
 		/* Because FreeRTOS is not supposed to run with nested interrupts, put all OS
-		calls in a critical section . */
-		portENTER_CRITICAL();
-			xQueueSendFromISR(xRxedChars, &cChar, &xHigherPriorityTaskWoken);
-		portEXIT_CRITICAL();
+		calls in a critical section . but in case of OpenRISC, it is not required. Tick
+		, External interrupt are automaticaly disabled. */
+		xQueueSendFromISR(xRxedChars, &cChar, &xHigherPriorityTaskWoken);
 	}
 
 	/* The return value will be used by portEXIT_SWITCHING_ISR() to know if it

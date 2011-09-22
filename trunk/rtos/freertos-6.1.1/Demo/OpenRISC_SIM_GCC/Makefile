@@ -15,19 +15,17 @@ RTOS_SRC = \
 APP_SOURCE_DIR	= ../Common/Minimal
 
 APP_SRC = \
-	$(APP_SOURCE_DIR)/integer.c \
-	$(APP_SOURCE_DIR)/flash.c \
-	$(APP_SOURCE_DIR)/PollQ.c \
-	$(APP_SOURCE_DIR)/comtest.c \
-	$(APP_SOURCE_DIR)/flop.c \
-	$(APP_SOURCE_DIR)/semtest.c \
 	$(APP_SOURCE_DIR)/dynamic.c \
-	$(APP_SOURCE_DIR)/BlockQ.c 
+	$(APP_SOURCE_DIR)/integer.c \
+	$(APP_SOURCE_DIR)/blocktim.c \
+	$(APP_SOURCE_DIR)/BlockQ.c \
+	$(APP_SOURCE_DIR)/flash.c \
+	$(APP_SOURCE_DIR)/comtest.c 
 
 PORT_SRC = $(RTOS_SOURCE_DIR)/portable/GCC/OpenRISC/port.c
 PORT_ASM = $(RTOS_SOURCE_DIR)/portable/GCC/OpenRISC/portasm.S
 
-DEMO_SRC = main.c  
+DEMO_SRC = main.c serial/serial.c ParTest/ParTest.c
 ARCH_ASM = ./arch/reset.S
 
 INC		= -I. -I../../Source/include -I./arch -I./drivers -I../Common/include \
@@ -67,9 +65,9 @@ LIBS	 = -L./arch -larch -L./drivers -ldrivers \
 
 all: $(PROG).or32
 
-$(PROG).or32 : $(PORT_ASM_OBJ) $(PORT_OBJ) $(RTOS_OBJ) $(DEMO_OBJ) Makefile arch drivers
+$(PROG).or32 : $(PORT_ASM_OBJ) $(PORT_OBJ) $(RTOS_OBJ) $(DEMO_OBJ) $(APP_OBJ) Makefile arch drivers
 	@echo Link....
-	@$(LD) -o $@ $(LDFLAGS) --start-group $(ARCH_ASM_OBJ) $(PORT_ASM_OBJ) $(PORT_OBJ) $(RTOS_OBJ) $(DEMO_OBJ) $(LIBS) --end-group 
+	@$(LD) -o $@ $(LDFLAGS) --start-group $(ARCH_ASM_OBJ) $(PORT_ASM_OBJ) $(PORT_OBJ) $(RTOS_OBJ) $(DEMO_OBJ) $(APP_OBJ) $(LIBS) --end-group 
 	@$(OBJDUMP) -S $(PROG).or32 >> $(PROG).asm	
 	@echo Complete $@
 
@@ -92,10 +90,10 @@ force_true:
 	@true
 
 #-------------------------------------------------------------
-sim:
+sim: $(PROG).or32
 	or32-elf-sim --nosrv -f sim.cfg $(PROG).or32
 
-debug:
+debug: $(PROG).or32
 	xterm -e or32-elf-sim -f sim.cfg --srv=9999 &
 	xterm -e or32-elf-gdb $(PROG).or32 &
 
