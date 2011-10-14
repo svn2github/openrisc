@@ -15742,8 +15742,9 @@ fi
 
 if test x"$with_or1ksim" != x
 then
-    CONFIG_LDFLAGS="${CONFIG_LDFLAGS} -Wl,-rpath -Wl,$with_or1ksim/lib -L$with_or1ksim/lib -lsim"
+    CONFIG_LDFLAGS="${CONFIG_LDFLAGS} -Wl,-rpath -Wl,$with_or1ksim/lib -L$with_or1ksim/lib"
 
+    LIBS="${LIBS} -lsim"
 fi
 
 

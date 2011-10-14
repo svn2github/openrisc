@@ -2024,8 +2024,9 @@ AC_ARG_WITH([or1ksim],
            [])
 if test x"$with_or1ksim" != x
 then
-    CONFIG_LDFLAGS="${CONFIG_LDFLAGS} -Wl,-rpath -Wl,$with_or1ksim/lib -L$with_or1ksim/lib -lsim"
+    CONFIG_LDFLAGS="${CONFIG_LDFLAGS} -Wl,-rpath -Wl,$with_or1ksim/lib -L$with_or1ksim/lib"
     AC_SUBST(CONFIG_LDFLAGS)
+    LIBS="${LIBS} -lsim"
 fi
 
 AC_SUBST(ENABLE_CFLAGS)
