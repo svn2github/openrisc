@@ -1,3 +1,7 @@
+2011-12-01  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* config/or32/or32.md (cbranchsi4): Fix mode of operands 1 and 2.
+
 2011-08-25  Jeremy Bennett  <jeremy.bennett@embecosm.com>
 
 	* config/or32/linux-elf.h <TARGET_OS_CPP_BUILTINS>: Defined, based

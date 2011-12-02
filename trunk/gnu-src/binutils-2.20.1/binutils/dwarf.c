@@ -1887,7 +1887,6 @@ process_debug_info (struct dwarf_section *section,
     {
       DWARF2_Internal_CompUnit compunit;
       unsigned char *hdrptr;
-      unsigned char *cu_abbrev_offset_ptr;
       unsigned char *tags;
       int level;
       unsigned long cu_offset;
@@ -1917,7 +1916,6 @@ process_debug_info (struct dwarf_section *section,
 
       cu_offset = start - section_begin;
 
-      cu_abbrev_offset_ptr = hdrptr;
       compunit.cu_abbrev_offset = byte_get (hdrptr, offset_size);
       hdrptr += offset_size;
 
@@ -2442,7 +2440,6 @@ display_debug_lines_decoded (struct dwarf_section *section,
       int i;
       File_Entry *file_table = NULL;
       unsigned char **directory_table = NULL;
-      unsigned int prev_line = 0;
 
       hdrptr = data;
 
@@ -2620,7 +2617,6 @@ display_debug_lines_decoded (struct dwarf_section *section,
           int is_special_opcode = 0;
 
           op_code = *data++;
-          prev_line = state_machine_regs.line;
 
           if (op_code >= info.li_opcode_base)
 	    {
@@ -3514,14 +3510,12 @@ display_debug_ranges (struct dwarf_section *section,
 		      void *file ATTRIBUTE_UNUSED)
 {
   unsigned char *start = section->start;
-  unsigned char *section_end;
   unsigned long bytes;
   unsigned char *section_begin = start;
   unsigned int num_range_list, i;
   struct range_entry *range_entries, *range_entry_fill;
 
   bytes = section->size;
-  section_end = start + bytes;
 
   if (bytes == 0)
     {

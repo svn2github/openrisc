@@ -164,7 +164,7 @@ read_section_stabs_debugging_info (bfd *abfd, asymbol **syms, long symcount,
 	    {
 	      unsigned int strx;
 	      int type;
-	      int other;
+	      int other ATTRIBUTE_UNUSED;
 	      int desc;
 	      bfd_vma value;
 

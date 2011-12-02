@@ -1406,7 +1406,6 @@ disassemble_bytes (struct disassemble_info * info,
   struct objdump_disasm_info *aux;
   asection *section;
   int octets_per_line;
-  bfd_boolean done_dot;
   int skip_addr_chars;
   bfd_vma addr_offset;
   unsigned int opb = info->octets_per_byte;
@@ -1453,7 +1452,6 @@ disassemble_bytes (struct disassemble_info * info,
 
   info->insn_info_valid = 0;
 
-  done_dot = FALSE;
   addr_offset = start_offset;
   while (addr_offset < stop_offset)
     {
@@ -1505,8 +1503,6 @@ disassemble_bytes (struct disassemble_info * info,
 	  char buf[50];
 	  int bpc = 0;
 	  int pb = 0;
-
-	  done_dot = FALSE;
 
 	  if (with_line_numbers || with_source_code)
 	    show_line (aux->abfd, section, addr_offset);

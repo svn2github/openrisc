@@ -4832,7 +4832,7 @@ static bfd_boolean
 prep_headers (bfd *abfd)
 {
   Elf_Internal_Ehdr *i_ehdrp;	/* Elf file header, internal form */
-  Elf_Internal_Phdr *i_phdrp = 0; /* Program header table, internal form */
+
   struct elf_strtab_hash *shstrtab;
   const struct elf_backend_data *bed = get_elf_backend_data (abfd);
 
@@ -4900,7 +4900,6 @@ prep_headers (bfd *abfd)
   else
     {
       i_ehdrp->e_phentsize = 0;
-      i_phdrp = 0;
       i_ehdrp->e_phoff = 0;
     }
 
@@ -4948,7 +4947,7 @@ bfd_boolean
 _bfd_elf_write_object_contents (bfd *abfd)
 {
   const struct elf_backend_data *bed = get_elf_backend_data (abfd);
-  Elf_Internal_Ehdr *i_ehdrp;
+
   Elf_Internal_Shdr **i_shdrp;
   bfd_boolean failed;
   unsigned int count, num_sec;
@@ -4958,7 +4957,6 @@ _bfd_elf_write_object_contents (bfd *abfd)
     return FALSE;
 
   i_shdrp = elf_elfsections (abfd);
-  i_ehdrp = elf_elfheader (abfd);
 
   failed = FALSE;
   bfd_map_over_sections (abfd, bed->s->write_relocs, &failed);

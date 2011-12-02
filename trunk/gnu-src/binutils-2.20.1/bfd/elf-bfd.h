@@ -2269,6 +2269,9 @@ extern asection _bfd_elf_large_com_section;
 	    return FALSE;						\
 	  warned = TRUE;						\
 	}								\
+      /* Added from upstream CVS rev 1.329 to avoid warnings */         \
+      (void) unresolved_reloc;                                          \
+      (void) warned;                                                    \
     }									\
   while (0)
 

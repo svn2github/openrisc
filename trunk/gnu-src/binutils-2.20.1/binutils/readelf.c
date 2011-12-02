@@ -8482,7 +8482,6 @@ dump_section_as_strings (Elf_Internal_Shdr * section, FILE * file)
 {
   Elf_Internal_Shdr * relsec;
   bfd_size_type num_bytes;
-  bfd_vma addr;
   char * data;
   char * end;
   char * start;
@@ -8516,7 +8515,6 @@ dump_section_as_strings (Elf_Internal_Shdr * section, FILE * file)
     }
 
   num_bytes = section->sh_size;
-  addr = section->sh_addr;
   data = start;
   end  = start + num_bytes;
   some_strings_shown = FALSE;
@@ -11276,7 +11274,6 @@ process_archive (char * file_name, FILE * file, bfd_boolean is_thin_archive)
   struct archive_info arch;
   struct archive_info nested_arch;
   size_t got;
-  size_t file_name_size;
   int ret;
 
   show_name = 1;
@@ -11370,7 +11367,6 @@ process_archive (char * file_name, FILE * file, bfd_boolean is_thin_archive)
 	}
     }
 
-  file_name_size = strlen (file_name);
   ret = 0;
 
   while (1)

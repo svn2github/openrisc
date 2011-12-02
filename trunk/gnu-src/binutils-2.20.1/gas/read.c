@@ -2604,10 +2604,15 @@ s_mexit (int ignore ATTRIBUTE_UNUSED)
 void
 s_mri (int ignore ATTRIBUTE_UNUSED)
 {
-  int on, old_flag;
+  int on;
+#ifdef MRI_MODE_CHANGE
+  int old_flag;
+#endif
 
   on = get_absolute_expression ();
+#ifdef MRI_MODE_CHANGE
   old_flag = flag_mri;
+#endif
   if (on != 0)
     {
       flag_mri = 1;
@@ -4753,11 +4758,9 @@ static inline int
 sizeof_uleb128 (valueT value)
 {
   register int size = 0;
-  register unsigned byte;
 
   do
     {
-      byte = (value & 0x7f);
       value >>= 7;
       size += 1;
     }
