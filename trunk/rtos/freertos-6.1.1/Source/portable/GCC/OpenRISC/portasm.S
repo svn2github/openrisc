@@ -74,7 +74,7 @@
 .macro portSAVE_CONTEXT
 	.global	pxCurrentTCB			
 	# make rooms in stack			
-	l.addi	r1, r1, -128			
+	l.addi	r1, r1, -132			
 	# early save r3-r5, these are clobber register
 	l.sw	0x08(r1), r3			
 	l.sw	0x0C(r1), r4			
@@ -166,7 +166,7 @@
 	l.lwz	r3, 0x08(r1)			
 	l.lwz	r4, 0x0C(r1)			
 	l.lwz	r5, 0x10(r1)			
-	l.addi	r1, r1, 128			
+	l.addi	r1, r1, 132			
 	l.rfe							
 	l.nop							
 .endm
