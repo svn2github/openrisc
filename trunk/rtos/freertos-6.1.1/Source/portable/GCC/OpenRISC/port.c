@@ -85,42 +85,15 @@ static inline unsigned long mfspr(unsigned long spr) {
 	return value;
 }
 
-
-/* 
- * naked attribute is ignored or32-elf-gcc 4.5.1-or32-1.0rc1 
- * use assemble routines in portasm.S
- */
-#if 0
-void vPortDisableInterrupts( void ) __attribute__ ((__naked__)) 
+inline void vPortDisableInterrupts( void ) 
 {
-	asm volatile (								\
-	"	@ get current SR				\n\t"	\
-	"	l.mfspr	r3, r0, SPR_SR			\n\t"	\
-	"	l.addi	r4, r0, SPR_SR_TEE		\n\t"	\
-	"	l.xori	r4, r4, 0xffffffff		\n\t"	\
-	"	l.and	r3, r3, r4				\n\t"	\
-	"	l.addi	r4, r0, SPR_SR_IEE		\n\t"	\
-	"	l.xori	r4, r4, 0xffffffff		\n\t"	\
-	"	l.and	r3, r3, r4				\n\t"	\
-	"	@ update SR						\n\t"	\
-	"	l.mtspr	r0, r3, SPR_SR			\n\t"	\
-	);
+	mtspr(SPR_SR, mfspr(SPR_SR) & ~(SPR_SR_TEE|SPR_SR_IEE));	// Tick, interrupt stop
 }
 
-void vPortEnableInterrupts( void ) __attribute__ ((__naked__))
+inline void vPortEnableInterrupts( void )
 {
-	asm volatile (								\
-	"	@ get current SR				\n\t"	\
-	"	l.mfspr	r3, r0, SPR_SR			\n\t"	\
-	"	@ enable Tick Timer Interrupt	\n\t"	\
-	"	l.ori	r3, r3, SPR_SR_TEE		\n\t"	\
-	"	@ enable External Interrupt		\n\t"	\
-	"	l.ori	r3, r3, SPR_SR_IEE		\n\t"	\
-	"	@ update SR						\n\t"	\
-	"	l.mtspr	r0, r3, SPR_SR			\n\t"	\
-	);
+	mtspr(SPR_SR, mfspr(SPR_SR) | (SPR_SR_TEE|SPR_SR_IEE));		// Tick, interrupt start
 }
-#endif
 
 
 /* 
@@ -131,9 +104,9 @@ void vPortEnableInterrupts( void ) __attribute__ ((__naked__))
  */
 portSTACK_TYPE *pxPortInitialiseStack( portSTACK_TYPE *pxTopOfStack, pdTASK_CODE pxCode, void *pvParameters )
 {
-	unsigned portLONG uTaskSR = mfspr(SPR_ESR_BASE);			
-	uTaskSR &= ~SPR_SR_SM;					// User mode
-	uTaskSR |= (SPR_SR_TEE | SPR_SR_IEE);	// Tick interrupt enable, All External interupt enable
+	unsigned portLONG uTaskSR = mfspr(SPR_SR);			
+	uTaskSR |= SPR_SR_SM;						// Supervisor mode
+	uTaskSR |= (SPR_SR_TEE | SPR_SR_IEE);		// Tick interrupt enable, All External interupt enable
 
 	/* Setup the initial stack of the task.  The stack is set exactly as 
 	expected by the portRESTORE_CONTEXT() macro. */

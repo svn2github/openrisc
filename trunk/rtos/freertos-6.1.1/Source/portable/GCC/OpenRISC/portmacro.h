@@ -83,50 +83,26 @@ extern "C" {
 #define portINSTRUCTION_SIZE			( ( portSTACK_TYPE ) 4 )
 #define portNO_CRITICAL_SECTION_NESTING	( ( portSTACK_TYPE ) 0 )
 
-#define portYIELD_FROM_ISR()			vTaskSwitchContext()
+#define portYIELD_FROM_ISR()			portYIELD()
 #define portYIELD()		{	\
-	__asm__ __volatile__ ( "l.sw  -4(r1), r11" ); \
-	__asm__ __volatile__ ( "l.addi r11, r0, 0x0FCC" ); \
+	__asm__ __volatile__ ( "l.nop       " ); \
 	__asm__ __volatile__ ( "l.sys 0x0FCC" ); \
 	__asm__ __volatile__ ( "l.nop       " ); \
 } 
 #define portNOP()		__asm__ __volatile__ ( "l.nop" )
 
 
-/* 
- * naked attribute is ignored or32-elf-gcc 4.5.1-or32-1.0rc1 
- * use assemble routines in portasm.S
- */
-#if 0
-extern void vPortDisableInterrupts( void ) __attribute__ ((__naked__));
-extern void vPortEnableInterrupts( void ) __attribute__ ((__naked__));
-#else
 void vPortDisableInterrupts( void );
 void vPortEnableInterrupts( void );
-#endif
-
 #define portDISABLE_INTERRUPTS()	vPortDisableInterrupts()
 #define portENABLE_INTERRUPTS()		vPortEnableInterrupts()
 
 /*-----------------------------------------------------------*/	
-
-
 // Critical section handling.
-// switch supervisormode, disable tick interrupt and all external interrupt, switch back usermode
-#define portENTER_CRITICAL()	{	\
-	__asm__ __volatile__ ( "l.sw  -4(r1), r11" ); \
-	__asm__ __volatile__ ( "l.addi r11, r0, 0x0FCE" ); \
-	__asm__ __volatile__ ( "l.sys 0x0FCE" ); \
-	__asm__ __volatile__ ( "l.nop       " ); \
-} 
-
-// switch supervisormode, enable tick interrupt and all external interrupt, switch back usermode
-#define portEXIT_CRITICAL()		{	\
-	__asm__ __volatile__ ( "l.sw  -4(r1), r11" ); \
-	__asm__ __volatile__ ( "l.addi r11, r0, 0x0FCF" ); \
-	__asm__ __volatile__ ( "l.sys 0x0FCF" ); \
-	__asm__ __volatile__ ( "l.nop       " ); \
-} 
+extern void vTaskEnterCritical( void );
+extern void vTaskExitCritical( void );
+#define portENTER_CRITICAL()		vTaskEnterCritical()
+#define portEXIT_CRITICAL()			vTaskExitCritical()
 
 /* Task function macros as described on the FreeRTOS.org WEB site. */
 #define portTASK_FUNCTION_PROTO( vFunction, pvParameters ) void vFunction( void *pvParameters )
@@ -241,5 +217,9 @@ void vPortEnableInterrupts( void );
 	"	l.rfe							\n\t"	\
 	"	l.nop							\n\t"	\
 	);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* PORTMACRO_H */

@@ -3,36 +3,6 @@
 	.file		"portasm.S"
 	.section	.text
 
-.text
-.global	vPortDisableInterrupts
-.type	vPortDisableInterrupts, %function
-vPortDisableInterrupts:
-	l.mfspr	r3, r0, SPR_SR		# get current SR			
-	l.addi	r4, r0, SPR_SR_TEE	
-	l.xori	r4, r4, 0xffffffff						
-	l.and	r3, r3, r4			# disable Tick Timer Interrupt
-	l.addi	r4, r0, SPR_SR_IEE	
-	l.xori	r4, r4, 0xffffffff						
-	l.and	r3, r3, r4			# disable External Interrupt
-	l.mtspr	r0, r3, SPR_SR		# update SR					
-	l.jr	r9
-	l.nop
-.size	vPortDisableInterrupts, .-vPortDisableInterrupts
-
-
-.text
-.global	vPortEnableInterrupts
-.type	vPortEnableInterrupts, %function
-vPortEnableInterrupts:
-	l.mfspr	r3, r0, SPR_SR		# get current SR			
-	l.ori	r3, r3, SPR_SR_TEE	# enable Tick Timer Interrup
-	l.ori	r3, r3, SPR_SR_IEE	# enable External Interrupt	
-	l.mtspr	r0, r3, SPR_SR		# update SR					
-	l.jr	r9
-	l.nop
-.size	vPortEnableInterrupts, .-vPortEnableInterrupts
-
-
 .macro portSAVE_REGISTER
 	l.addi	r1, r1, -116			
 	l.sw    0x00(r1), r3
@@ -232,28 +202,10 @@ vPortTickHandler:
 .global	vPortSystemCall
 .type	vPortSystemCall, %function
 vPortSystemCall:
-	l.sfeqi	r11, 0xFCC
-	l.bf	1f
-	l.nop
-	
-	l.sw	-120(r1), r11	
-	l.lwz	r11, -4(r1)
-	portSAVE_REGISTER
-
-	l.jal	syscall_except
-	l.lwz	r3, -4(r1)
-
-	portRESTORE_REGISTER
-	l.rfe
-	l.nop
-
-1:
-	l.sw	-132(r1), r11	
-	l.lwz	r11, -4(r1)
 	portSAVE_CONTEXT	
 	
-	l.jal	syscall_except
-	l.lwz	r3, -4(r1)
+	l.jal	vTaskSwitchContext
+	l.nop
 	
 	portRESTORE_CONTEXT
 .size	vPortSystemCall, .-vPortSystemCall
