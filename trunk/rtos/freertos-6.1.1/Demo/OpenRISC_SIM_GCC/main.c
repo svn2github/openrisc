@@ -138,9 +138,9 @@ int main( int argc, char **argv )
 	vStartLEDFlashTasks( mainLED_TASK_PRIORITY );
 	vStartIntegerMathTasks( tskIDLE_PRIORITY );
 	
-	// vCreateBlockTimeTasks();
-	// vStartBlockingQueueTasks( mainBLOCK_Q_PRIORITY );
-	// vStartDynamicPriorityTasks();
+	vCreateBlockTimeTasks();
+	vStartBlockingQueueTasks( mainBLOCK_Q_PRIORITY );
+	vStartDynamicPriorityTasks();
 
 	/* Create the tasks defined within this file. */
 	xTaskCreate( vCheckTask, ( signed char * ) "Check", configMINIMAL_STACK_SIZE, NULL, mainCHECK_TASK_PRIORITY, NULL );
@@ -184,34 +184,34 @@ static void vCheckTask( void *pvParameters )
 			// ulErrorDetected = pdTRUE;
 		}		
 
-		// if( xAreBlockTimeTestTasksStillRunning() != pdTRUE )
-		// {
-		// 	ulErrorDetected = pdTRUE;
-		// }
+		if( xAreBlockTimeTestTasksStillRunning() != pdTRUE )
+		{
+			ulErrorDetected = pdTRUE;
+		}
 
-		// if( xAreBlockingQueuesStillRunning() != pdTRUE )
-		// {
-		// 	ulErrorDetected = pdTRUE;
-		// }
+		if( xAreBlockingQueuesStillRunning() != pdTRUE )
+		{
+			ulErrorDetected = pdTRUE;
+		}
 		
-		// if( xAreDynamicPriorityTasksStillRunning() != pdTRUE )
-		// {
-		// 	ulErrorDetected = pdTRUE;
-		// }		
+		if( xAreDynamicPriorityTasksStillRunning() != pdTRUE )
+		{
+			ulErrorDetected = pdTRUE;
+		}		
 		
 		if(ulErrorDetected == pdTRUE)
 		{
 			// something was wrong. report negative indicator
-			const char *message = "vCheckTask Error detected!\n\r";
-			vSerialPutString(NULL, (const signed char*)message, strlen(message));
+			// const char *message = "vCheckTask Error detected!\n\r";
+			// vSerialPutString(NULL, (const signed char*)message, strlen(message));
 
 			report(0xDEADBEEF);
 		} 
 		else 
 		{
 			// we have no error. report positive indicator
-			const char *message = "vCheckTask OK!\n\r";
-			vSerialPutString(NULL, (const signed char*)message, strlen(message));
+			// const char *message = "vCheckTask OK!\n\r";
+			// vSerialPutString(NULL, (const signed char*)message, strlen(message));
 
 			report(0x00000000);
 		}
