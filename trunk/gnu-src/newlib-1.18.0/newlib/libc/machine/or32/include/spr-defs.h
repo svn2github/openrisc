@@ -1,4 +1,4 @@
-/* ipc.h.  Microkernel IPC header for Or1ksim
+/* spr-defs.h - Special purpose registers definitions file
 	
    Copyright (C) 2000 Damjan Lampret
    Copyright (C) 2008, 2010 Embecosm Limited
@@ -100,6 +100,7 @@
 
 /* Data MMU group */
 #define SPR_DMMUCR	(SPRGROUP_DMMU + 0)
+#define SPR_DTLBEIR     (SPRGROUP_DMMU + 2)
 #define SPR_DTLBMR_BASE(WAY)	(SPRGROUP_DMMU + 0x200 + (WAY) * 0x100)
 #define SPR_DTLBMR_LAST(WAY)	(SPRGROUP_DMMU + 0x27f + (WAY) * 0x100)
 #define SPR_DTLBTR_BASE(WAY)	(SPRGROUP_DMMU + 0x280 + (WAY) * 0x100)
@@ -107,6 +108,7 @@
 
 /* Instruction MMU group */
 #define SPR_IMMUCR	(SPRGROUP_IMMU + 0)
+#define SPR_ITLBEIR     (SPRGROUP_IMMU + 2)
 #define SPR_ITLBMR_BASE(WAY)	(SPRGROUP_IMMU + 0x200 + (WAY) * 0x100)
 #define SPR_ITLBMR_LAST(WAY)	(SPRGROUP_IMMU + 0x27f + (WAY) * 0x100)
 #define SPR_ITLBTR_BASE(WAY)	(SPRGROUP_IMMU + 0x280 + (WAY) * 0x100)
@@ -166,7 +168,7 @@
  */
 #define SPR_VR_VER	0xff000000  /* Processor version */
 #define SPR_VR_CFG	0x00ff0000  /* Processor configuration */
-#define SPR_VR_RES	0x00ff0000  /* Reserved */
+#define SPR_VR_RES	0x0000ffc0  /* Reserved */
 #define SPR_VR_REV	0x0000003f  /* Processor revision */
 
 #define SPR_VR_VER_OFF	24
@@ -281,7 +283,7 @@
 #define SPR_DTLBMR_PL1	   0x00000002  /* Page Level 1 (if 0 then PL2) */
 #define SPR_DTLBMR_CID	   0x0000003c  /* Context ID */
 #define SPR_DTLBMR_LRU	   0x000000c0  /* Least Recently Used */
-#define SPR_DTLBMR_VPN	   0xfffff000  /* Virtual Page Number */
+#define SPR_DTLBMR_VPN	   0xffffe000  /* Virtual Page Number */
 
 /*
  * Bit definitions for the Data TLB Translate Register
@@ -297,7 +299,7 @@
 #define SPR_DTLBTR_UWE	   0x00000080  /* User Write Enable */
 #define SPR_DTLBTR_SRE	   0x00000100  /* Supervisor Read Enable */
 #define SPR_DTLBTR_SWE	   0x00000200  /* Supervisor Write Enable */
-#define SPR_DTLBTR_PPN	   0xfffff000  /* Physical Page Number */
+#define SPR_DTLBTR_PPN	   0xffffe000  /* Physical Page Number */
 
 #define DTLB_PR_NOLIMIT  ( SPR_DTLBTR_URE  | \
 			   SPR_DTLBTR_UWE  | \
@@ -312,7 +314,7 @@
 #define SPR_ITLBMR_PL1	   0x00000002  /* Page Level 1 (if 0 then PL2) */
 #define SPR_ITLBMR_CID	   0x0000003c  /* Context ID */
 #define SPR_ITLBMR_LRU	   0x000000c0  /* Least Recently Used */
-#define SPR_ITLBMR_VPN	   0xfffff000  /* Virtual Page Number */
+#define SPR_ITLBMR_VPN	   0xffffe000  /* Virtual Page Number */
 
 /*
  * Bit definitions for the Instruction TLB Translate Register
@@ -326,7 +328,7 @@
 #define SPR_ITLBTR_D	   0x00000020  /* Dirty */
 #define SPR_ITLBTR_SXE	   0x00000040  /* User Read Enable */
 #define SPR_ITLBTR_UXE	   0x00000080  /* User Write Enable */
-#define SPR_ITLBTR_PPN	   0xfffff000  /* Physical Page Number */
+#define SPR_ITLBTR_PPN	   0xffffe000  /* Physical Page Number */
 
 #define ITLB_PR_NOLIMIT  ( SPR_ITLBTR_SXE  |	\
 			   SPR_ITLBTR_UXE  )
