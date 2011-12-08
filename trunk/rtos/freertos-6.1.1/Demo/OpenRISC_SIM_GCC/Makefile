@@ -78,7 +78,7 @@ drivers: force_true
 	@(cd $@; make)
 
 clean :
-	@rm -f $(RTOS_OBJ) $(DEMO_OBJ) $(PORT_OBJ) $(PORT_ASM_OBJ)
+	@rm -f $(PORT_ASM_OBJ) $(PORT_OBJ) $(RTOS_OBJ) $(DEMO_OBJ) $(APP_OBJ)
 	@rm -f rtosdemo.or32 
 	@rm -f rtosdemo.map
 	@rm -f rtosdemo.asm
