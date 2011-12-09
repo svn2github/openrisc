@@ -88,14 +88,11 @@ static inline unsigned long mfspr(unsigned long spr) {
 inline void vPortDisableInterrupts( void ) 
 {
 	mtspr(SPR_SR, mfspr(SPR_SR) & ~(SPR_SR_TEE|SPR_SR_IEE));	// Tick, interrupt stop
-	// mtspr(SPR_SR, mfspr(SPR_SR) & ~(SPR_SR_IEE));	// interrupt stop
-	// mtspr(SPR_SR, mfspr(SPR_SR) & ~(SPR_SR_TEE));	// interrupt stop
 }
 
 inline void vPortEnableInterrupts( void )
 {
 	mtspr(SPR_SR, mfspr(SPR_SR) | (SPR_SR_TEE|SPR_SR_IEE));		// Tick, interrupt start
-	//mtspr(SPR_SR, mfspr(SPR_SR) | (SPR_SR_IEE));		// interrupt start
 }
 
 
