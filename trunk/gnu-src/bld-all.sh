@@ -626,7 +626,7 @@ function gnu_config {
 	    cd ${top_builddir} &&                                      \
 	    ${top_srcdir}/configure --target=${target}                 \
   	        --with-pkgversion="${verstr}" --disable-shared         \
-	        --with-bugurl=http://www.opencores.org/                \
+	        --with-bugurl=http://bugzilla.opencores.org/           \
 	        --with-or1ksim=${or1ksim_dir} --disable-werror         \
 	        --enable-fast-install=N/A --disable-libssp             \
 	        --enable-languages=${langs} --prefix=${this_prefix} $*
