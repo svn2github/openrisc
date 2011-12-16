@@ -28,7 +28,7 @@
 #include <string.h>
 #include <stdlib.h>
 
-#define EXTEND28(x) ((x) & (unsigned long) 0x08000000 ? ((x) | (unsigned long) 0xf0000000) : ((x)))
+#define EXTEND28(x) ((x) & 0x08000000UL ? ((x) | ~0x0fffffffUL) : ((x)))
 
 /* Now find the four bytes of INSN_CH and put them in *INSN.  */
 
@@ -100,7 +100,7 @@ or32_extract (char param_ch, char *enc_initial, unsigned long insn)
       {
 	opc_pos--;
 	if (param_ch == *enc)
-	  ret |= 1 << opc_pos;
+	  ret |= 1UL << opc_pos;
 	enc++;
       }
     else if (*enc == param_ch)
@@ -120,7 +120,7 @@ or32_extract (char param_ch, char *enc_initial, unsigned long insn)
 	    printf ("\n  ret=%x opc_pos=%x, param_pos=%x\n",
 		    ret, opc_pos, param_pos);
 #endif
-	    ret |= 0xffffffff << letter_range(param_ch);
+	    ret |= -1L << letter_range(param_ch);
 #if DEBUG
 	    printf ("\n  after conversion to signed: ret=%x\n", ret);
 #endif
@@ -157,12 +157,6 @@ or32_opcode_match (unsigned long insn, char *encoding)
   ones  = or32_extract ('1', encoding, insn);
   zeros = or32_extract ('0', encoding, insn);
 
-  // Added 090430 - jb - fixed problem where upper 4 bytes of a 64-bit long weren't getting setup properly for comparison
-  // As a result, instructions weren't getting decoded properly
-  insn &= 0xffffffff;
-  ones &= 0xffffffff;
-  zeros &= 0xffffffff;
-  
 #if DEBUG
   printf ("ones: %x \n", ones);
   printf ("zeros: %x \n", zeros);

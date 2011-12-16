@@ -28,7 +28,7 @@
 #include <string.h>
 #include <stdlib.h>
 
-#define EXTEND29(x) ((x) & (unsigned long) 0x10000000 ? ((x) | (unsigned long) 0xf0000000) : ((x)))
+#define EXTEND29(x) ((x) & 0x10000000UL ? ((x) | ~0x0fffffffUL) : ((x)))
 
 /* Now find the four bytes of INSN_CH and put them in *INSN.  */
 
@@ -100,7 +100,7 @@ or32_extract (char param_ch, char *enc_initial, unsigned long insn)
       {
 	opc_pos--;
 	if (param_ch == *enc)
-	  ret |= 1 << opc_pos;
+	  ret |= 1UL << opc_pos;
 	enc++;
       }
     else if (*enc == param_ch)
@@ -120,7 +120,7 @@ or32_extract (char param_ch, char *enc_initial, unsigned long insn)
 	    printf ("\n  ret=%x opc_pos=%x, param_pos=%x\n",
 		    ret, opc_pos, param_pos);
 #endif
-	    ret |= 0xffffffff << letter_range(param_ch);
+	    ret |= -1L << letter_range(param_ch);
 #if DEBUG
 	    printf ("\n  after conversion to signed: ret=%x\n", ret);
 #endif
