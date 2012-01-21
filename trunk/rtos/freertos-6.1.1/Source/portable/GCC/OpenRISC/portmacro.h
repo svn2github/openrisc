@@ -84,78 +84,65 @@ extern "C" {
 #define portNO_CRITICAL_SECTION_NESTING	( ( portSTACK_TYPE ) 0 )
 
 #define portYIELD_FROM_ISR()			portYIELD()
-#define portYIELD()		{	\
-	__asm__ __volatile__ ( "l.nop       " ); \
-	__asm__ __volatile__ ( "l.sys 0x0FCC" ); \
-	__asm__ __volatile__ ( "l.nop       " ); \
-} 
+#define portYIELD()		\
+	__asm__ __volatile__ ( 	"l.nop       \n\t"  \
+	 						"l.sys 0x0FCC\n\t"  \
+	 						"l.nop       \n\t"  \
+	);	
 #define portNOP()		__asm__ __volatile__ ( "l.nop" )
 
 
-void vPortDisableInterrupts( void );
-void vPortEnableInterrupts( void );
-#define portDISABLE_INTERRUPTS()	vPortDisableInterrupts()
-#define portENABLE_INTERRUPTS()		vPortEnableInterrupts()
-
 /*-----------------------------------------------------------*/	
-extern void vTaskEnterCritical( void );
-extern void vTaskExitCritical( void );
-#define portENTER_CRITICAL()		vTaskEnterCritical()
-#define portEXIT_CRITICAL()			vTaskExitCritical()
+#define portDISABLE_INTERRUPTS()	{ extern inline void vPortDisableInterrupts( void ); vPortDisableInterrupts(); }
+#define portENABLE_INTERRUPTS()		{ extern inline void vPortEnableInterrupts( void );  vPortEnableInterrupts();  }
+
+#define portENTER_CRITICAL()		{ extern void vTaskEnterCritical( void ); vTaskEnterCritical();  }
+#define portEXIT_CRITICAL()			{ extern void vTaskExitCritical( void );  vTaskExitCritical();   }
+/*-----------------------------------------------------------*/	
 
 /* Task function macros as described on the FreeRTOS.org WEB site. */
 #define portTASK_FUNCTION_PROTO( vFunction, pvParameters ) void vFunction( void *pvParameters )
 #define portTASK_FUNCTION( vFunction, pvParameters ) void vFunction( void *pvParameters )
 
-#define portRESTORE_CONTEXT()                   \
-	asm volatile (                              \
-	"   .global pxCurrentTCB            \n\t"   \
-	"   # restore stack pointer         \n\t"   \
-	"   l.movhi	r3, hi(pxCurrentTCB)	\n\t"   \
-	"   l.ori	r3, r3, lo(pxCurrentTCB)\n\t"   \
-	"   l.lwz	r3, 0x0(r3)				\n\t"   \
-	"   l.lwz	r1, 0x0(r3)				\n\t"   \
-	"   # restore context               \n\t"   \
-	"   l.lwz	r9, 0x00(r1)            \n\t"   \
-	"   l.lwz	r2, 0x04(r1)            \n\t"   \
-	"   l.lwz	r6, 0x14(r1)            \n\t"   \
-	"   l.lwz	r7, 0x18(r1)            \n\t"   \
-	"   l.lwz	r8, 0x1C(r1)            \n\t"   \
-	"   l.lwz	r10, 0x20(r1)           \n\t"   \
-	"   l.lwz	r11, 0x24(r1)           \n\t"   \
-	"   l.lwz	r12, 0x28(r1)           \n\t"   \
-	"   l.lwz	r13, 0x2C(r1)           \n\t"   \
-	"   l.lwz	r14, 0x30(r1)           \n\t"   \
-	"   l.lwz	r15, 0x34(r1)           \n\t"   \
-	"   l.lwz	r16, 0x38(r1)           \n\t"   \
-	"   l.lwz	r17, 0x3C(r1)           \n\t"   \
-	"   l.lwz	r18, 0x40(r1)           \n\t"   \
-	"   l.lwz	r19, 0x44(r1)           \n\t"   \
-	"   l.lwz	r20, 0x48(r1)           \n\t"   \
-	"   l.lwz	r21, 0x4C(r1)           \n\t"   \
-	"   l.lwz	r22, 0x50(r1)           \n\t"   \
-	"   l.lwz	r23, 0x54(r1)           \n\t"   \
-	"   l.lwz	r24, 0x58(r1)           \n\t"   \
-	"   l.lwz	r25, 0x5C(r1)           \n\t"   \
-	"   l.lwz	r26, 0x60(r1)           \n\t"   \
-	"   l.lwz	r27, 0x64(r1)           \n\t"   \
-	"   l.lwz	r28, 0x68(r1)           \n\t"   \
-	"   l.lwz	r29, 0x6C(r1)           \n\t"   \
-	"   l.lwz	r30, 0x70(r1)           \n\t"   \
-	"   l.lwz	r31, 0x74(r1)           \n\t"   \
-	"   # restore SPR_ESR_BASE(0), SPR_EPCR_BASE(0)\n\t"    \
-	"   l.lwz	r3, 0x78(r1)		    \n\t"   \
-	"   l.lwz	r4, 0x7C(r1)		    \n\t"   \
-	"   l.mtspr	r0, r3, ((0<<11) + 64) 	\n\t"   \
-	"   l.mtspr	r0, r4, ((0<<11) + 32)	\n\t"   \
-	"   # restore clobber register      \n\t"   \
-	"   l.lwz	r3, 0x08(r1)            \n\t"   \
-	"   l.lwz	r4, 0x0C(r1)            \n\t"   \
-	"   l.lwz	r5, 0x10(r1)            \n\t"   \
-	"   l.addi	r1, r1, 132	            \n\t"   \
-	"   l.rfe                           \n\t"   \
-	"   l.nop                           \n\t"   \
-	);
+/*
+	Context layout
+	0x00	r9
+	0x04	r2
+	0x08	r3
+	0x0C    r4
+	0x10    r5
+	0x14 	r6 
+	0x18 	r7 
+	0x1C 	r8 
+	0x20 	r10
+	0x24 	r11
+	0x28 	r12
+	0x2C 	r13
+	0x30 	r14
+	0x34 	r15
+	0x38 	r16
+	0x3C 	r17
+	0x40 	r18
+	0x44 	r19
+	0x48 	r20
+	0x4C 	r21
+	0x50 	r22
+	0x54 	r23
+	0x58 	r24
+	0x5C 	r25
+	0x60 	r26
+	0x64 	r27
+	0x68 	r28
+	0x6C 	r29
+	0x70 	r30
+	0x74 	r31
+	0x78 	ESR 
+	0x7C 	EPCR
+*/
+
+#define REDZONE_SIZE		(128)
+#define CONTEXT_SIZE		(128)
+#define STACKFRAME_SIZE		(CONTEXT_SIZE + REDZONE_SIZE)
 
 #ifdef __cplusplus
 }

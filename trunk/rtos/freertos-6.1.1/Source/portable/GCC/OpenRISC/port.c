@@ -74,31 +74,27 @@ void vTickHandler( void );
 static void prvSetupTimerInterrupt( void );
 
 /* For writing into SPR. */
-static inline void mtspr(unsigned long spr, unsigned long value) {	
+static inline void mtspr(unsigned long spr, unsigned long value) 
+{	
 	asm("l.mtspr\t\t%0,%1,0": : "r" (spr), "r" (value));
 }
 
 /* For reading SPR. */
-static inline unsigned long mfspr(unsigned long spr) {	
+static inline unsigned long mfspr(unsigned long spr) 
+{	
 	unsigned long value;
 	asm("l.mfspr\t\t%0,%1,0" : "=r" (value) : "r" (spr));
 	return value;
 }
 
-inline void vPortDisableInterrupts( void ) 
-{
-	mtspr(SPR_SR, mfspr(SPR_SR) & ~(SPR_SR_TEE|SPR_SR_IEE));	// Tick, interrupt stop
-}
-
-inline void vPortEnableInterrupts( void )
-{
-	mtspr(SPR_SR, mfspr(SPR_SR) | (SPR_SR_TEE|SPR_SR_IEE));		// Tick, interrupt start
-}
-
+/* forward decleation */
+inline void vPortDisableInterrupts( void );
+inline void vPortEnableInterrupts( void );
 
 /* 
  * Initialise the stack of a task to look exactly as if a call to 
- * portSAVE_CONTEXT had been called.
+ * portSAVE_CONTEXT had been called. Context layout is described in
+ * portmarco.h
  *
  * See header file for description. 
  */
@@ -107,6 +103,9 @@ portSTACK_TYPE *pxPortInitialiseStack( portSTACK_TYPE *pxTopOfStack, pdTASK_CODE
 	unsigned portLONG uTaskSR = mfspr(SPR_SR);			
 	uTaskSR |= SPR_SR_SM;						// Supervisor mode
 	uTaskSR |= (SPR_SR_TEE | SPR_SR_IEE);		// Tick interrupt enable, All External interupt enable
+	
+	// allocate redzone	
+	pxTopOfStack -= REDZONE_SIZE/4;			
 
 	/* Setup the initial stack of the task.  The stack is set exactly as 
 	expected by the portRESTORE_CONTEXT() macro. */
@@ -155,7 +154,58 @@ portBASE_TYPE xPortStartScheduler( void )
 		prvSetupTimerInterrupt();
 
 		/* Start the first task. */
-		portRESTORE_CONTEXT();	
+		asm volatile (                              
+		" .global	pxCurrentTCB	\n\t"
+		/*   restore stack pointer         	*/
+		"   l.movhi	r3, hi(pxCurrentTCB)		\n\t"
+		"   l.ori	r3, r3, lo(pxCurrentTCB)	\n\t"
+		"   l.lwz	r3, 0x0(r3)		\n\t"
+		"   l.lwz	r1, 0x0(r3)		\n\t"
+		/*   restore context               	*/
+		"   l.lwz	r9,  0x00(r1)	\n\t"
+		"   l.lwz	r2,  0x04(r1)	\n\t"
+		"   l.lwz	r6,  0x14(r1)	\n\t"
+		"   l.lwz	r7,  0x18(r1)	\n\t"
+		"   l.lwz	r8,  0x1C(r1)	\n\t"
+		"   l.lwz	r10, 0x20(r1)	\n\t"
+		"   l.lwz	r11, 0x24(r1)	\n\t"
+		"   l.lwz	r12, 0x28(r1)	\n\t"
+		"   l.lwz	r13, 0x2C(r1)	\n\t"
+		"   l.lwz	r14, 0x30(r1)	\n\t"
+		"   l.lwz	r15, 0x34(r1)	\n\t"
+		"   l.lwz	r16, 0x38(r1)	\n\t"
+		"   l.lwz	r17, 0x3C(r1)	\n\t"
+		"   l.lwz	r18, 0x40(r1)	\n\t"
+		"   l.lwz	r19, 0x44(r1)	\n\t"
+		"   l.lwz	r20, 0x48(r1)	\n\t"
+		"   l.lwz	r21, 0x4C(r1)	\n\t"
+		"   l.lwz	r22, 0x50(r1)	\n\t"
+		"   l.lwz	r23, 0x54(r1)	\n\t"
+		"   l.lwz	r24, 0x58(r1)	\n\t"
+		"   l.lwz	r25, 0x5C(r1)	\n\t"
+		"   l.lwz	r26, 0x60(r1)	\n\t"
+		"   l.lwz	r27, 0x64(r1)	\n\t"
+		"   l.lwz	r28, 0x68(r1)	\n\t"
+		"   l.lwz	r29, 0x6C(r1)	\n\t"
+		"   l.lwz	r30, 0x70(r1)	\n\t"
+		"   l.lwz	r31, 0x74(r1)	\n\t"
+		/*  restore SPR_ESR_BASE(0), SPR_EPCR_BASE(0) */
+		"   l.lwz	r3,  0x78(r1)	\n\t"
+		"   l.lwz	r4,  0x7C(r1)	\n\t"
+		"   l.mtspr	r0,  r3, %1	 	\n\t"
+		"   l.mtspr	r0,  r4, %2	 	\n\t"
+		/*   restore clobber register     */
+		"   l.lwz	r3,  0x08(r1)	\n\t"
+		"   l.lwz	r4,  0x0C(r1)	\n\t"
+		"   l.lwz	r5,  0x10(r1)	\n\t"
+		"   l.addi	r1,  r1, %0	 	\n\t"
+		"   l.rfe                	\n\t"
+		"   l.nop                	\n\t"
+		:
+		: 	"n"(STACKFRAME_SIZE), 
+			"n"(SPR_ESR_BASE), 
+			"n"(SPR_EPCR_BASE)
+		);
 		
 		/* Should not get here! */
 	} else {
@@ -192,6 +242,16 @@ static void prvSetupTimerInterrupt( void )
 
     // set OR1200 to accept exceptions
     mtspr(SPR_SR, mfspr(SPR_SR) | SPR_SR_TEE);
+}
+
+inline void vPortDisableInterrupts( void ) 
+{
+	mtspr(SPR_SR, mfspr(SPR_SR) & ~(SPR_SR_TEE|SPR_SR_IEE));	// Tick, interrupt stop
+}
+
+inline void vPortEnableInterrupts( void )
+{
+	mtspr(SPR_SR, mfspr(SPR_SR) | (SPR_SR_TEE|SPR_SR_IEE));		// Tick, interrupt start
 }
 
 /* 

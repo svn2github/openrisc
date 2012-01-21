@@ -52,7 +52,7 @@ _except_200:
 	l.nop
 	l.sw	-4(r1), r3	
 	l.addi	r3, r0, 0x200
-	l.sw	-132(r1), r3
+	l.sw	-260(r1), r3
 	l.lwz	r3, -4(r1)
 	l.j		vPortMiscIntHandler
 	l.nop
@@ -63,7 +63,7 @@ _except_300:
 	l.nop
 	l.sw	-4(r1), r3	
 	l.addi	r3, r0, 0x300
-	l.sw	-132(r1), r3
+	l.sw	-260(r1), r3
 	l.lwz	r3, -4(r1)
 	l.j		vPortMiscIntHandler
 	l.nop
@@ -74,7 +74,7 @@ _except_400:
 	l.nop
 	l.sw	-4(r1), r3	
 	l.addi	r3, r0, 0x400
-	l.sw	-132(r1), r3
+	l.sw	-260(r1), r3
 	l.lwz	r3, -4(r1)
 	l.j		vPortMiscIntHandler
 	l.nop
@@ -92,7 +92,7 @@ _except_600:
 	l.nop
 	l.sw	-4(r1), r3	
 	l.addi	r3, r0, 0x600
-	l.sw	-132(r1), r3
+	l.sw	-260(r1), r3
 	l.lwz	r3, -4(r1)
 	l.j		vPortMiscIntHandler
 	l.nop
@@ -103,7 +103,7 @@ _except_700:
 	l.nop
 	l.sw	-4(r1), r3	
 	l.addi	r3, r0, 0x700
-	l.sw	-132(r1), r3
+	l.sw	-260(r1), r3
 	l.lwz	r3, -4(r1)
 	l.j		vPortMiscIntHandler
 	l.nop
@@ -121,7 +121,7 @@ _except_900:
 	l.nop
 	l.sw	-4(r1), r3	
 	l.addi	r3, r0, 0x900
-	l.sw	-132(r1), r3
+	l.sw	-260(r1), r3
 	l.lwz	r3, -4(r1)
 	l.j		vPortMiscIntHandler
 	l.nop
@@ -132,7 +132,7 @@ _except_a00:
 	l.nop
 	l.sw	-4(r1), r3	
 	l.addi	r3, r0, 0xa00
-	l.sw	-132(r1), r3
+	l.sw	-260(r1), r3
 	l.lwz	r3, -4(r1)
 	l.j		vPortMiscIntHandler
 	l.nop
@@ -143,7 +143,7 @@ _except_b00:
 	l.nop
 	l.sw	-4(r1), r3	
 	l.addi	r3, r0, 0xb00
-	l.sw	-132(r1), r3
+	l.sw	-260(r1), r3
 	l.lwz	r3, -4(r1)
 	l.j		vPortMiscIntHandler
 	l.nop
@@ -162,7 +162,7 @@ _except_d00:
 	l.nop
 	l.sw	-4(r1), r3	
 	l.addi	r3, r0, 0xd00
-	l.sw	-132(r1), r3
+	l.sw	-260(r1), r3
 	l.lwz	r3, -4(r1)
 	l.j		vPortMiscIntHandler
 	l.nop
@@ -173,7 +173,7 @@ _except_e00:
 	l.nop
 	l.sw	-4(r1), r3	
 	l.addi	r3, r0, 0xe00
-	l.sw	-132(r1), r3
+	l.sw	-260(r1), r3
 	l.lwz	r3, -4(r1)
 	l.j		vPortMiscIntHandler
 	l.nop
@@ -184,7 +184,7 @@ _except_f00:
 	l.nop
 	l.sw	-4(r1), r3	
 	l.addi	r3, r0, 0xf00
-	l.sw	-132(r1), r3
+	l.sw	-260(r1), r3
 	l.lwz	r3, -4(r1)
 	l.j		vPortMiscIntHandler
 	l.nop

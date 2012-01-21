@@ -1,4 +1,7 @@
 #include "port_spr_defs.h"
+#include "portmacro.h"
+#include "FreeRTOSConfig.h"
+
 	
 	.file		"portasm.S"
 	.section	.text
@@ -6,7 +9,7 @@
 .macro portSAVE_CONTEXT
 	.global	pxCurrentTCB			
 	# make rooms in stack			
-	l.addi	r1, r1, -132			
+	l.addi	r1, r1, -STACKFRAME_SIZE			
 	# early save r3-r5, these are clobber register
 	l.sw	0x08(r1), r3			
 	l.sw	0x0C(r1), r4			
@@ -16,8 +19,8 @@
 	l.mfspr	r4, r0, SPR_EPCR_BASE	
 	l.sw	0x78(r1), r3			
 	l.sw	0x7C(r1), r4			
-	l.sw	0x00(r1), r9			
 	# Save Context					
+	l.sw	0x00(r1), r9			
 	l.sw	0x04(r1), r2			
 	l.sw	0x14(r1), r6			
 	l.sw	0x18(r1), r7			
@@ -62,11 +65,11 @@
 	l.lwz	r3, 0x0(r3)				
 	l.lwz	r1, 0x0(r3)				
 	# restore context				
-	l.lwz	r9, 0x00(r1)			
-	l.lwz	r2, 0x04(r1)			
-	l.lwz	r6, 0x14(r1)			
-	l.lwz	r7, 0x18(r1)			
-	l.lwz	r8, 0x1C(r1)			
+	l.lwz	r9,  0x00(r1)			
+	l.lwz	r2,  0x04(r1)			
+	l.lwz	r6,  0x14(r1)			
+	l.lwz	r7,  0x18(r1)			
+	l.lwz	r8,  0x1C(r1)			
 	l.lwz	r10, 0x20(r1)			
 	l.lwz	r11, 0x24(r1)			
 	l.lwz	r12, 0x28(r1)			
@@ -90,15 +93,15 @@
 	l.lwz	r30, 0x70(r1)			
 	l.lwz	r31, 0x74(r1)			
 	# restore SPR_ESR_BASE(0), SPR_EPCR_BASE(0)
-	l.lwz	r3, 0x78(r1)			
-	l.lwz	r4, 0x7C(r1)			
-	l.mtspr	r0, r3, SPR_ESR_BASE	
-	l.mtspr	r0, r4, SPR_EPCR_BASE	
+	l.lwz	r3,  0x78(r1)			
+	l.lwz	r4,  0x7C(r1)			
+	l.mtspr	r0,  r3, SPR_ESR_BASE	
+	l.mtspr	r0,  r4, SPR_EPCR_BASE	
 	# restore clobber register		
-	l.lwz	r3, 0x08(r1)			
-	l.lwz	r4, 0x0C(r1)			
-	l.lwz	r5, 0x10(r1)			
-	l.addi	r1, r1, 132			
+	l.lwz	r3,  0x08(r1)			
+	l.lwz	r4,  0x0C(r1)			
+	l.lwz	r5,  0x10(r1)			
+	l.addi	r1,  r1, STACKFRAME_SIZE			
 	l.rfe							
 	l.nop							
 .endm
