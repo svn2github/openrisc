@@ -1,22 +1,28 @@
-		  OpenRISC Unified GNU Tool Chain Repository
-		  ==========================================
+		  OpenRISC Stable GNU Tool Chain Repository
+		  =========================================
 
-This directory is where you will find all the source trees for the standard
-GNU tool chain. The newlib library is included, since that is required for GCC
-testing.
+This directory is where you will find the source trees for the stable versions
+of the standard GNU tool chain past and present. The newlib library is
+included, since that is required for GCC testing.
 
-The structure mirrors that of the main Free Software Foundation repository.
+Note that the Linux tool chain requires uClibc and Linux, which should be
+downloaded using git.
 
-Using a unified directory means that the entire tool chain can be built in a
-single pass. The script "bld.sh" will build a unified source tree in the a
-directory (default name "srcw") and then configure, build, check and install
-all the tools using a separate build directory (default "bld-or32"). The
-default install directory is "/opt/or32-elf-new").
+Development source trees are found in the gdb-dev directory.
 
-Use "./bld.sh --help" to check the options available, which includes options
-to change all the default directories, omit building newlib and to control
-whichphases of the build process (linking, configuring, building, checking and
-installing) are run.
+The structure mirrors that of the Free Software Foundation tool releases.
+
+The scripts use a unified directory which allows the entire newlib tool chain
+to be built in a single pass. The script "bld-all.sh" will build a unified
+source tree in the a directory (default name "unisrc") and then configure,
+build, check and install all the tools for both newlib and uClibc tool chains
+using separate build directories (defaults "bd-elf", "bd-elf-gdb", "bd-linux"
+and "bd-linux-gdb"). The default install directory is "/opt/or32-elf-new".
+
+Use "./bld-all.sh --help" to check the options available, which includes
+options to change all the default directories, omit building newlib and to
+control whichphases of the build process (linking, configuring, building,
+checking and installing) are run.
 
 By default the tests (which require DejaGnu to be installed) are *not* run.
 
@@ -50,12 +56,12 @@ Once the require libraries are installed, their location must be passed to the
 compiler. The CPPFLAGS, CFLAGS and LFLAGS environment variables are used for
 this. The standard place MacPorts places its installed libraries is /opt/local
 so if this default location was used export the following flags before running 
-the bld.sh script:
+the bld-all.sh script:
 $ export CPPFLAGS="-I/opt/local/include"
 $ export CFLAGS="-L/opt/local/lib"
 $ export LDFLAGS="-L/opt/local/lib"
 
-The bld.sh script should then be OK to run as described above.
+The bld-all.sh script should then be OK to run as described above.
 
 Any questions should be posted on the OpenRISC forum at
 opencores.org/forum,OpenRISC, or discussed on IRC at freenode.net, channel
@@ -63,4 +69,4 @@ opencores.org/forum,OpenRISC, or discussed on IRC at freenode.net, channel
 
 
 Jeremy Bennett
-20 August 2010
+1 March 2012
