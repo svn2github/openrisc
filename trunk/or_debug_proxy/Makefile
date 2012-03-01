@@ -114,9 +114,9 @@ $(STATIC_LIBDIR)/$(STATIC_LIB):
 	@echo "The static library, $(STATIC_LIB), is missing."
 	@echo "Please download the driver to build a statically linked version"
 	@echo "of this app. For 32-bit Linux, try:"; echo
-	@echo "\twget http://www.ftdichip.com/Drivers/D2XX/Linux/libftd2xx1.0.4.tar.gz"
-	@echo "\ttar xzf libftd2xx1.0.4.tar.gz"
-	@echo "\tcp libftd2xx1.0.4/build/i386/libftd2xx.a lib"
+	@echo "\twget http://www.ftdichip.com/Drivers/D2XX/Linux/libftd2xx0.4.16.tar.gz"
+	@echo "\ttar xzf libftd2xx0.4.16.tar.gz"
+	@echo "\tcp libftd2xx0.4.16/static_lib/libftd2xx.a.0.4.16 lib/"
 	@echo
 	@exit 1
 # -----------------------------------------------------------------------------
