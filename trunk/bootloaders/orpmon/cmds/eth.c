@@ -43,8 +43,8 @@ void show_rx_bd(int start, int max)
 	int i;
 	unsigned long rx_bd_base, rx_bd_num;
 
-	rx_bd_num = REG32(ETH_REG_BASE + ETH_RXBD_NUM);
-	rx_bd_base = ETH_BD_BASE + (rx_bd_num << 2);
+	rx_bd_num = REG32(ETH_REG_BASE + ETH_TX_BD_NUM);
+	rx_bd_base = ETH_BD_BASE + (rx_bd_num << 3);
 
 	for (i = start; i <= max; i++) {
 		/* Read Rx BD */
@@ -77,8 +77,8 @@ void show_rx_buffs(int max, int show_all)
 	int i;
 	unsigned long rx_bd_base, rx_bd_num;
 
-	rx_bd_num = REG32(ETH_REG_BASE + ETH_RXBD_NUM);
-	rx_bd_base = ETH_BD_BASE + (rx_bd_num << 2);
+	rx_bd_num = REG32(ETH_REG_BASE + ETH_TX_BD_NUM);
+	rx_bd_base = ETH_BD_BASE + (rx_bd_num << 3);
 
 	for (i = 0; i <= max; i++) {
 		if (!(REG32(rx_bd_base + (i << 3)) & ETH_RX_BD_EMPTY)
@@ -322,8 +322,8 @@ int show_mac_regs_cmd(int argc, char *argv[])
 	printf("\n %08x", ETH_REG_BASE + ETH_COLLCONF);
 	printf(" COLLCONF: %08lx", REG32(ETH_REG_BASE + ETH_COLLCONF));
 
-	printf("\n %08x", ETH_REG_BASE + ETH_RXBD_NUM);
-	printf(" RX_BD_NUM: %08lx", REG32(ETH_REG_BASE + ETH_RXBD_NUM));
+	printf("\n %08x", ETH_REG_BASE + ETH_TX_BD_NUM);
+	printf(" TX_BD_NUM: %08lx", REG32(ETH_REG_BASE + ETH_TX_BD_NUM));
 
 	printf("\n %08x", ETH_REG_BASE + ETH_CTRLMODER);
 	printf(" CTRLMODER: %08lx", REG32(ETH_REG_BASE + ETH_CTRLMODER));
