@@ -193,48 +193,6 @@ _except_f00:
 	.section .text
 
 _start:
-.if IC | DC
-	/* Flush IC and/or DC */
-	l.addi  r10,r0,0   
-	l.addi  r11,r0,0   
-	l.addi  r12,r0,0   
-.if IC
-	l.addi  r11,r0,IC_SIZE
-.endif
-.if DC
-	l.addi	r12,r0,DC_SIZE
-.endif
-	l.sfleu	r12,r11
-	l.bf	loop
-	l.nop
-	l.add	r11,r0,r12
-loop:
-.if IC
-	l.mtspr r0,r10,SPR_ICBIR
-.endif
-.if DC
-	l.mtspr r0,r10,SPR_DCBIR
-.endif
-	l.sfne  r10,r11
-	l.bf    loop   
-	l.addi  r10,r10,16
-
-	/* Enable IC and/or DC */
-	l.addi  r10,r0,(SPR_SR_SM)
-.if IC
-	l.ori	r10,r10,(SPR_SR_ICE)
-.endif
-.if DC
-	l.ori	r10,r10,(SPR_SR_DCE)
-.endif
-	l.mtspr r0,r10,SPR_SR
-	l.nop
-	l.nop
-	l.nop
-	l.nop
-	l.nop
-.endif
-	
 	/* Set stack pointer */
 	l.movhi r1, hi(_stack_top)
 	l.ori   r1, r1, lo(_stack_top)

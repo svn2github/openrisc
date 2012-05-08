@@ -56,6 +56,7 @@
 #include <string.h>
 
 /* Architecture specific header files. */
+#include "support.h"
 #include "spr_defs.h"
 
 /* Scheduler header files. */
@@ -86,10 +87,8 @@
 #define mainBLOCK_Q_PRIORITY		( tskIDLE_PRIORITY + 2 )
 #define mainLED_TASK_PRIORITY		( tskIDLE_PRIORITY + 1 )
 #define mainCOM_TEST_PRIORITY		( tskIDLE_PRIORITY + 1 )
-#define mainLCD_TASK_PRIORITY		( tskIDLE_PRIORITY + 1 )
 
 #define mainPRINT_STACK_SIZE		( ( unsigned short ) 64 )
-#define mainDEBUG_LOG_BUFFER_SIZE	( ( unsigned short ) 256 )
 
 /* How often should we check the other tasks? */
 #define mainCHECK_TASK_CYCLE_TIME	( 3000 )
@@ -235,6 +234,9 @@ void prvSetupHardware( void )
 
 	// set low 8 port is outout
 	set_gpio_direction(0, 0xFFFFFF00);
+
+	// enable IC/DC if present
+	cache_init();
 }
 /*-----------------------------------------------------------*/
 

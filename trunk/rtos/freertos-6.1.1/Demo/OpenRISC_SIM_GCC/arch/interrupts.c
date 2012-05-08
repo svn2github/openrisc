@@ -62,9 +62,12 @@ int int_enable(unsigned long vect) {
 
 /* Main interrupt handler */
 void int_main(void) {
-	unsigned long picsr = mfspr(SPR_PICSR);   // process only the interrupts asserted at signal catch, ignore all during process
-	unsigned long i = 0;
-
+	unsigned long picsr;
+	unsigned long i;
+	
+	// vPortDisableInterrupts();	
+	picsr = mfspr(SPR_PICSR);   // process only the interrupts asserted at signal catch, ignore all during process
+	i = 0;
 	while(i < 32) {
 		if((picsr & (0x01L << i)) && (int_handlers[i].handler != 0)) {
 			(*int_handlers[i].handler)(int_handlers[i].arg); 
@@ -73,11 +76,30 @@ void int_main(void) {
 	}
 
 	mtspr(SPR_PICSR, 0);	// clear interrupt status: all modules have level interrupts, which have to be cleared by software,
-}                          	// thus this is safe, since non processed interrupts will get re-asserted soon enough
+                          	// thus this is safe, since non processed interrupts will get re-asserted soon enough
+
+	// vPortEnableInterrupts();	
+}
 
 // Dummy or32 except vectors
+static void stall(void) {
+	while(1);
+}
+
 void buserr_except(void) {
+	unsigned long epcr = mfspr(SPR_EPCR_BASE);
+	unsigned long eear = mfspr(SPR_EEAR_BASE);
+
 	uart_print_str("buserr_except\n\r");
+	uart_print_str("\n\r");
+	uart_print_int(epcr);
+	uart_print_str("\n\r");
+	uart_print_str("\n\r");
+	uart_print_int(eear);
+	uart_print_str("\n\r");
+	report(epcr);
+	report(eear);
+	stall();
 }
 
 void dpf_except(void) {
@@ -89,7 +111,19 @@ void ipf_except(void) {
 }
 
 void align_except(void) {
+	unsigned long epcr = mfspr(SPR_EPCR_BASE);
+	unsigned long eear = mfspr(SPR_EEAR_BASE);
+
 	uart_print_str("align_except\n\r");
+	uart_print_str("\n\r");
+	uart_print_int(epcr);
+	uart_print_str("\n\r");
+	uart_print_str("\n\r");
+	uart_print_int(eear);
+	uart_print_str("\n\r");
+	report(epcr);
+	report(eear);
+	stall();
 }
 
 void illegal_except(void) {
