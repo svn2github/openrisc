@@ -74,11 +74,14 @@
 #include "comtest2.h"
 #include "dynamic.h"
 
+#include "or32_dma.h"
+
 /* BSP headers. */
 #include "support.h"
 #include "board.h"
 #include "uart.h"
 #include "gpio.h"
+#include "dma.h"
 
 #include "interrupts.h"
 
@@ -136,6 +139,7 @@ int main( int argc, char **argv )
 	vAltStartComTestTasks( mainCOM_TEST_PRIORITY, mainCOM_TEST_BAUD_RATE, mainCOM_TEST_LED );
 	vStartLEDFlashTasks( mainLED_TASK_PRIORITY );
 	vStartIntegerMathTasks( tskIDLE_PRIORITY );
+	vStartDmaDemoTasks( tskIDLE_PRIORITY );
 	
 	vCreateBlockTimeTasks();
 	vStartBlockingQueueTasks( mainBLOCK_Q_PRIORITY );
@@ -196,7 +200,12 @@ static void vCheckTask( void *pvParameters )
 		if( xAreDynamicPriorityTasksStillRunning() != pdTRUE )
 		{
 			ulErrorDetected = pdTRUE;
-		}		
+		}	
+		
+		if( xAreDmaDemoTaskStillRunning() != pdTRUE )
+		{
+			ulErrorDetected = pdTRUE;
+		}	
 		
 		if(ulErrorDetected == pdTRUE)
 		{
@@ -225,6 +234,9 @@ void prvSetupHardware( void )
 	// UART controller use 25 Mhz Wishbone bus clock, define in board.h
 	uart_init(0);			
 	uart_rxint_enable(0);
+	
+	// Initialize DMA controller
+	dma_init((void *)DMA_BASE);
 
 	// Initialize internal Programmable Interrupt Controller
 	int_init();

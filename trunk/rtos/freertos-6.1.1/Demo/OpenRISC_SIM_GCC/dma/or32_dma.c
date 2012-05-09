@@ -51,59 +51,111 @@
     licensing and training services.
 */
 
-#ifndef FREERTOS_CONFIG_H
-#define FREERTOS_CONFIG_H
+/*
+ * DMA demo task
+ * testing DMA, D-Cache 
+ */
 
-/*-----------------------------------------------------------
- * Application specific definitions.
- *
- * These definitions should be adjusted for your particular hardware and
- * application requirements.
- *
- * THESE PARAMETERS ARE DESCRIBED WITHIN THE 'CONFIGURATION' SECTION OF THE
- * FreeRTOS API DOCUMENTATION AVAILABLE ON THE FreeRTOS.org WEB SITE. 
- *
- * See http://www.freertos.org/a00110.html.
- *----------------------------------------------------------*/
-#include "board.h"
+#include <stdlib.h>
 
-#define configUSE_PREEMPTION			1
-#define configUSE_IDLE_HOOK				0
-#define configUSE_TICK_HOOK				0
-#define configCPU_CLOCK_HZ				( ( unsigned long ) SYS_CLK )	
-#define configTICK_RATE_HZ				( ( portTickType ) 1000 )
-#define configMINIMAL_STACK_SIZE		( ( unsigned portSHORT ) 256 )
-#define configTOTAL_HEAP_SIZE			( ( size_t ) ( 40 * 1024 ) )
-#define configMAX_TASK_NAME_LEN			( 32 )
-#define configUSE_TRACE_FACILITY		0
-#define configUSE_16_BIT_TICKS			0
-#define configIDLE_SHOULD_YIELD			0
-#define configUSE_MUTEXES				1
-#define configUSE_RECURSIVE_MUTEXES		0
-#define configQUEUE_REGISTRY_SIZE		1
-#define configUSE_MALLOC_FAILED_HOOK	1
-#define configUSE_APPLICATION_TASK_TAG	1
-#define configUSE_COUNTING_SEMAPHORES	1
-#define configMAX_PRIORITIES			( ( unsigned portBASE_TYPE ) 10 )
+/* Scheduler include files. */
+#include "FreeRTOS.h"
+#include "task.h"
 
-#define configGENERATE_RUN_TIME_STATS	0
-#define configCHECK_FOR_STACK_OVERFLOW	0
+/* Demo program include files. */
+#include "or32_dma.h"
+#include "dma.h"
+#include "support.h"
 
-/* Co-routine definitions. */
-#define configUSE_CO_ROUTINES 			0
-#define configMAX_CO_ROUTINE_PRIORITIES ( 2 )
+/* The constants used in the dma demo task. */
+#define dmaSTACK_SIZE			configMINIMAL_STACK_SIZE
 
-/* Set the following definitions to 1 to include the API function, or zero
-to exclude the API function. */
+/*-----------------------------------------------------------*/
+/* Structure used to pass parameters to the blocking queue tasks. */
+#define DMA_TRANSFER_WORD	(256)
+typedef struct DMA_DEMO_PARAMETERS
+{
+	unsigned portBASE_TYPE source[DMA_TRANSFER_WORD];
+	unsigned portBASE_TYPE destination[DMA_TRANSFER_WORD];
+} xDmaDemoParameters;
 
-#define INCLUDE_vTaskPrioritySet			1
-#define INCLUDE_uxTaskPriorityGet			1
-#define INCLUDE_vTaskDelete					1
-#define INCLUDE_vTaskCleanUpResources		0
-#define INCLUDE_vTaskSuspend				1
-#define INCLUDE_vTaskDelayUntil				1
-#define INCLUDE_vTaskDelay					1
-#define INCLUDE_uxTaskGetStackHighWaterMark	1
-#define INCLUDE_xTaskGetSchedulerState		1
+static volatile portBASE_TYPE checker;
+/* Task function that creates an incrementing number and posts it on a queue. */
+static portTASK_FUNCTION_PROTO( vDmaDemoTask, pvParameters );
 
-#endif /* FREERTOS_CONFIG_H */
+void vStartDmaDemoTasks( unsigned portBASE_TYPE uxPriority )
+{
+	xDmaDemoParameters *pxDmaDemoParamter;
+	checker = pdTRUE;
+
+	/* First create the structure used to pass parameters to the demo tasks. */
+	pxDmaDemoParamter = ( xDmaDemoParameters * ) pvPortMalloc( sizeof( xDmaDemoParameters ) );
+
+	/* create demo task */
+	xTaskCreate( vDmaDemoTask, ( signed char * ) "DmaDemo", dmaSTACK_SIZE, ( void * ) pxDmaDemoParamter, uxPriority, ( xTaskHandle * ) NULL );
+}
+/*-----------------------------------------------------------*/
+
+static portTASK_FUNCTION( vDmaDemoTask, pvParameters )
+{
+	xDmaDemoParameters *pxDmaDemoParamter = (xDmaDemoParameters *)pvParameters;
+	unsigned portBASE_TYPE *source = pxDmaDemoParamter->source;
+	unsigned portBASE_TYPE *destination = pxDmaDemoParamter->destination;
+	int i;
+
+	srand(0);	
+	for( ;; )
+	{
+		/* Yield in case cooperative scheduling is being used. */
+		#if configUSE_PREEMPTION == 0
+		{
+			taskYIELD();
+		}
+		#endif
+		
+		/* fill source array with random value */
+		for(i = 0; i < DMA_TRANSFER_WORD; i++) 
+		{
+			source[i] = rand();
+		}
+		
+		/* flushing dcache for coherency(update memory) */
+		flush_dcache_range((unsigned long)source, (unsigned long)(source + DMA_TRANSFER_WORD));
+			
+		portENTER_CRITICAL();
+		{
+			/* move DMA_TRANSFER_WORD words from source to destination */
+			dma_block_transfer(0,
+							   0, (unsigned int)source,
+							   1, (unsigned int)destination,
+							   16, DMA_TRANSFER_WORD, 0);
+
+		}
+		portEXIT_CRITICAL();
+		
+		/* invalidating dcache for coherency(update cache) */
+		invalidate_dcache_range((unsigned long)destination, (unsigned long)(destination + DMA_TRANSFER_WORD));
+
+		for(i = 0; i < DMA_TRANSFER_WORD; i++)
+		{
+			if(source[i] != destination[i])
+				checker = pdFAIL;
+		}
+
+		/* Yield in case cooperative scheduling is being used. */
+		#if configUSE_PREEMPTION == 0
+		{
+			taskYIELD();
+		}
+		#endif
+	}
+}
+/*-----------------------------------------------------------*/
+
+/* This is called to check that all the created tasks are still running. */
+portBASE_TYPE xAreDmaDemoTaskStillRunning( void )
+{
+	portBASE_TYPE xReturn = checker;
+	return xReturn;
+}
+

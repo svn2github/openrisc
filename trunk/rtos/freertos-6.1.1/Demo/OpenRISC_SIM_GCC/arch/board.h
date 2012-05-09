@@ -1,13 +1,6 @@
 #ifndef _BOARD_H_
 #define _BOARD_H_
 
-#define MC_ENABLED	    0
-
-#define IC_ENABLE 	    0
-#define IC_SIZE         8192
-#define DC_ENABLE 	    0
-#define DC_SIZE         8192
-
 #define SYS_CLK			25000000
 #define IN_CLK  	    25000000
 
@@ -23,5 +16,8 @@
 
 #define GPIO0_BASE		0x91000000
 #define GPIO0_IRQ		3
+
+#define DMA_BASE		0x9a000000
+#define DMA_IRQ			11
 
 #endif

@@ -25,14 +25,14 @@ APP_SRC = \
 PORT_SRC = $(RTOS_SOURCE_DIR)/portable/GCC/OpenRISC/port.c
 PORT_ASM = $(RTOS_SOURCE_DIR)/portable/GCC/OpenRISC/portasm.S
 
-DEMO_SRC = main.c serial/serial.c ParTest/ParTest.c
+DEMO_SRC = main.c serial/serial.c ParTest/ParTest.c dma/or32_dma.c
 ARCH_ASM = ./arch/reset.S
 
-INC		= -I. -I../../Source/include -I./arch -I./drivers -I../Common/include \
+INC		= -I. -I../../Source/include -I./arch -I./drivers -I./dma \
+		  -I../Common/include \
 		  -I$(RTOS_SOURCE_DIR)/portable/GCC/OpenRISC
 
-CFLAGS	= $(WARNINGS) $(INC) \
-		-I../Common/include $(DEBUG) \
+CFLAGS	+= $(WARNINGS) $(INC) $(DEBUG) \
 		-D__GCC_OpenRISC__ \
 		-fomit-frame-pointer -fno-strict-aliasing -fno-builtin
 
@@ -64,6 +64,7 @@ LIBS	 = -L./arch -larch -L./drivers -ldrivers \
 	@$(CC) -c $(CFLAGS) -o $@ $<
 
 all: $(PROG).or32
+	@$(SIZE) $(PORT_ASM_OBJ) $(PORT_OBJ) $(RTOS_OBJ) $(DEMO_OBJ) $(APP_OBJ) $(PROG).or32
 
 $(PROG).or32 : $(PORT_ASM_OBJ) $(PORT_OBJ) $(RTOS_OBJ) $(DEMO_OBJ) $(APP_OBJ) Makefile arch drivers
 	@echo Link....
@@ -78,7 +79,7 @@ drivers: force_true
 	@(cd $@; make)
 
 clean :
-	@rm -f $(PORT_ASM_OBJ) $(PORT_OBJ) $(RTOS_OBJ) $(DEMO_OBJ) $(APP_OBJ)
+	@rm -f $(RTOS_OBJ) $(DEMO_OBJ) $(PORT_OBJ) $(PORT_ASM_OBJ)
 	@rm -f rtosdemo.or32 
 	@rm -f rtosdemo.map
 	@rm -f rtosdemo.asm

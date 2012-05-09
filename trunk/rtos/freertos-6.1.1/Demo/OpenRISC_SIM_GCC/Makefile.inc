@@ -9,6 +9,7 @@ OBJCOPY	= $(TARGET)-objcopy
 OBJDUMP	= $(TARGET)-objdump
 AR		= $(TARGET)-ar
 RANLIB	= $(TARGET)-ranlib
+SIZE	= $(TARGET)-size
 
 #-----------------------------------------------------------
 WARNINGS= -Wall -Wextra -Wshadow -Wpointer-arith -Wbad-function-cast -Wcast-align -Wsign-compare \
