@@ -49,6 +49,7 @@
 //#####DESCRIPTIONBEGIN####
 //
 // Author(s):    Piotr Skrzypek
+// Contributor:  R.Diez
 // Date:         2012-06-08
 // Purpose:      
 // Description:  Based on ARM code
@@ -171,16 +172,32 @@ static void do_exec(int argc, char *argv[]) {
 
 	// This code is executed from the trampoline address. Trampoline never returns.
 	asm volatile (
+
+		// All code below must be position independent, 
+		// as it will run on another memory address.
+		// Accorting to ABI:
+		// R3 is base_addr
+		// R4 is base_addr + length
+		// R5 is target
+		// R6 is the entry point to jump to at the end
+
 		"__tramp_start__:\n"
 		"1: l.sfeq  r3, r4\n"
 		"   l.bf    2f\n"
 		"   l.lwz   r13,0x00(r3)\n"
 		"   l.sw    0x00(r5), r13\n"
 		"   l.addi  r3, r3, 4\n"
+#ifdef CYGHWR_BRANCH_SLOT_IMPLEMENTED
 		"   l.j     1b\n"
 		"   l.addi  r5, r5, 4\n"
+#else
+		"   l.addi  r5, r5, 4\n"
+		"   l.j     1b\n"
+#endif
 		"2: l.jr    r6\n"
+#ifdef CYGHWR_BRANCH_SLOT_IMPLEMENTED
 		"   l.nop\n"
+#endif
 		"__tramp_end__:\n"
 		: /* no output registers */
 		: /* no input registers */

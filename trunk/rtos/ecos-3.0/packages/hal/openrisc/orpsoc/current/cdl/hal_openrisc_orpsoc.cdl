@@ -161,7 +161,8 @@ cdl_package CYGPKG_HAL_OPENRISC_ORPSOC {
                             "-g -O2 -fno-omit-frame-pointer -fno-rtti -fno-exceptions " .
                             (CYGHWR_MUL_IMPLEMENTED ? "-mhard-mul " : "-msoft-mul ") .
                             (CYGHWR_DIV_IMPLEMENTED ? "-mhard-div " : "-msoft-div ") .
-                            (CYGHWR_FPU_IMPLEMENTED ? "-mhard-float " : "-msoft-float ") }
+                            (CYGHWR_FPU_IMPLEMENTED ? "-mhard-float " : "-msoft-float ") .
+                            (CYGHWR_BRANCH_SLOT_IMPLEMENTED ? "" : "-mno-branch-delay " ) }
             description   "
                 This option controls the global compiler flags which
                 are used to compile all packages by
@@ -307,6 +308,15 @@ cdl_package CYGPKG_HAL_OPENRISC_ORPSOC {
         default_value 0
         description   "
             Select this option only if FPU is implemented."
+    }
+
+    cdl_option CYGHWR_BRANCH_SLOT_IMPLEMENTED {
+        display       "Branch slot implemented"
+        flavor        bool
+        default_value 1
+        description   "
+            Select this option if your implementation of OpenRISC
+            has branch slot."
     }
 
     cdl_component CYGHWR_ICACHE_IMPLEMENTED {

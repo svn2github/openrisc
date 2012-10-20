@@ -99,9 +99,12 @@
         .p2align 8
         .globl  __exception_\name
 __exception_\name:
+        l.movhi r0, 0
         load32i r3,start
         l.jr    r3
+#ifdef CYGHWR_BRANCH_SLOT_IMPLEMENTED
         l.nop           # delay slot
+#endif
         .endm
         
 # Generic vector macro
@@ -190,11 +193,14 @@ __exception_\name:
         #   Arg 1: Vector #
         load32i r5,hal_vsr_table+(\org>>6)
         l.lwz   r5,0(r5)
+#ifdef CYGHWR_BRANCH_SLOT_IMPLEMENTED
         l.jr    r5                           # To the VSR, Batman
+        l.or    r3,r0,sp                     # First arg to VSR is SP
+#else
+        l.or    r3,r0,sp                     # First arg to VSR is SP
+        l.jr    r5                           # To the VSR, Batman
+#endif
 
-        # First arg to VSR is SP
-        l.or    r3,r0,sp                     # Delay slot
-        
         .endm
         
 #---------------------------------------------------------------------------
@@ -238,8 +244,14 @@ rom_vectors_end:
 1:      l.sw    0(r4),r3
         l.addi  r5,r5,-1
         l.sfgtsi r5,0
+
+#ifdef CYGHWR_BRANCH_SLOT_IMPLEMENTED
         l.bf    1b
-        l.addi  r4,r4,4         # delay slot
+        l.addi  r4,r4,4
+#else
+        l.addi  r4,r4,4
+        l.bf    1b
+#endif
 
         # Then fill in the interrupt handlers
         load32i r4,hal_vsr_table
@@ -284,9 +296,14 @@ rom_vectors_end:
 1:
         l.mtspr r0,r13,SPR_ICBIR
         l.sfne  r13,r11
+#ifdef CYGHWR_BRANCH_SLOT_IMPLEMENTED
         l.bf    1b
         l.addi  r13,r13,HAL_ICACHE_LINE_SIZE
-        
+#else
+        l.addi  r13,r13,HAL_ICACHE_LINE_SIZE
+        l.bf    1b
+#endif        
+
         /* Enable I-Cache */
         l.mfspr r13,r0,SPR_SR
         l.ori   r13,r13,SPR_SR_ICE
@@ -309,8 +326,13 @@ rom_vectors_end:
 1:
         l.mtspr r0,r10,SPR_DCBIR
         l.sfne  r10,r11
+#ifdef CYGHWR_BRANCH_SLOT_IMPLEMENTED
         l.bf    1b
         l.addi  r10,r10,HAL_DCACHE_LINE_SIZE
+#else
+        l.addi  r10,r10,HAL_DCACHE_LINE_SIZE
+        l.bf    1b
+#endif
 
         /* Enable DC */
         l.mfspr r10,r0,SPR_SR
@@ -383,8 +405,13 @@ hal_hardware_init_done:
         l.lwz   r6,0(r3)
         l.sw    0(r4),r6
         l.addi  r3,r3,4
+#ifdef CYGHWR_BRANCH_SLOT_IMPLEMENTED
         l.j     1b
         l.addi  r4,r4,4         # delay slot
+#else
+        l.addi  r4,r4,4
+        l.j     1b
+#endif
 2:
 
         # Copy .data section into RAM
@@ -396,8 +423,13 @@ hal_hardware_init_done:
         l.lwz   r6,0(r3)
         l.sw    0(r4),r6
         l.addi  r3,r3,4
+#ifdef CYGHWR_BRANCH_SLOT_IMPLEMENTED
         l.j     1b
         l.addi  r4,r4,4         # delay slot
+#else
+        l.addi  r4,r4,4
+        l.j     1b
+#endif
 2:
 
 #endif
@@ -407,39 +439,58 @@ hal_hardware_init_done:
         load32i r5,__bss_end
 1:      l.sfeq  r4,r5
         l.bf    2f
+#ifdef CYGHWR_BRANCH_SLOT_IMPLEMENTED
         l.nop
+#endif
         l.sw    0(r4),r0
+#ifdef CYGHWR_BRANCH_SLOT_IMPLEMENTED
         l.j     1b
         l.addi  r4,r4,4
+#else
+        l.addi  r4,r4,4
+        l.j     1b
+#endif
 2:
 
         # Note:  no SBSS section to clear with OpenRISC target
         
         # Platform-specific initialization
         l.jal   hal_platform_init
+#ifdef CYGHWR_BRANCH_SLOT_IMPLEMENTED
         l.nop   # delay slot
+#endif
         
         # call c++ constructors
         l.jal   cyg_hal_invoke_constructors
+#ifdef CYGHWR_BRANCH_SLOT_IMPLEMENTED
         l.nop   # delay slot
+#endif
 
 #ifdef CYGDBG_HAL_DEBUG_GDB_INCLUDE_STUBS
         l.jal   initialize_stub
+#ifdef CYGHWR_BRANCH_SLOT_IMPLEMENTED
         l.nop   # delay slot
+#endif
 #endif
 
 #if defined(CYGDBG_HAL_DEBUG_GDB_CTRLC_SUPPORT) \
     || defined(CYGDBG_HAL_DEBUG_GDB_BREAK_SUPPORT)
         .extern hal_ctrlc_isr_init
         l.jal   hal_ctrlc_isr_init
+#ifdef CYGHWR_BRANCH_SLOT_IMPLEMENTED
         l.nop   # delay slot
+#endif
 #endif
         
         l.jal   cyg_start       # call cyg_start()
+#ifdef CYGHWR_BRANCH_SLOT_IMPLEMENTED
         l.nop   # delay slot
+#endif
 9:      
         l.j     9b              # if we return, loop
+#ifdef CYGHWR_BRANCH_SLOT_IMPLEMENTED
         l.nop   # delay slot
+#endif
 
 FUNC_END(start)
         
@@ -466,8 +517,13 @@ FUNC_START(cyg_hal_default_exception_vsr)
 	# directly to restore_state(), which will resume execution
 	# at the location of the exception.
         l.movhi r9, hi(restore_state)
+#ifdef CYGHWR_BRANCH_SLOT_IMPLEMENTED
         l.j     cyg_hal_exception_handler
         l.ori   r9,r9,lo(restore_state) #Delay slot
+#else
+        l.ori   r9,r9,lo(restore_state)
+        l.j     cyg_hal_exception_handler
+#endif
 
         # Control never reaches this point, 
 
@@ -513,7 +569,9 @@ FUNC_START(cyg_hal_default_interrupt_vsr)
         l.bf    1f                              #    switch to interrupt stack
         l.sfltu sp,r7                           # if (sp < __interrupt_stack_top)
         l.bf   2f                               #    already on interrupt stack
+#ifdef CYGHWR_BRANCH_SLOT_IMPLEMENTED
         l.nop                                   # delay slot
+#endif
 1:      l.or    sp,r7,r7                        # Switch to interrupt stack
 2:      l.addi  sp,sp,-8                        # Make space to save old SP...
         l.sw    0(sp),r6                        # ...and save it on the stack           
@@ -527,6 +585,9 @@ FUNC_START(cyg_hal_default_interrupt_vsr)
                                                 # arg2 = vector number
         l.ori   r5,r0,r0                        # arg3 = 0
         l.jal   _cyg_instrument                  # call instrument function
+#ifdef CYGHWR_BRANCH_SLOT_IMPLEMENTED
+	l.nop
+#endif
         
 #endif
 
@@ -555,18 +616,31 @@ FUNC_START(cyg_hal_default_interrupt_vsr)
         # Any pending external interrupts ?
         l.sfnei r9,0
         l.bf    check_for_external_interrupts
+#ifdef CYGHWR_BRANCH_SLOT_IMPLEMENTED
+	l.nop
+#endif
 
         # Theoretically, the only way we could get here is if the tick timer
         # interrupt fired, but we check to be sure that's what happened.
         l.sfeqi r4,CYGNUM_HAL_VECTOR_TICK_TIMER
+#ifdef CYGHWR_BRANCH_SLOT_IMPLEMENTED
         l.bf    3f
         l.ori   r3,r0,CYGNUM_HAL_INTERRUPT_RTC  # delay slot
-        
+#else
+        l.ori   r3,r0,CYGNUM_HAL_INTERRUPT_RTC
+        l.bf    3f
+#endif        
+
 #ifndef CYGIMP_HAL_COMMON_INTERRUPTS_IGNORE_SPURIOUS
         l.jal   hal_spurious_IRQ
+#ifdef CYGHWR_BRANCH_SLOT_IMPLEMENTED
         l.nop
+#endif
 #endif // CYGIMP_HAL_COMMON_INTERRUPTS_IGNORE_SPURIOUS
         l.j     ignore_spurious_interrupt
+#ifdef CYGHWR_BRANCH_SLOT_IMPLEMENTED
+	l.nop
+#endif
         
         # Identify the lowest numbered interrupt bit in the PIC's PSR,
         # numbering the MSB as 31 and the LSB as 0
@@ -576,8 +650,13 @@ check_for_external_interrupts:
         l.sfnei r11,0
         l.bf    3f
         l.srli  r9,r9,1                         # Shift right 1 bit
+#ifdef CYGHWR_BRANCH_SLOT_IMPLEMENTED
         l.j     2b
         l.addi  r3,r3,1                         # Delay slot
+#else
+        l.addi  r3,r3,1
+        l.j     2b
+#endif
 3:              
 
         # At this point, r3 contains the ISR number, from 0-32
@@ -594,7 +673,9 @@ check_for_external_interrupts:
         #   arg0 = ISR #
         #   arg1 = data arg associated with interrupt
         l.jalr  r11
+#ifdef CYGHWR_BRANCH_SLOT_IMPLEMENTED
         l.nop
+#endif
 
 ignore_spurious_interrupt:
         
@@ -636,7 +717,9 @@ ignore_spurious_interrupt:
 
         .extern interrupt_end
         l.jal   interrupt_end                   # call into C to finish off
+#ifdef CYGHWR_BRANCH_SLOT_IMPLEMENTED
         l.nop
+#endif
 #endif
 
         # Fall through to restore_state...
@@ -712,7 +795,9 @@ restore_state:
 
         # All done, restore CPU state and continue
         l.rfe
+#ifdef CYGHWR_BRANCH_SLOT_IMPLEMENTED
         l.nop           # Delay slot
+#endif
 
 
 ##-----------------------------------------------------------------------------
@@ -733,11 +818,13 @@ FUNC_START(hal_interrupt_stack_call_pending_DSRs)
         l.sw    4(sp), r4       # Save interrupt state
         l.ori   r4, r4, SPR_SR_IEE|SPR_SR_TEE
         l.sw    8(sp),lr
-        
+#ifdef CYGHWR_BRANCH_SLOT_IMPLEMENTED        
         l.jal   cyg_interrupt_call_pending_DSRs
-	# Enable interrupts before calling DSRs
-	l.mtspr r0, r4, SPR_SR  # Delay slot
-
+	l.mtspr r0, r4, SPR_SR  # Enable interrupts before calling DSRs
+#else
+	l.mtspr r0, r4, SPR_SR  # Enable interrupts before calling DSRs
+        l.jal   cyg_interrupt_call_pending_DSRs
+#endif
         l.lwz   r4, 4(sp)
         l.lwz   lr, 8(sp)
         l.lwz   sp, 0(sp)
@@ -748,10 +835,14 @@ FUNC_START(hal_interrupt_stack_call_pending_DSRs)
         load32i r6, ~(SPR_SR_IEE|SPR_SR_TEE)
         l.and   r5, r5, r6
         l.or    r4, r4, r5
-        
+#ifdef CYGHWR_BRANCH_SLOT_IMPLEMENTED        
         l.jr    r9
         l.mtspr r0, r4, SPR_SR  # Delay slot
-        
+#else
+        l.mtspr r0, r4, SPR_SR
+        l.jr    r9
+#endif        
+
 FUNC_END(hal_interrupt_stack_call_pending_DSRs)
 #endif          
 
@@ -785,13 +876,20 @@ FUNC_START(hal_program_new_stack)
 
         # Call function
         l.jalr  r3
+#ifdef CYGHWR_BRANCH_SLOT_IMPLEMENTED
         l.nop
+#endif
         
         l.lwz   sp, 8(sp)       # Restore original SP
         l.lwz   lr, 4(sp)
+#ifdef CYGHWR_BRANCH_SLOT_IMPLEMENTED
         l.jr    lr              # Return to caller
         l.addi  sp,sp, 8        # Delay slot
-        
+#else
+        l.addi  sp,sp, 8
+        l.jr    lr              # Return to caller
+#endif        
+
 FUNC_END(hal_program_new_stack)
 
 #---------------------------------------------------------------------------

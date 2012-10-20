@@ -217,7 +217,9 @@ FUNC_START(hal_thread_load_context)
         l.lwz   sp,   1 * OR1K_GPRSIZE(sp)
 
         l.jr    lr
+#ifdef CYGHWR_BRANCH_SLOT_IMPLEMENTED
         l.nop                                   # delay slot - must be nop
+#endif
 
 FUNC_END(hal_thread_load_context)
         
@@ -267,7 +269,10 @@ FUNC_START(hal_setjmp)
         l.sw    CYGARC_JMP_BUF_R30 * OR1K_GPRSIZE(r3), r30
         l.movhi rv, 0
         l.jr    lr
+#ifdef CYGHWR_BRANCH_SLOT_IMPLEMENTED
         l.nop                   # delay slot
+#endif
+
 FUNC_END(hal_setjmp)
 
 
@@ -289,7 +294,10 @@ FUNC_START(hal_longjmp)
         l.movhi rv, 0
         l.or    rv, rv, r4
         l.jr    lr
+#ifdef CYGHWR_BRANCH_SLOT_IMPLEMENTED
         l.nop                   # delay slot
+#endif
+
 FUNC_END(hal_longjmp)
         
 
