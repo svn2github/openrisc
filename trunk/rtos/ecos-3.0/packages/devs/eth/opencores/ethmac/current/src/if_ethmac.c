@@ -54,6 +54,7 @@
 #include <cyg/hal/drv_api.h>
 #include <cyg/io/eth/netdev.h>
 #include <cyg/io/eth/eth_drv.h>
+#include <string.h>
 
 // Settings exported from CDL
 #include <pkgconf/devs_eth_opencores_ethmac.h>

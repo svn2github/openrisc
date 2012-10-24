@@ -402,7 +402,7 @@ hal_hardware_init_done:
         load32i r5,rom_vectors_end
 1:      l.sfeq  r3,r5
         l.bf    2f
-        l.lwz   r6,0(r3)
+        l.lwz   r6,0(r3) # Note that this might be a branch slot
         l.sw    0(r4),r6
         l.addi  r3,r3,4
 #ifdef CYGHWR_BRANCH_SLOT_IMPLEMENTED
@@ -420,7 +420,7 @@ hal_hardware_init_done:
         load32i r5,__ram_data_end
 1:      l.sfeq  r4,r5
         l.bf    2f
-        l.lwz   r6,0(r3)
+        l.lwz   r6,0(r3) # Note that this might be a branch slot
         l.sw    0(r4),r6
         l.addi  r3,r3,4
 #ifdef CYGHWR_BRANCH_SLOT_IMPLEMENTED
@@ -567,7 +567,8 @@ FUNC_START(cyg_hal_default_interrupt_vsr)
         load32i r8,__interrupt_stack_base       # stack base (lowest addr)
         l.sfltu sp,r8                           # if (sp < __interrupt_stack_base) 
         l.bf    1f                              #    switch to interrupt stack
-        l.sfltu sp,r7                           # if (sp < __interrupt_stack_top)
+        l.sfltu sp,r7                           # Note that this might be a branch slot
+                                                # if (sp < __interrupt_stack_top)
         l.bf   2f                               #    already on interrupt stack
 #ifdef CYGHWR_BRANCH_SLOT_IMPLEMENTED
         l.nop                                   # delay slot
@@ -649,7 +650,7 @@ check_for_external_interrupts:
 2:      l.andi  r11,r9,1                        # Test low bit
         l.sfnei r11,0
         l.bf    3f
-        l.srli  r9,r9,1                         # Shift right 1 bit
+        l.srli  r9,r9,1                         # Shift right 1 bit, note that this might be a branch slot
 #ifdef CYGHWR_BRANCH_SLOT_IMPLEMENTED
         l.j     2b
         l.addi  r3,r3,1                         # Delay slot
@@ -795,9 +796,7 @@ restore_state:
 
         # All done, restore CPU state and continue
         l.rfe
-#ifdef CYGHWR_BRANCH_SLOT_IMPLEMENTED
-        l.nop           # Delay slot
-#endif
+	# l.rfe does not have a branch slot
 
 
 ##-----------------------------------------------------------------------------

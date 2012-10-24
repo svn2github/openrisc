@@ -184,7 +184,7 @@ static void do_exec(int argc, char *argv[]) {
 		"__tramp_start__:\n"
 		"1: l.sfeq  r3, r4\n"
 		"   l.bf    2f\n"
-		"   l.lwz   r13,0x00(r3)\n"
+		"   l.lwz   r13,0x00(r3)\n" // Note that this might be a branch slot
 		"   l.sw    0x00(r5), r13\n"
 		"   l.addi  r3, r3, 4\n"
 #ifdef CYGHWR_BRANCH_SLOT_IMPLEMENTED
