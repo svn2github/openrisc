@@ -567,8 +567,7 @@ FUNC_START(cyg_hal_default_interrupt_vsr)
         load32i r8,__interrupt_stack_base       # stack base (lowest addr)
         l.sfltu sp,r8                           # if (sp < __interrupt_stack_base) 
         l.bf    1f                              #    switch to interrupt stack
-        l.sfltu sp,r7                           # Note that this might be a branch slot
-                                                # if (sp < __interrupt_stack_top)
+        l.sfltu sp,r7                           # if (sp < __interrupt_stack_top) (note this might be a branch slot)
         l.bf   2f                               #    already on interrupt stack
 #ifdef CYGHWR_BRANCH_SLOT_IMPLEMENTED
         l.nop                                   # delay slot
