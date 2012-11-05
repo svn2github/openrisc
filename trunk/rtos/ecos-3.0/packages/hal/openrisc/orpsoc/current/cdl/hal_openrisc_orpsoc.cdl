@@ -162,7 +162,7 @@ cdl_package CYGPKG_HAL_OPENRISC_ORPSOC {
                             (CYGHWR_MUL_IMPLEMENTED ? "-mhard-mul " : "-msoft-mul ") .
                             (CYGHWR_DIV_IMPLEMENTED ? "-mhard-div " : "-msoft-div ") .
                             (CYGHWR_FPU_IMPLEMENTED ? "-mhard-float " : "-msoft-float ") .
-                            (CYGHWR_BRANCH_SLOT_IMPLEMENTED ? "" : "-mno-branch-delay " ) }
+                            (CYGHWR_BRANCH_SLOT_IMPLEMENTED ? "" : "-mno-delay " ) }
             description   "
                 This option controls the global compiler flags which
                 are used to compile all packages by
@@ -178,7 +178,7 @@ cdl_package CYGPKG_HAL_OPENRISC_ORPSOC {
                             (CYGHWR_MUL_IMPLEMENTED ? "-mhard-mul " : "-msoft-mul ") .
                             (CYGHWR_DIV_IMPLEMENTED ? "-mhard-div " : "-msoft-div ") .
                             (CYGHWR_FPU_IMPLEMENTED ? "-mhard-float " : "-msoft-float ") .
-                            (CYGHWR_BRANCH_SLOT_IMPLEMENTED ? "" : "-mno-branch-delay " ) }
+                            (CYGHWR_BRANCH_SLOT_IMPLEMENTED ? "" : "-mno-delay " ) }
             description   "
                 This option controls the global linker flags. Individual
                 packages may define options which override these global flags."
