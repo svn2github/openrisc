@@ -176,7 +176,7 @@
 // Assume the UART is driven 1/16 CPU frequency
 #define UART_CLOCK    ((CYGHWR_HAL_OPENRISC_CPU_FREQ)*1.0e6/16.0)
 
-#define DIVISOR(baud) ((int)((UART_CLOCK)/baud))
+#define DIVISOR(baud) (((((CYGHWR_HAL_OPENRISC_CPU_FREQ)*10000000)/(16*baud))+5)/10)
 
 #ifdef CYGNUM_HAL_VIRTUAL_VECTOR_CONSOLE_CHANNEL_BAUD
 #define CYG_DEV_SERIAL_BAUD_DIVISOR   \
