@@ -236,6 +236,13 @@ _start:
 	/* TODO - track and check the number of TLB misses we should
 	have incurred */
 	
+	/* Check if IC present and skip enabling otherwise */
+	l.mfspr r3,r0,SPR_UPR
+	l.andi  r4,r3,SPR_UPR_ICP
+	l.sfeq  r4,r0
+	l.bf    test_ok
+	l.nop
+	
 	/* Now repeat the tests with caches enabled if they weren't */
 	l.mfspr	r1,r0,SPR_SR
 	l.andi	r1,r1,SPR_SR_ICE
