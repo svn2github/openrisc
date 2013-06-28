@@ -45,15 +45,15 @@ module or1200_monitor;
 
    integer fexe;
    integer finsn;
-   
+
    reg [23:0] ref;
-`ifdef OR1200_MONITOR_SPRS   
+`ifdef OR1200_MONITOR_SPRS
    integer    fspr;
-`endif   
+`endif
    integer    fgeneral;
 `ifdef OR1200_MONITOR_LOOKUP
    integer    flookup;
-`endif   
+`endif
    integer    r3;
    integer    insns;
 
@@ -63,20 +63,20 @@ module or1200_monitor;
    //
    initial begin
       ref = 0;
-`ifdef OR1200_MONITOR_EXEC_STATE      
+`ifdef OR1200_MONITOR_EXEC_STATE
       fexe = $fopen({"../out/",`TEST_NAME_STRING,"-executed.log"});
 `endif
 `ifdef OR1200_MONITOR_EXEC_LOG_DISASSEMBLY
       finsn = fexe;
-`endif      
+`endif
       $timeformat (-9, 2, " ns", 12);
-`ifdef OR1200_MONITOR_SPRS      
+`ifdef OR1200_MONITOR_SPRS
       fspr = $fopen({"../out/",`TEST_NAME_STRING,"-sprs.log"});
-`endif      
+`endif
       fgeneral = $fopen({"../out/",`TEST_NAME_STRING,"-general.log"});
-`ifdef OR1200_MONITOR_LOOKUP      
+`ifdef OR1200_MONITOR_LOOKUP
       flookup = $fopen({"../out/",`TEST_NAME_STRING,"-lookup.log"});
-`endif      
+`endif
       insns = 0;
 
    end
@@ -94,11 +94,11 @@ module or1200_monitor;
 	 for(j = 0; j < 32; j = j + 1) begin
 	    gpr[j] = `OR1200_TOP.`CPU_cpu.`CPU_rf.rf_a.mem[gpr_no*32+j];
 	 end
-	 
+
 `else
 	 //gpr = `OR1200_TOP.`CPU_cpu.`CPU_rf.rf_a.mem[gpr_no];
 	 gpr = `OR1200_TOP.`CPU_cpu.`CPU_rf.rf_a.get_gpr(gpr_no);
-	 
+
 `endif
 
 
@@ -118,17 +118,17 @@ module or1200_monitor;
       begin
 `ifdef OR1200_MONITOR_EXEC_STATE
 	 ref = ref + 1;
- `ifdef OR1200_MONITOR_LOOKUP	 
+ `ifdef OR1200_MONITOR_LOOKUP
 	 $fdisplay(flookup, "Instruction %d: %t", insns, $time);
- `endif	 
-	 $fwrite(fexe, "\nEXECUTED(%d): %h:  %h", insns, 
-		 `OR1200_TOP.`CPU_cpu.`CPU_except.wb_pc, 
+ `endif
+	 $fwrite(fexe, "\nEXECUTED(%d): %h:  %h", insns,
+		 `OR1200_TOP.`CPU_cpu.`CPU_except.wb_pc,
 		 `OR1200_TOP.`CPU_cpu.`CPU_ctrl.wb_insn);
  `ifdef OR1200_MONITOR_EXEC_LOG_DISASSEMBLY
-	 $fwrite(fexe,"\t");	 
+	 $fwrite(fexe,"\t");
 	 // Decode the instruction, print it out
 	 or1200_print_op(`OR1200_TOP.`CPU_cpu.`CPU_ctrl.wb_insn);
- `endif	 
+ `endif
 	 for(i = 0; i < 32; i = i + 1) begin
 	    if (i % 4 == 0)
 	      $fdisplay(fexe);
@@ -147,34 +147,34 @@ module or1200_monitor;
 `endif //  `ifdef OR1200_MONITOR_EXEC_STATE
 `ifdef OR1200_DISPLAY_EXECUTED
 	 ref = ref + 1;
- `ifdef OR1200_MONITOR_LOOKUP	 
+ `ifdef OR1200_MONITOR_LOOKUP
 	 $fdisplay(flookup, "Instruction %d: %t", insns, $time);
- `endif	 
+ `endif
 	 $fwrite(fexe, "\nEXECUTED(%d): %h:  %h", insns, `OR1200_TOP.`CPU_cpu.`CPU_except.wb_pc, `OR1200_TOP.`CPU_cpu.`CPU_ctrl.wb_insn);
 `endif
 	 insns = insns + 1;
       end
    endtask // display_arch_state
 
-   /* Keep a trace buffer of the last lot of instructions and addresses 
+   /* Keep a trace buffer of the last lot of instructions and addresses
     * "executed",as read from the writeback stage, and cause a $finish if we hit
     * an instruction that is invalid, such as all zeros.
-    * Currently, only breaks on an all zero instruction, but should probably be 
+    * Currently, only breaks on an all zero instruction, but should probably be
     * made to break for anything with an X in it too. And of course ideally this
     * shouldn't be needed - but is handy if someone changes something and stops
     * the test continuing forever.
     */
    integer num_nul_inst;
    initial num_nul_inst = 0;
-   
+
    task monitor_for_crash;
 `define OR1200_MONITOR_CRASH_TRACE_SIZE 32
       //Trace buffer of 32 instructions
       reg [31:0] insn_trace [0:`OR1200_MONITOR_CRASH_TRACE_SIZE-1];
       //Trace buffer of the addresses of those instructions
-      reg [31:0] addr_trace [0:`OR1200_MONITOR_CRASH_TRACE_SIZE-1]; 
+      reg [31:0] addr_trace [0:`OR1200_MONITOR_CRASH_TRACE_SIZE-1];
       integer 	 i;
-      
+
       begin
 	 if (`OR1200_TOP.`CPU_cpu.`CPU_ctrl.wb_insn == 32'h00000000)
 	   num_nul_inst = num_nul_inst + 1;
@@ -183,7 +183,7 @@ module or1200_monitor;
 
 	 if (num_nul_inst == 1000) // Sat a loop a bit too long...
 	   begin
-	      $fdisplay(fgeneral, "ERROR - no instruction at PC %h", 
+	      $fdisplay(fgeneral, "ERROR - no instruction at PC %h",
 			`OR1200_TOP.`CPU_cpu.`CPU_except.wb_pc);
 	      $fdisplay(fgeneral, "Crash trace: Last %d instructions: ",
 			`OR1200_MONITOR_CRASH_TRACE_SIZE);
@@ -192,10 +192,10 @@ module or1200_monitor;
 	      for(i=`OR1200_MONITOR_CRASH_TRACE_SIZE-1;i>=0;i=i-1) begin
 		 $fdisplay(fgeneral, "%h\t%h",addr_trace[i], insn_trace[i]);
 	      end
-	      $display("*");	      
+	      $display("*");
 	      $display("* or1200_monitor : OR1200 crash detected (suspected CPU PC corruption)");
-	      $display("*");	      
-	      
+	      $display("*");
+
 	      #100 $finish;
 	   end
 	 else
@@ -207,10 +207,10 @@ module or1200_monitor;
 	      insn_trace[0] = `OR1200_TOP.`CPU_cpu.`CPU_ctrl.wb_insn;
 	      addr_trace[0] = `OR1200_TOP.`CPU_cpu.`CPU_except.wb_pc;
 	   end
-	 
+
       end
    endtask // monitor_for_crash
-   
+
 
    //
    // Write state of the OR1200 registers into a file; version for exception
@@ -222,9 +222,9 @@ module or1200_monitor;
       begin
 `ifdef OR1200_MONITOR_EXEC_STATE
 	 ref = ref + 1;
- `ifdef OR1200_MONITOR_LOOKUP	 
+ `ifdef OR1200_MONITOR_LOOKUP
 	 $fdisplay(flookup, "Instruction %d: %t", insns, $time);
- `endif	 
+ `endif
 	 $fwrite(fexe, "\nEXECUTED(%d): %h:  %h  (exception)", insns, `OR1200_TOP.`CPU_cpu.`CPU_except.ex_pc, `OR1200_TOP.`CPU_cpu.`CPU_ctrl.ex_insn);
 	 for(i = 0; i < 32; i = i + 1) begin
 	    if (i % 4 == 0)
@@ -245,15 +245,15 @@ module or1200_monitor;
 `endif //  `ifdef OR1200_MONITOR_EXEC_STATE
 `ifdef OR1200_DISPLAY_EXECUTED
 	 ref = ref + 1;
- `ifdef OR1200_MONITOR_LOOKUP	 
+ `ifdef OR1200_MONITOR_LOOKUP
 	 $fdisplay(flookup, "Instruction %d: %t", insns, $time);
- `endif	 
-	 $fwrite(fexe, "\nEXECUTED(%d): %h:  %h  (exception)", insns, 
-		 `OR1200_TOP.`CPU_cpu.`CPU_except.ex_pc, 
+ `endif
+	 $fwrite(fexe, "\nEXECUTED(%d): %h:  %h  (exception)", insns,
+		 `OR1200_TOP.`CPU_cpu.`CPU_except.ex_pc,
 		 `OR1200_TOP.`CPU_cpu.`CPU_ctrl.ex_insn);
 	 insns = insns + 1;
 `endif
-	 
+
       end
    endtask
 
@@ -274,7 +274,7 @@ module or1200_monitor;
 	if (`OR1200_TOP.iwb_stb_o) begin
 	   if (iwb_progress >= 1) begin
 	      if (iwb_progress == 1)
-		iwb_progress_addr = `OR1200_TOP.iwb_adr_o; 
+		iwb_progress_addr = `OR1200_TOP.iwb_adr_o;
 	      iwb_progress = 2;
 	   end
 	   else begin
@@ -318,7 +318,7 @@ module or1200_monitor;
 	if (`OR1200_TOP.dwb_stb_o)
 	  if (dwb_progress >= 1) begin
 	     if (dwb_progress == 1)
-	       dwb_progress_addr = `OR1200_TOP.dwb_adr_o; 
+	       dwb_progress_addr = `OR1200_TOP.dwb_adr_o;
 	     dwb_progress = 2;
 	  end
 	  else begin
@@ -358,7 +358,7 @@ module or1200_monitor;
 	//	#2;
 	if (((`OR1200_TOP.`CPU_cpu.`CPU_ctrl.wb_insn[31:26] != `OR1200_OR32_NOP)
 	     | !`OR1200_TOP.`CPU_cpu.`CPU_ctrl.wb_insn[16])
-	    & !(`OR1200_TOP.`CPU_cpu.`CPU_except.except_flushpipe & 
+	    & !(`OR1200_TOP.`CPU_cpu.`CPU_except.except_flushpipe &
 		`OR1200_TOP.`CPU_cpu.`CPU_except.ex_dslot))
 	  begin
 	     display_arch_state;
@@ -375,7 +375,7 @@ module or1200_monitor;
        // Note that the 'expect' scripts in or1ksim's test suite look for strings
        // like "exit(1)", therefore something like "exit(  1)" would fail.
        $display("exit(%0d)",r3);
-`endif	   
+`endif
 	   $finish;
 	end
 	// debug if test (l.nop 10)
@@ -383,7 +383,7 @@ module or1200_monitor;
 	   $fdisplay(fgeneral, "%t: l.nop dbg_if_test", $time);
 	end
 	// simulation reports (l.nop 2)
-	if (`OR1200_TOP.`CPU_cpu.`CPU_ctrl.wb_insn == 32'h1500_0002) begin 
+	if (`OR1200_TOP.`CPU_cpu.`CPU_ctrl.wb_insn == 32'h1500_0002) begin
 	   get_gpr(3, r3);
 	   $fdisplay(fgeneral, "%t: l.nop report (0x%h)", $time, r3);
 `ifdef OR1200_MONITOR_VERBOSE_NOPS
@@ -394,27 +394,27 @@ module or1200_monitor;
 `endif
 	end
 	// simulation printfs (l.nop 3)
-	if (`OR1200_TOP.`CPU_cpu.`CPU_ctrl.wb_insn == 32'h1500_0003) begin 
+	if (`OR1200_TOP.`CPU_cpu.`CPU_ctrl.wb_insn == 32'h1500_0003) begin
 	   get_gpr(3, r3);
 	   $fdisplay(fgeneral, "%t: l.nop printf (%h)", $time, r3);
 	end
-	if (`OR1200_TOP.`CPU_cpu.`CPU_ctrl.wb_insn == 32'h1500_0004) begin 
+	if (`OR1200_TOP.`CPU_cpu.`CPU_ctrl.wb_insn == 32'h1500_0004) begin
 	   // simulation putc (l.nop 4)
 	   get_gpr(3, r3);
 	   $write("%c", r3);
 	   $fdisplay(fgeneral, "%t: l.nop putc (%c)", $time, r3);
 	end
-`ifdef OR1200_MONITOR_SPRS	
+`ifdef OR1200_MONITOR_SPRS
 	if (`OR1200_TOP.`CPU_cpu.`CPU_sprs.spr_we)
 	  $fdisplay(fspr, "%t: Write to SPR : [%h] <- %h", $time,
 		    `OR1200_TOP.`CPU_cpu.`CPU_sprs.spr_addr,
 		    `OR1200_TOP.`CPU_cpu.`CPU_sprs.spr_dat_o);
-	if ((|`OR1200_TOP.`CPU_cpu.`CPU_sprs.spr_cs) & 
+	if ((|`OR1200_TOP.`CPU_cpu.`CPU_sprs.spr_cs) &
 	    !`OR1200_TOP.`CPU_cpu.`CPU_sprs.spr_we)
 	  $fdisplay(fspr, "%t: Read from SPR: [%h] -> %h", $time,
-		    `OR1200_TOP.`CPU_cpu.`CPU_sprs.spr_addr, 
+		    `OR1200_TOP.`CPU_cpu.`CPU_sprs.spr_addr,
 		    `OR1200_TOP.`CPU_cpu.`CPU_sprs.to_wbmux);
-`endif	
+`endif
      end
 
 
@@ -428,7 +428,7 @@ module or1200_monitor;
       end
    endtask // get_insn_from_wb_ram
 `endif
-   
+
 `ifdef VERSATILE_SDRAM
  `define SDRAM_TOP `TB_TOP.sdram0
    // Bit selects to define the bank
@@ -440,18 +440,18 @@ module or1200_monitor;
       input [31:0] addr;
       output [31:0] insn;
       reg [`SDRAM_WORD_SEL_TOP_BIT-1:0] word_addr;
-      
+
       begin
-	 word_addr = addr[`SDRAM_WORD_SEL_TOP_BIT:2];	 
+	 word_addr = addr[`SDRAM_WORD_SEL_TOP_BIT:2];
 	 if (addr[`SDRAM_BANK_SEL_BITS] == 2'b00)
 	   begin
-	      
-	      //$display("%t: get_insn_from_sdram bank0, word 0x%h, (%h and %h in SDRAM)", $time, word_addr, `SDRAM_TOP.Bank0[{word_addr,1'b0}], `SDRAM_TOP.Bank0[{word_addr,1'b1}]);	      
+
+	      //$display("%t: get_insn_from_sdram bank0, word 0x%h, (%h and %h in SDRAM)", $time, word_addr, `SDRAM_TOP.Bank0[{word_addr,1'b0}], `SDRAM_TOP.Bank0[{word_addr,1'b1}]);
 	      insn[15:0] = `SDRAM_TOP.Bank0[{word_addr,1'b1}];
 	      insn[31:16] = `SDRAM_TOP.Bank0[{word_addr,1'b0}];
 	   end
       end
-      
+
    endtask // get_insn_from_sdram
 `endif //  `ifdef VERSATILE_SDRAM
 
@@ -463,9 +463,9 @@ module or1200_monitor;
       output [31:0] insn;
       reg [16*8-1:0] ddr2_array_line0,ddr2_array_line1,ddr2_array_line2,
 		     ddr2_array_line3;
-      integer 	     word_in_line_num;      
+      integer 	     word_in_line_num;
       begin
-	 // Get our 4 128-bit chunks (8 half-words in each!! Confused yet?), 
+	 // Get our 4 128-bit chunks (8 half-words in each!! Confused yet?),
 	 // 16 words total
 	 `DDR2_TOP.gen[0].u_mem0.memory_read(addr[28:27],addr[26:13],{addr[12:6],3'd0},ddr2_array_line0);
 	 `DDR2_TOP.gen[1].u_mem0.memory_read(addr[28:27],addr[26:13],{addr[12:6],3'd0},ddr2_array_line1);
@@ -551,13 +551,13 @@ module or1200_monitor;
 	     begin
 		insn[15:0] = ddr2_array_line2[127:112];
 		insn[31:16] = ddr2_array_line3[127:112];
-	     end	   
+	     end
 	 endcase // case (addr[5:2])
       end
    endtask // get_insn_from_xilinx_ddr2
-`endif   
-   
-   
+`endif
+
+
    task get_insn_from_memory;
       input [31:0] id_pc;
       output [31:0] insn;
@@ -575,7 +575,7 @@ module or1200_monitor;
 `ifdef RAM_WB
 	   4'h0:
 	     get_insn_from_wb_ram(id_pc, insn);
-`endif	   	   
+`endif
 	   4'hf:
 	     // Flash isn't stored in a memory, it's an FSM so just skip/ignore
 	     insn = `OR1200_TOP.`CPU_cpu.`CPU_ctrl.id_insn;
@@ -587,7 +587,7 @@ module or1200_monitor;
 	 endcase // case (id_pc[31:28])
       end
    endtask // get_insn_from_memory
-   
+
 
    //
    // Look in the iMMU TLB MR for this address' page, if MMUs are on and enabled
@@ -595,21 +595,21 @@ module or1200_monitor;
    task check_for_immu_entry;
       input [31:0] pc;
       output [31:0] physical_pc;
-      output 	    mmu_tlb_miss;      
+      output 	    mmu_tlb_miss;
       integer 	    w,x;
 
       reg [31:`OR1200_IMMU_PS] pc_vpn;
-      
+
       reg [`OR1200_ITLBTRW-1:0] itlb_tr;
       reg [`OR1200_ITLBMRW-1:0] itlb_mr;
 
       integer 			tlb_index;
       reg 			mmu_en;
-      
-      
+
+
       begin
 	 mmu_tlb_miss = 0;
-	 
+
 `ifdef OR1200_NO_IMMU
 	 physical_pc = pc;
 `else
@@ -617,22 +617,22 @@ module or1200_monitor;
 	 // If MMU is enabled
 	 if (mmu_en)
 	   begin
-	      
+
 	      // Look in the iTLB for mapping - get virtual page number
 	      pc_vpn = pc[31:`OR1200_IMMU_PS];
 
-	      tlb_index = pc[`OR1200_ITLB_INDX];	      
-	      
+	      tlb_index = pc[`OR1200_ITLB_INDX];
+
 	      // Look at the ITLB match register
 	      itlb_mr = `OR1200_TOP.`CPU_immu_top.`CPU_immu_tlb.itlb_mr_ram.mem[tlb_index];
 
 	      // Get the translate register here too, in case there's an error, we print it
 	      itlb_tr = `OR1200_TOP.`CPU_immu_top.`CPU_immu_tlb.itlb_tr_ram.mem[tlb_index];
-	      
+
 	      if ((itlb_mr[`OR1200_ITLBMR_V_BITS] === 1'b1) & (itlb_mr[`OR1200_ITLBMRW-1:1] === pc[`OR1200_ITLB_TAG]))
 		begin
 		   // Page number in match register matches page number of virtual PC, so get the physical
-		   // address from the translate memory		   
+		   // address from the translate memory
 		   // Now pull the physical page number out of the tranlsate register (it's after bottom 3 bits)
 		   physical_pc = {itlb_tr[`OR1200_ITLBTRW-1:`OR1200_ITLBTRW-(32-`OR1200_IMMU_PS)],pc[`OR1200_IMMU_PS-1:0]};
 		   //$display("check_for_immu_entry: found match for virtual PC 0x%h in entry %d of iMMU, mr = 0x%x tr = 0x%x, phys. PC = 0x%h", pc, pc[`OR1200_ITLB_INDX], itlb_mr, itlb_tr, physical_pc);
@@ -655,47 +655,47 @@ module or1200_monitor;
 			mmu_tlb_miss = 1; // Started a miss, so ignore this instruction
 		     end
 		end // else: !if((itlb_mr[`OR1200_ITLBMR_V_BITS]) & (itlb_mr[`OR1200_ITLBMRW-1:1] == pc[`OR1200_ITLB_TAG]))
-	      
+
 	   end // if (`OR1200_TOP.`CPU_immu_top.immu_en === 1'b1)
 	 else
  	   physical_pc = pc;
 `endif // !`ifdef OR1200_NO_IMMU
       end
    endtask // check_for_immu_entry
-   
+
 
    /*
     Instruction memory coherence checking.
-    
+
     For new instruction executed in the pipeline - ensure it matches
     what is in the main program memory. Perform MMU translations if
     it is enabled.
     */
-   
+
    reg [31:0] mem_word;
    reg [31:0] last_addr = 0;
    reg [31:0] last_mem_word;
    reg [31:0] physical_pc;
-   reg 	      tlb_miss;   
-   
+   reg 	      tlb_miss;
+
 
 `ifdef MEM_COHERENCE_CHECK
  `define MEM_COHERENCE_TRIGGER (`OR1200_TOP.`CPU_cpu.`CPU_ctrl.id_void === 1'b0)
 
  `define INSN_TO_CHECK `OR1200_TOP.`CPU_cpu.`CPU_ctrl.id_insn
  `define PC_TO_CHECK `OR1200_TOP.`CPU_cpu.`CPU_except.id_pc
-   
+
    // Check instruction in decode stage is what is in the RAM
    always @(posedge `CPU_CORE_CLK)
      begin
 	if (`MEM_COHERENCE_TRIGGER)
 	  begin
-	     
+
 	     check_for_immu_entry(`PC_TO_CHECK, physical_pc, tlb_miss);
-	     
+
 	     // Check if it's a new PC - will also get triggered if the
 	     // instruction has changed since we last checked it
-	     if (((physical_pc !== last_addr) || 
+	     if (((physical_pc !== last_addr) ||
 		  (last_mem_word != `INSN_TO_CHECK)) & !tlb_miss)
 	       begin
 		  // Decode stage not void, check instruction
@@ -704,41 +704,41 @@ module or1200_monitor;
 
 		  if (mem_word !== `INSN_TO_CHECK)
 		    begin
-		       $fdisplay(fgeneral, "%t: Instruction mismatch for PC 0x%h (phys. 0x%h) - memory had 0x%h, CPU had 0x%h", 
-				 $time, `PC_TO_CHECK, physical_pc, mem_word, 
+		       $fdisplay(fgeneral, "%t: Instruction mismatch for PC 0x%h (phys. 0x%h) - memory had 0x%h, CPU had 0x%h",
+				 $time, `PC_TO_CHECK, physical_pc, mem_word,
 				 `INSN_TO_CHECK);
-		       $display("%t: Instruction mismatch for PC 0x%h (phys. 0x%h) - memory had 0x%h, CPU had 0x%h", 
-				$time, `PC_TO_CHECK, physical_pc, mem_word, 
+		       $display("%t: Instruction mismatch for PC 0x%h (phys. 0x%h) - memory had 0x%h, CPU had 0x%h",
+				$time, `PC_TO_CHECK, physical_pc, mem_word,
 				`INSN_TO_CHECK);
 		       #200;
-		       $finish;		  
+		       $finish;
 		    end
 		  last_addr = physical_pc;
-		  last_mem_word = mem_word;	
-		  
-	       end // if (((physical_pc !== last_addr) || (last_mem_word != `INSN_TO_CHECK))...	     
-	  end // if (`MEM_COHERENCE_TRIGGER)	
+		  last_mem_word = mem_word;
+
+	       end // if (((physical_pc !== last_addr) || (last_mem_word != `INSN_TO_CHECK))...
+	  end // if (`MEM_COHERENCE_TRIGGER)
      end // always @ (posedge `CPU_CORE_CLK)
-   
+
 `endif //  `ifdef MEM_COHERENCE_CHECK
-   
+
    // Trigger on each instruction that gets into writeback stage properly
    reg exception_coming1, exception_coming2, exception_here;
    reg will_jump, jumping, jump_dslot, jumped;
    reg rfe, except_during_rfe;
    reg dslot_expt;
-   
+
 
    // Maintain a copy of GPRS for previous instruction
    reg [31:0] current_gprs [0:31];
-   reg [31:0] current_epcr, current_eear, current_esr, current_sr;   
+   reg [31:0] current_epcr, current_eear, current_esr, current_sr;
    reg [31:0] previous_gprs [0:31];
    reg [31:0] previous_epcr;
    reg [31:0] previous_eear;
    reg [31:0] previous_esr;
    reg [31:0] previous_sr;
-   
-   task update_current_gprs;      
+
+   task update_current_gprs;
       integer j;
       begin
 	 for(j=0;j<32;j=j+1)
@@ -751,21 +751,21 @@ module or1200_monitor;
 	 current_eear = `OR1200_TOP.`CPU_cpu.`CPU_sprs.eear ;
       end
    endtask
-   
-   task update_previous_gprs;      
+
+   task update_previous_gprs;
       integer j;
       begin
 	 for(j=0;j<32;j=j+1)
 	   begin
 	      previous_gprs[j] = current_gprs[j];
 	   end
-	 previous_sr = current_sr;	 
-    	 previous_esr = current_esr;	 
-	 previous_epcr = current_epcr;	 
+	 previous_sr = current_sr;
+    	 previous_esr = current_esr;
+	 previous_epcr = current_epcr;
 	 previous_eear = current_eear;
       end
    endtask // update_previous_gprs
-   
+
    // Maintain a list of addresses we expect the processor to execute
    // Whenever we hit a branch or jump or rfe we add to this list - when we
    // execute it then we remove it from the list.
@@ -777,34 +777,34 @@ module or1200_monitor;
    always @(`OR1200_TOP.iwb_rst_i)
      begin
 	for (expected_address_num=0;expected_address_num<32;expected_address_num=expected_address_num+1)
-	  begin													
+	  begin
 	     expected_addresses_waiting[expected_address_num] = 0;
 	     duplicate_expected_addresses_waiting[expected_address_num] = 0;
 	  end
 	expected_address_num = 0;
      end
-   
-   task add_expected_address;      
+
+   task add_expected_address;
       input [31:0] expected_pc;
       begin
 	 if (expected_address_num == 31)
 	   begin
 	      $display("%t: Too many branches not reached",$time);
-	      #100;	      
+	      #100;
 	      $finish;
 	   end
 	 if (expected_addresses_waiting[expected_address_num])
 	   begin
 	      $display("%t: expected_addresses tracker bugged out. expected_address_num = %0d",$time,expected_address_num);
-	      #100;	      
+	      #100;
 	      $finish;
 	   end
 	 else
 	   begin
-`ifdef OR1200_MONITOR_JUMPTRACK_DEBUG_OUTPUT	      	      
+`ifdef OR1200_MONITOR_JUMPTRACK_DEBUG_OUTPUT
 	      // Debugging output...
 	      $display("%t: Adding address 0x%h to expected list index %0d",$time, expected_pc,expected_address_num);
-`endif	      
+`endif
 	      // Put the expected PC in the list, increase the index
 	      expected_addresses[expected_address_num] = expected_pc;
 	      expected_addresses_waiting[expected_address_num] = 1;
@@ -813,21 +813,21 @@ module or1200_monitor;
       end
    endtask // add_address_to_expect
 
-   // Use this in the case that there's an execption after a jump, in which 
-   // case we'll have two entries when we finally jump back (the one the 
-   // original jump put in, and the one put in by the l.rfe or l.jr/ when 
-   // returning outside of exception handler), so mark this one as OK for 
+   // Use this in the case that there's an execption after a jump, in which
+   // case we'll have two entries when we finally jump back (the one the
+   // original jump put in, and the one put in by the l.rfe or l.jr/ when
+   // returning outside of exception handler), so mark this one as OK for
    // removing the duplicate of
    task mark_duplicate_expected_address;
       begin
-	 // This will always be done on the first instruction of an exception 
-	 // that has occured after a delay slot instruction, so 
+	 // This will always be done on the first instruction of an exception
+	 // that has occured after a delay slot instruction, so
 	 // expected_address_num will be one past the entry for the one we will
 	 // get a duplicate return call for
 	 duplicate_expected_addresses_waiting[expected_address_num-1] = 1;
       end
    endtask // mark_duplicate_expected_address
-   
+
 
    task check_expected_address;
       input [31:0] pc;
@@ -835,11 +835,11 @@ module or1200_monitor;
       integer 	   i,j;
       reg 	   hit;
       reg 	   duplicates;
-      
+
       begin
 	 hit = 0;
 	 //$display("%t: check_expected_addr 0x%h, index %0d",
-	 // $time,pc, expected_address_num);	 
+	 // $time,pc, expected_address_num);
 	 if (expected_address_num > 0)
 	   begin
 	      // First check the last jump we did
@@ -849,7 +849,7 @@ module or1200_monitor;
 		   // Debugging printout:
 `ifdef OR1200_MONITOR_JUMPTRACK_DEBUG_OUTPUT
 		   $display("%t: PC address 0x%h was in expected list, index %0d",$time, pc,expected_address_num-1);
-`endif		   
+`endif
 		   expected_address_num = expected_address_num-1;
 		   expected_addresses_waiting[expected_address_num] = 0;
 		   hit = 1;
@@ -863,17 +863,17 @@ module or1200_monitor;
 			  begin
 			     // Jump address hit
 			     // Debugging printout:
-`ifdef OR1200_MONITOR_JUMPTRACK_DEBUG_OUTPUT			     
+`ifdef OR1200_MONITOR_JUMPTRACK_DEBUG_OUTPUT
 			     $display("%t: PC address 0x%h was in expected list, index %0d",$time, pc,i);
-`endif			     
+`endif
 			     for(j=i;j<expected_address_num;j=j+1)
 			       begin
 				  // Pull all of the ones above us down one
-				  expected_addresses_waiting[j] 
+				  expected_addresses_waiting[j]
 				    = expected_addresses_waiting[j+1];
-				  expected_addresses[j] 
+				  expected_addresses[j]
 				    = expected_addresses[j+1];
-				  duplicate_expected_addresses_waiting[j] 
+				  duplicate_expected_addresses_waiting[j]
 				    = duplicate_expected_addresses_waiting[j+1];
 			       end
 			     expected_address_num = expected_address_num-1;
@@ -887,19 +887,19 @@ module or1200_monitor;
 
 	 // Check for duplicates this way because of the way we've declared
 	 // the array...
-	 duplicates=0;	 
+	 duplicates=0;
 	 for(i=0;i<32;i=i+1)
 	   duplicates = duplicates | duplicate_expected_addresses_waiting[i];
-	 
+
 	 if (hit & duplicates)
 	   begin
 	      // If we got a hit, check for duplicates we're also meant to clear
-`ifdef OR1200_MONITOR_JUMPTRACK_DEBUG_OUTPUT	      	      
+`ifdef OR1200_MONITOR_JUMPTRACK_DEBUG_OUTPUT
 	      $display;
-`endif	      
+`endif
 	      for(i=0;i<expected_address_num;i=i+1)
 		begin
-		   if(duplicate_expected_addresses_waiting[i] & 
+		   if(duplicate_expected_addresses_waiting[i] &
 		      expected_addresses_waiting[i] &
 		      expected_addresses[i] == pc)
 		     begin
@@ -919,51 +919,51 @@ module or1200_monitor;
 		     end
 		end // for (i=0;i<expected_address_num;i=i+1)
 	   end // if (hit & duplicates)
-	 
+
 	 if (expecting_hit & !hit)
 	   begin
 	      // Expected this address to be one we're supposed to jump to, but it wasn't!
 	      $display("%t: Failed to find current PC, 0x%h, in expected PCs for branches/jumps",$time,pc);
-	      #100;	      
+	      #100;
 	      $finish;
 	   end
-	 
+
       end
    endtask // check_expected_address
 
    // Task to assert value of GPR
    task assert_gpr_val;
       input [5:0] regnum;
-      input [31:0] assert_value;      
+      input [31:0] assert_value;
       input [31:0] pc;
       reg [31:0]   reg_val;
-      
+
       begin
 	 get_gpr(regnum, reg_val);
 	 if (reg_val !== assert_value)
 	   begin
 	      $display("%t: Assert r%0d value (0x%h) = 0x%h failed. pc=0x%h",
 		       $time, regnum, reg_val, assert_value,pc);
-	      #100;	      
+	      #100;
 	      $finish;
 	   end
       end
    endtask // assert_gpr_val
-   
+
    // Task to assert something is true
    task assert_this;
-      input assert_result;      
+      input assert_result;
       input [31:0] pc;
       begin
 	 if (!assert_result)
 	   begin
 	      $display("%t: Assert failed for instruction at pc=0x%h",
 		       $time , pc);
-	      #100;	      
+	      #100;
 	      $finish;
 	   end
       end
-   endtask // assert_gpr_val		 
+   endtask // assert_gpr_val
 
    // The jumping variable doesn't get updated until we do the proper check of
    // the current instruction reaching the writeback stage. We need to know
@@ -971,16 +971,16 @@ module or1200_monitor;
    // jump. We do that with this task.
    task check_for_jump;
       input [31:0] insn;
-      reg [5:0]    opcode;   
-      reg 	   flag;   
+      reg [5:0]    opcode;
+      reg 	   flag;
       begin
 	 opcode = insn[`OR1K_OPCODE_POS];
-	 // Use the flag from the previous instruction, as the decision 
-	 // is made in the execute stage not in te writeback stage, 
+	 // Use the flag from the previous instruction, as the decision
+	 // is made in the execute stage not in te writeback stage,
 	 // which is where we're getting our instructions.
-	 flag = previous_sr[`OR1200_SR_F];	 
-	 
-	 case (opcode)	   
+	 flag = previous_sr[`OR1200_SR_F];
+
+	 case (opcode)
 	   `OR1200_OR32_J,
 	     `OR1200_OR32_JR,
 	     `OR1200_OR32_JAL,
@@ -994,33 +994,33 @@ module or1200_monitor;
 	     will_jump = 0;
 	 endcase // case (opcode)
       end
-   endtask // check_for_jump   
-   
+   endtask // check_for_jump
+
 
 
    // Detect exceptions from the processor here
-   reg [13:0] except_trig_r;   
+   reg [13:0] except_trig_r;
    reg        exception_coming;
-   
+
    always @(posedge `CPU_CORE_CLK)
      if (`OR1200_TOP.iwb_rst_i)
        begin
 	  except_trig_r = 0;
 	  exception_coming = 0;
-	  except_during_rfe = 0;	  
+	  except_during_rfe = 0;
        end
      else if ((|`OR1200_TOP.`CPU_cpu.`CPU_except.except_trig) && !exception_coming)
        begin
 	  exception_coming  = 1;
 	  except_trig_r = `OR1200_TOP.`CPU_cpu.`CPU_except.except_trig;
-	  except_during_rfe = rfe;	  
+	  except_during_rfe = rfe;
        end
 
    task check_incoming_exceptions;
       begin
-	 
+
 	 // Exception timing  - depends on the trigger.
-	 // Appears to be: 
+	 // Appears to be:
 	 // tick timer - dslot - 1 instruction delay, else 2
 	 // tlb lookasides - 1 instruction for both
 
@@ -1033,7 +1033,7 @@ module or1200_monitor;
 	   end
 	   13'b0_1xxx_xxxx_xxxx: begin
 	      //except_type <= #1 `OR1200_EXCEPT_INT;
-	      #1;	      
+	      #1;
 	   end
 	   13'b0_01xx_xxxx_xxxx: begin
 	      //except_type <= #1 `OR1200_EXCEPT_ITLBMISS;
@@ -1049,9 +1049,9 @@ module or1200_monitor;
 	   end
 	   13'b0_0001_xxxx_xxxx: begin
 	      //except_type <= #1 `OR1200_EXCEPT_BUSERR;
-	      exception_here = exception_coming;		   
-	      exception_coming2 = 0;		   
-	      exception_coming1 = 0;     
+	      exception_here = exception_coming;
+	      exception_coming2 = 0;
+	      exception_coming1 = 0;
 	   end
 	   13'b0_0000_1xxx_xxxx: begin
 	      //except_type <= #1 `OR1200_EXCEPT_ILLEGAL;
@@ -1060,25 +1060,25 @@ module or1200_monitor;
 		   // Writeback stage instruction will jump, and we have an
 		   // illegal instruction in the decode/execute stage, which is
 		   // the delay slot, so indicate the exception is coming...
-		   exception_here = exception_coming2;		   
-		   exception_coming2 = exception_coming;		   
-		   exception_coming1 = 0;     
+		   exception_here = exception_coming2;
+		   exception_coming2 = exception_coming;
+		   exception_coming1 = 0;
 		end
 	      else
 		begin
-		   exception_here = jump_dslot ? 
+		   exception_here = jump_dslot ?
 				    exception_coming2 : exception_coming;
 		   exception_coming2 = jump_dslot ? exception_coming : 0;
-		   exception_coming1 = 0;	      
+		   exception_coming1 = 0;
 		end
 	   end
 	   13'b0_0000_01xx_xxxx: begin
 	      //except_type <= #1 `OR1200_EXCEPT_ALIGN;
 	      if(will_jump)
 		begin
-		   exception_here = exception_coming2;		   
-		   exception_coming2 = exception_coming;		   
-		   exception_coming1 = 0;	      
+		   exception_here = exception_coming2;
+		   exception_coming2 = exception_coming;
+		   exception_coming1 = 0;
 		end
 	      else
 		begin
@@ -1093,10 +1093,10 @@ module or1200_monitor;
 	      // instruction before the itlb miss after a delay slot, so we
 	      // miss the dslot variable (it gets propegated before we call
 	      // this task) so we use the jumped variable here to see if we
-	      // are an exception after a delay slot	      
+	      // are an exception after a delay slot
 	      //exception_here = (jumped | rfe) ? exception_coming : exception_coming2 ;
 	      //exception_coming2 = (jumped | rfe) ? 0 : exception_coming;
-	      
+
 	      exception_here = (jumped | rfe) ? exception_coming : exception_coming2 ;
 	      exception_coming2 = (jumped | rfe) ? 0 : exception_coming;
 
@@ -1119,19 +1119,19 @@ module or1200_monitor;
 	      //except_type <= #1 `OR1200_EXCEPT_BUSERR;
 	      exception_here = exception_coming2 ;
 	      exception_coming2 = exception_coming;
-	      exception_coming1 = 0;	      
+	      exception_coming1 = 0;
 	   end
 	   13'b0_0000_0000_01xx: begin
 	      //except_type <= #1 `OR1200_EXCEPT_RANGE;
-	      #1;	      
+	      #1;
 	   end
 	   13'b0_0000_0000_001x: begin
-	      // trap 	      
-	      #1;	      
+	      // trap
+	      #1;
 	   end
 	   13'b0_0000_0000_0001: begin
 	      //except_type <= #1 `OR1200_EXCEPT_SYSCALL;
-	      exception_here = exception_coming2;	      
+	      exception_here = exception_coming2;
 	      exception_coming2 = jumped ? exception_coming: exception_coming1 ;
 	      exception_coming1 = jumped ? 0 : exception_coming;
 	   end
@@ -1139,18 +1139,18 @@ module or1200_monitor;
 
 	 exception_coming = 0;
 	 except_during_rfe = 0;
-	 
+
       end
    endtask // check_incoming_exceptions
-   
-   
-   
+
+
+
 
    /////////////////////////////////////////////////////////////////////////
    // Execution tracking task
    /////////////////////////////////////////////////////////////////////////
 
-   
+
 `ifdef OR1200_SYSTEM_CHECKER
    always @(posedge `CPU_CORE_CLK)
      begin
@@ -1162,12 +1162,12 @@ module or1200_monitor;
 	  end
 	if (!`OR1200_TOP.`CPU_cpu.`CPU_ctrl.wb_freeze) begin
 	   //#2 ;
-	   // If instruction isn't a l.nop with bit 16 set (implementation's 
-	   // filler instruction in pipeline), and do not have an exception 
+	   // If instruction isn't a l.nop with bit 16 set (implementation's
+	   // filler instruction in pipeline), and do not have an exception
 	   // signaled with a dslot instruction in the execute stage
-	   if (((`OR1200_TOP.`CPU_cpu.`CPU_ctrl.wb_insn[`OR1K_OPCODE_POS] != 
+	   if (((`OR1200_TOP.`CPU_cpu.`CPU_ctrl.wb_insn[`OR1K_OPCODE_POS] !=
 		 `OR1200_OR32_NOP) || !`OR1200_TOP.`CPU_cpu.`CPU_ctrl.wb_insn[16])
-	       && !(`OR1200_TOP.`CPU_cpu.`CPU_except.except_flushpipe && 
+	       && !(`OR1200_TOP.`CPU_cpu.`CPU_except.except_flushpipe &&
 		    `OR1200_TOP.`CPU_cpu.`CPU_except.ex_dslot)) // and not except start
 	     begin
 
@@ -1178,7 +1178,7 @@ module or1200_monitor;
 		jump_dslot = jumping;
 		jumping = 0;
 		rfe = 0;
-		
+
 		// Now, check if current instruction will jump/branch, this is
 		// needed by the exception checking code, sets will_jump=1
 		check_for_jump(`OR1200_TOP.`CPU_cpu.`CPU_ctrl.wb_insn);
@@ -1186,7 +1186,7 @@ module or1200_monitor;
 		// Now check if it's an exception this instruction
 		check_incoming_exceptions;
 
-		// Case where we just went to an exception after a jump, so we 
+		// Case where we just went to an exception after a jump, so we
 		// mark the address we were meant to jump to as a place which will
 		// have duplicate return entries in the expected address list
 		if (exception_here & (jumped | jump_dslot))
@@ -1195,56 +1195,56 @@ module or1200_monitor;
 			      ,$time);
 		     mark_duplicate_expected_address;
 		  end
-		
+
 		or1200_check_execution(`OR1200_TOP.`CPU_cpu.`CPU_ctrl.wb_insn,
-				       `OR1200_TOP.`CPU_cpu.`CPU_except.wb_pc, 
-				       exception_here);		
+				       `OR1200_TOP.`CPU_cpu.`CPU_except.wb_pc,
+				       exception_here);
 		//$write("%t: pc:0x%h\t",$time,
 		//       `OR1200_TOP.`CPU_cpu.`CPU_except.wb_pc);
 		// Decode the instruction, print it out
-		//or1200_print_op(`OR1200_TOP.`CPU_cpu.`CPU_ctrl.wb_insn); 
+		//or1200_print_op(`OR1200_TOP.`CPU_cpu.`CPU_ctrl.wb_insn);
 		//$write("\t exc:%0h dsl:%0h\n",exception_here,jump_dslot);
 
-		
-		
+
+
 	     end
 	end // if (!`OR1200_TOP.`CPU_cpu.`CPU_ctrl.wb_freeze)
      end // always @ (posedge `CPU_CORE_CLK)
-`endif   
-  
+`endif
+
 
    task or1200_check_execution;
       input [31:0] insn;
       input [31:0] pc;
       input 	   exception;
-      
+
       reg [5:0]    opcode;
 
       reg [25:0]   j_imm;
       reg [25:0]   br_imm;
-      
+
       reg [4:0]    rD_num, rA_num, rB_num;
       reg [31:0]   rD_val, rA_val, rB_val;
       reg [15:0]   imm_16bit;
-      
+
       reg [15:0]   mtspr_imm;
-      
+
       reg [3:0]    alu_op;
       reg [1:0]    shrot_op;
 
       reg [5:0]    shroti_imm;
-      
+
       reg [5:0]    sf_op;
-      
-      reg [5:0]    xsync_op;	  
+
+      reg [5:0]    xsync_op;
 
       reg 	   flag;
 
       reg [31:0]   br_j_ea; // Branch/jump effective address
-      
-      
+
+
       begin
-	 
+
 	 // Instruction opcode
 	 opcode = insn[`OR1K_OPCODE_POS];
 	 // Immediates for jump or branch instructions
@@ -1252,7 +1252,7 @@ module or1200_monitor;
 	 br_imm = insn[`OR1K_J_BR_IMM_POS];
 	 // Register numbers (D, A and B)
 	 rD_num = insn[`OR1K_RD_POS];
-	 rA_num = insn[`OR1K_RA_POS];	 
+	 rA_num = insn[`OR1K_RA_POS];
 	 rB_num = insn[`OR1K_RB_POS];
 	 // Bottom 16 bits when used as immediates in various instructions
 	 imm_16bit = insn[15:0];
@@ -1266,19 +1266,19 @@ module or1200_monitor;
 
 	 // Set flag op
 	 sf_op = insn[`OR1K_SF_OP];
-	 
+
 	 // Xsync/syscall/trap opcode
 	 xsync_op = insn[`OR1K_XSYNC_OP_POS];
 
-	 // Use the flag from the previous instruction, as the decision 
-	 // is made in the execute stage not in te writeback stage, 
+	 // Use the flag from the previous instruction, as the decision
+	 // is made in the execute stage not in te writeback stage,
 	 // which is where we're getting our instructions.
 	 flag = previous_sr[`OR1200_SR_F];
 
 	 update_current_gprs;
 
 	 // Check MSbit of the immediate, sign extend if set
-	 br_j_ea = j_imm[25] ? pc + {4'hf,j_imm,2'b00} : 
+	 br_j_ea = j_imm[25] ? pc + {4'hf,j_imm,2'b00} :
 		   pc + {4'h0,j_imm,2'b00};
 
 	 if (exception)
@@ -1286,28 +1286,28 @@ module or1200_monitor;
 	      $display("%t: exception - at 0x%x",$time, pc);
 	      // get epcr, put it in the addresses we expect to jump
 	      // back to
-	      // Maybe DON'T do this. Because maybe in linux things we 
+	      // Maybe DON'T do this. Because maybe in linux things we
 	      // interrupt out of, we don't want to execute them again?
 	      //add_expected_address(current_epcr);
 	   end
-	 
+
 
 	 check_expected_address(pc, (jumped & !exception));
 
 	 rfe = 0;
-	 
-	 case (opcode)	   
+
+	 case (opcode)
 	   `OR1200_OR32_J:
 	     begin
 		//
 		// PC < - exts(Immediate < < 2) + JumpInsnAddr
 		//
-		//The immediate value is shifted left two bits, sign-extended 
-		// to program counter width, and then added to the address of 
-		// the jump instruction. The result is the effective address 
-		// of the jump. The program unconditionally jumps to EA with 
+		//The immediate value is shifted left two bits, sign-extended
+		// to program counter width, and then added to the address of
+		// the jump instruction. The result is the effective address
+		// of the jump. The program unconditionally jumps to EA with
 		// a delay of one instruction.
-		
+
 		add_expected_address(br_j_ea);
 
 		jumping = 1;
@@ -1322,7 +1322,7 @@ module or1200_monitor;
 		//
 		add_expected_address(br_j_ea);
 		assert_gpr_val(9, pc+8, pc);
-		jumping = 1;	// 
+		jumping = 1;	//
 	     end
 	   `OR1200_OR32_BNF:
 	     begin
@@ -1347,9 +1347,9 @@ module or1200_monitor;
 	   `OR1200_OR32_RFE:
 	     begin
 		add_expected_address(current_epcr);
-		// jumping variable keeps track of jumps/branches with delay 
+		// jumping variable keeps track of jumps/branches with delay
 		// slot - there is none for l.rfe
-		rfe = 1;		
+		rfe = 1;
 	     end
 	   `OR1200_OR32_JR:
 	     begin
@@ -1400,20 +1400,20 @@ end
 	    // Double check operations done on RF and immediate values
 	    $display("%t: ALU op",$time);
 end
-	    
+
 	    `OR1200_OR32_SH_ROTI:
 	    begin
 	    // Rotate according to immediate - maybe should be in ALU ops
 	    $display("%t: rotate op",$time);
 end
-	    
+
 	    `OR1200_OR32_SFXXI,
 	    `OR1200_OR32_SFXX:
 	    begin
 	    // Set flag - do the check oursevles, check flag
 	    $display("%t: set flag op",$time);
 end
-	    
+
 	    `OR1200_OR32_MACI,
 	    `OR1200_OR32_MACMSB:
 	    begin
@@ -1422,7 +1422,7 @@ end
 	    $display("%t: MAC op",$time);
 end
 	    */
-	   
+
 	   /*default:
 	    begin
 	    $display("%t: Unknown opcode 0x%h at pc 0x%x\n",
@@ -1431,12 +1431,12 @@ end
 	    */
 	 endcase // case (opcode)
 
-	 update_previous_gprs;	 
-	 
+	 update_previous_gprs;
+
       end
    endtask // or1200_check_execution
-   
-   
+
+
    /////////////////////////////////////////////////////////////////////////
    // Instruction decode task
    /////////////////////////////////////////////////////////////////////////
@@ -1445,24 +1445,24 @@ end
       input [31:0] insn;
 
       reg [5:0]    opcode;
-      
+
       reg [25:0]   j_imm;
       reg [25:0]   br_imm;
-      
+
       reg [4:0]    rD_num, rA_num, rB_num;
       reg [31:0]   rA_val, rB_val;
       reg [15:0]   imm_16bit;
-      reg [10:0]   imm_split16bit;      
-      
+      reg [10:0]   imm_split16bit;
+
       reg [3:0]    alu_op;
       reg [1:0]    shrot_op;
 
       reg [5:0]    shroti_imm;
 
       reg [5:0]    sf_op;
-      
-      reg [5:0]    xsync_op;	   
-      
+
+      reg [5:0]    xsync_op;
+
       begin
 	 // Instruction opcode
 	 opcode = insn[`OR1K_OPCODE_POS];
@@ -1471,7 +1471,7 @@ end
 	 br_imm = insn[`OR1K_J_BR_IMM_POS];
 	 // Register numbers (D, A and B)
 	 rD_num = insn[`OR1K_RD_POS];
-	 rA_num = insn[`OR1K_RA_POS];	 
+	 rA_num = insn[`OR1K_RA_POS];
 	 rB_num = insn[`OR1K_RB_POS];
 	 // Bottom 16 bits when used as immediates in various instructions
 	 imm_16bit = insn[15:0];
@@ -1487,16 +1487,16 @@ end
 
 	 // Set flag op
 	 sf_op = insn[`OR1K_SF_OP];
-	 
+
 	 // Xsync/syscall/trap opcode
 	 xsync_op = insn[`OR1K_XSYNC_OP_POS];
-	 
+
 	 case (opcode)
 	   `OR1200_OR32_J:
-	     begin	      
-		$fwrite(finsn,"l.j 0x%h", {j_imm,2'b00});	      
+	     begin
+		$fwrite(finsn,"l.j 0x%h", {j_imm,2'b00});
 	     end
-	   
+
 	   `OR1200_OR32_JAL:
 	     begin
 		$fwrite(finsn,"l.jal 0x%h", {j_imm,2'b00});
@@ -1504,79 +1504,79 @@ end
 
 	   `OR1200_OR32_BNF:
 	     begin
-		$fwrite(finsn,"l.bnf 0x%h", {br_imm,2'b00});	      
+		$fwrite(finsn,"l.bnf 0x%h", {br_imm,2'b00});
 	     end
-	   
+
 	   `OR1200_OR32_BF:
 	     begin
 		$fwrite(finsn,"l.bf 0x%h", {br_imm,2'b00});
 	     end
-	   
+
 	   `OR1200_OR32_RFE:
 	     begin
-		$fwrite(finsn,"l.rfe");	      
+		$fwrite(finsn,"l.rfe");
 	     end
-	   
+
 	   `OR1200_OR32_JR:
 	     begin
 		$fwrite(finsn,"l.jr r%0d",rB_num);
 	     end
-	   
+
 	   `OR1200_OR32_JALR:
 	     begin
 		$fwrite(finsn,"l.jalr r%0d",rB_num);
 	     end
-	   
+
 	   `OR1200_OR32_LWZ:
 	     begin
 		$fwrite(finsn,"l.lwz r%0d,0x%0h(r%0d)",rD_num,imm_16bit,rA_num);
 	     end
-	   
+
 	   `OR1200_OR32_LBZ:
 	     begin
 		$fwrite(finsn,"l.lbz r%0d,0x%0h(r%0d)",rD_num,imm_16bit,rA_num);
 	     end
-	   
+
 	   `OR1200_OR32_LBS:
 	     begin
 		$fwrite(finsn,"l.lbs r%0d,0x%0h(r%0d)",rD_num,imm_16bit,rA_num);
 	     end
-	   
+
 	   `OR1200_OR32_LHZ:
 	     begin
 		$fwrite(finsn,"l.lhz r%0d,0x%0h(r%0d)",rD_num,imm_16bit,rA_num);
 	     end
-	   
+
 	   `OR1200_OR32_LHS:
 	     begin
 		$fwrite(finsn,"l.lhs r%0d,0x%0h(r%0d)",rD_num,imm_16bit,rA_num);
 	     end
-	   
+
 	   `OR1200_OR32_SW:
 	     begin
 		$fwrite(finsn,"l.sw 0x%0h(r%0d),r%0d",imm_split16bit,rA_num,rB_num);
 	     end
-	   
+
 	   `OR1200_OR32_SB:
 	     begin
 		$fwrite(finsn,"l.sb 0x%0h(r%0d),r%0d",imm_split16bit,rA_num,rB_num);
 	     end
-	   
+
 	   `OR1200_OR32_SH:
 	     begin
-		$fwrite(finsn,"l.sh 0x%0h(r%0d),r%0d",imm_split16bit,rA_num,rB_num);	      
+		$fwrite(finsn,"l.sh 0x%0h(r%0d),r%0d",imm_split16bit,rA_num,rB_num);
 	     end
-	   
+
 	   `OR1200_OR32_MFSPR:
 	     begin
-		$fwrite(finsn,"l.mfspr r%0d,r%0d,0x%h",rD_num,rA_num,imm_16bit,);	
-	     end	      
+		$fwrite(finsn,"l.mfspr r%0d,r%0d,0x%h",rD_num,rA_num,imm_16bit,);
+	     end
 
 	   `OR1200_OR32_MTSPR:
 	     begin
-		$fwrite(finsn,"l.mtspr r%0d,r%0d,0x%h",rA_num,rB_num,imm_split16bit);	
+		$fwrite(finsn,"l.mtspr r%0d,r%0d,0x%h",rA_num,rB_num,imm_split16bit);
 	     end
-	   
+
 	   `OR1200_OR32_MOVHI:
 	     begin
 		if (!insn[16])
@@ -1584,54 +1584,54 @@ end
 		else
 		  $fwrite(finsn,"l.macrc r%0d",rD_num);
 	     end
-	   
+
 	   `OR1200_OR32_ADDI:
 	     begin
 		$fwrite(finsn,"l.addi r%0d,r%0d,0x%h",rD_num,rA_num,imm_16bit);
 	     end
-	   
+
 	   `OR1200_OR32_ADDIC:
 	     begin
 		$fwrite(finsn,"l.addic r%0d,r%0d,0x%h",rD_num,rA_num,imm_16bit);
 	     end
-	   
+
 	   `OR1200_OR32_ANDI:
 	     begin
 		$fwrite(finsn,"l.andi r%0d,r%0d,0x%h",rD_num,rA_num,imm_16bit);
-	     end	     
-	   
+	     end
+
 	   `OR1200_OR32_ORI:
 	     begin
 		$fwrite(finsn,"l.ori r%0d,r%0d,0x%h",rD_num,rA_num,imm_16bit);
-	     end	     
+	     end
 
 	   `OR1200_OR32_XORI:
 	     begin
 		$fwrite(finsn,"l.xori r%0d,r%0d,0x%h",rD_num,rA_num,imm_16bit);
-	     end	     
+	     end
 
 	   `OR1200_OR32_MULI:
 	     begin
 		$fwrite(finsn,"l.muli r%0d,r%0d,0x%h",rD_num,rA_num,imm_16bit);
 	     end
-	   
+
 	   `OR1200_OR32_ALU:
 	     begin
 		case(alu_op)
 		  `OR1200_ALUOP_ADD:
-		    $fwrite(finsn,"l.add ");		
+		    $fwrite(finsn,"l.add ");
 		  `OR1200_ALUOP_ADDC:
-		    $fwrite(finsn,"l.addc ");		
+		    $fwrite(finsn,"l.addc ");
 		  `OR1200_ALUOP_SUB:
-		    $fwrite(finsn,"l.sub ");		
+		    $fwrite(finsn,"l.sub ");
 		  `OR1200_ALUOP_AND:
-		    $fwrite(finsn,"l.and ");		
+		    $fwrite(finsn,"l.and ");
 		  `OR1200_ALUOP_OR:
-		    $fwrite(finsn,"l.or ");		
+		    $fwrite(finsn,"l.or ");
 		  `OR1200_ALUOP_XOR:
-		    $fwrite(finsn,"l.xor ");		
+		    $fwrite(finsn,"l.xor ");
 		  `OR1200_ALUOP_MUL:
-		    $fwrite(finsn,"l.mul ");		
+		    $fwrite(finsn,"l.mul ");
 		  `OR1200_ALUOP_SHROT:
 		    begin
 		       case(shrot_op)
@@ -1646,15 +1646,15 @@ end
 		       endcase // case (shrot_op)
 		    end
 		  `OR1200_ALUOP_DIV:
-		    $fwrite(finsn,"l.div ");		
+		    $fwrite(finsn,"l.div ");
 		  `OR1200_ALUOP_DIVU:
-		    $fwrite(finsn,"l.divu ");		
+		    $fwrite(finsn,"l.divu ");
 		  `OR1200_ALUOP_CMOV:
-		    $fwrite(finsn,"l.cmov ");		
+		    $fwrite(finsn,"l.cmov ");
 		endcase // case (alu_op)
 		$fwrite(finsn,"r%0d,r%0d,r%0d",rD_num,rA_num,rB_num);
 	     end
-	   
+
 	   `OR1200_OR32_SH_ROTI:
 	     begin
 		case(shrot_op)
@@ -1667,9 +1667,9 @@ end
 		  `OR1200_SHROTOP_ROR:
 		    $fwrite(finsn,"l.rori ");
 		endcase // case (shrot_op)
-		$fwrite(finsn,"r%0d,r%0d,0x%h",rD_num,rA_num,shroti_imm);		
+		$fwrite(finsn,"r%0d,r%0d,0x%h",rD_num,rA_num,shroti_imm);
 	     end
-	   
+
 	   `OR1200_OR32_SFXXI:
 	     begin
 		case(sf_op[2:0])
@@ -1704,11 +1704,11 @@ end
 			 $fwrite(finsn,"l.sflesi ");
 		       else
 			 $fwrite(finsn,"l.sfleui ");
-		    end		  
+		    end
 		endcase // case (sf_op[2:0])
-		
+
 		$fwrite(finsn,"r%0d,0x%h",rA_num, imm_16bit);
-		
+
 	     end // case: `OR1200_OR32_SFXXI
 
 	   `OR1200_OR32_SFXX:
@@ -1746,13 +1746,13 @@ end
 		       else
 			 $fwrite(finsn,"l.sfleu ");
 		    end
-		  
+
 		endcase // case (sf_op[2:0])
-		
+
 		$fwrite(finsn,"r%0d,r%0d",rA_num, rB_num);
-		
+
 	     end
-	   
+
 	   `OR1200_OR32_MACI:
 	     begin
 		$fwrite(finsn,"l.maci r%0d,0x%h",rA_num,imm_16bit);
@@ -1761,10 +1761,10 @@ end
 	   `OR1200_OR32_MACMSB:
 	     begin
 		if(insn[3:0] == 4'h1)
-		  $fwrite(finsn,"l.mac ");	      
+		  $fwrite(finsn,"l.mac ");
 		else if(insn[3:0] == 4'h2)
 		  $fwrite(finsn,"l.msb ");
-		
+
 		$fwrite(finsn,"r%0d,r%0d",rA_num,rB_num);
 	     end
 
@@ -1772,7 +1772,7 @@ end
 	     begin
 		$fwrite(finsn,"l.nop 0x%0h",imm_16bit);
 	     end
-	   
+
 	   `OR1200_OR32_XSYNC:
 	     begin
 		case (xsync_op)
@@ -1793,18 +1793,18 @@ end
 		    end
 		endcase // case (xsync_op)
 	     end
-	   
+
 	   default:
 	     begin
 		$display("%t: Unknown opcode 0x%h",$time,opcode);
 		$fwrite(finsn,"%t: Unknown opcode 0x%h",$time,opcode);
 	     end
-	   
+
 	 endcase // case (opcode)
-	 
+
       end
    endtask // or1200_print_op
 
 
-   
+
 endmodule
