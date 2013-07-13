@@ -38,10 +38,12 @@
 `include "timescale.v"
 `include "or1200_defines.v"
 `include "or1200_monitor_defines.v"
-`include "test-defines.v"
 
 
 module or1200_monitor;
+
+   parameter TEST_NAME_STRING = "unnamed";
+   parameter LOG_DIR          = ".";
 
    integer fexe;
    integer finsn;
@@ -57,25 +59,45 @@ module or1200_monitor;
    integer    r3;
    integer    insns;
 
+   //Trim \0 characters from str and return a right-adjusted string
+   function [128*8-1:0] trim;
+      input [128*8-1:0] str;
+      integer 		wpos;
+      integer 		rpos;
+      begin
+	 trim = 0;
+	 wpos = 0;
+	 for(rpos=0;rpos<=128*8;rpos=rpos+8)
+	   if(str[rpos+:8] != 0) begin
+	      trim[wpos+:8] = str[rpos+:8];
+	      wpos = wpos +8;
+	   end
+      end
+   endfunction
 
    //
    // Initialization
    //
+   reg [64*8-1:0]  testcase; //Maximum 64 characters
+   
    initial begin
       ref = 0;
+      if(!$value$plusargs("testcase=%s", testcase))
+	testcase = TEST_NAME_STRING;
+
 `ifdef OR1200_MONITOR_EXEC_STATE
-      fexe = $fopen({"../out/",`TEST_NAME_STRING,"-executed.log"});
+      fexe = $fopen(trim({LOG_DIR, "/", testcase, "-executed.log"}));
 `endif
 `ifdef OR1200_MONITOR_EXEC_LOG_DISASSEMBLY
       finsn = fexe;
 `endif
       $timeformat (-9, 2, " ns", 12);
 `ifdef OR1200_MONITOR_SPRS
-      fspr = $fopen({"../out/",`TEST_NAME_STRING,"-sprs.log"});
+      fspr = $fopen(trim({LOG_DIR, "/", testcase, "-sprs.log"}));
 `endif
-      fgeneral = $fopen({"../out/",`TEST_NAME_STRING,"-general.log"});
+      fgeneral = $fopen(trim({LOG_DIR, "/", testcase, "-general.log"}));
 `ifdef OR1200_MONITOR_LOOKUP
-      flookup = $fopen({"../out/",`TEST_NAME_STRING,"-lookup.log"});
+      flookup = $fopen(trim({LOG_DIR, "/", testcase, "-lookup.log"}));
 `endif
       insns = 0;
 

@@ -91,7 +91,10 @@ module orpsoc_testbench;
    //
    // Instantiate OR1200 monitor
    //
-   or1200_monitor monitor();
+   or1200_monitor
+     #(.TEST_NAME_STRING (`TEST_NAME_STRING),
+       .LOG_DIR("../out"))
+   monitor();
 
 `ifndef SIM_QUIET
  `define CPU_ic_top or1200_ic_top
