@@ -93,7 +93,7 @@ $(MAPPED_NCD): $(NGD_FILE)
 #This target uses Xilinx tools to Place & Route the design
 $(PARRED_NCD): $(MAPPED_NCD)
 	@echo; echo "\t#### PAR'ing ####";
-	$(Q)par -w -ol high -xe n $(XILINX_FLAGS) $< $@ $(PCD_FILE)
+	$(Q)par -w -ol high -xe n $(XILINX_FLAGS) $< $@ $(PCF_FILE)
 
 #This target uses Xilinx tools to generate a bitstream for download
 $(BIT_FILE): $(PARRED_NCD)
